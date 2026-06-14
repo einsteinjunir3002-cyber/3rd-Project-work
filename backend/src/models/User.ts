@@ -4,7 +4,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   passwordHash: string;
-  role: 'student' | 'lecturer' | 'admin' | 'superadmin' | 'researcher' | 'entrepreneur' | 'alumni' | 'industry_partner' | 'career_advisor';
+  role: 'student' | 'lecturer' | 'admin' | 'superadmin' | 'researcher' | 'entrepreneur' | 'alumni' | 'industry_partner' | 'career_advisor' | 'prospective_student';
   provider: string;
   providerId?: string;
   isEmailVerified: boolean;
@@ -33,6 +33,9 @@ export interface IUser extends Document {
   industrySector?: string;
   // Career Advisor Metadata
   advisorExpertise?: string;
+  // Prospective Student Metadata
+  intendedMajor?: string;
+  highSchool?: string;
   isSuspended: boolean;
   biometricPublicKey?: string;
   biometricKeyId?: string;
@@ -45,7 +48,7 @@ const UserSchema: Schema = new Schema(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, required: true, enum: ['student', 'lecturer', 'admin', 'superadmin', 'researcher', 'entrepreneur', 'alumni', 'industry_partner', 'career_advisor'], default: 'student' },
+    role: { type: String, required: true, enum: ['student', 'lecturer', 'admin', 'superadmin', 'researcher', 'entrepreneur', 'alumni', 'industry_partner', 'career_advisor', 'prospective_student'], default: 'student' },
     isSuspended: { type: Boolean, default: false },
     provider: { type: String, required: true, default: 'local' },
     providerId: { type: String },
@@ -87,6 +90,10 @@ const UserSchema: Schema = new Schema(
 
     // Career Advisor fields
     advisorExpertise: { type: String },
+
+    // Prospective Student fields
+    intendedMajor: { type: String },
+    highSchool: { type: String },
   },
   {
     timestamps: true,

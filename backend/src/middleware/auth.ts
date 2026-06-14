@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey1234567890!';
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET is not set in environment variables!');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -32,13 +35,31 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
 import Role from '../models/Role';
 
 // Role-based access control middleware
-export const requireRole = (allowedRoles: ('student' | 'lecturer' | 'admin' | 'superadmin')[]) => {
+export const requireRole = (allowedRoles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized.' });
     }
 
-    if (allowedRoles.includes(req.user.role) || (req.user.role === 'superadmin' && !allowedRoles.includes('student') && !allowedRoles.includes('lecturer'))) {
+    const role = req.user.role;
+    if (role === 'superadmin') {
+      return next();
+    }
+
+    const hasAccess = allowedRoles.some(allowed => {
+      if (allowed === 'student') {
+        return ['student', 'researcher', 'entrepreneur'].includes(role);
+      }
+      if (allowed === 'lecturer') {
+        return ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(role);
+      }
+      if (allowed === 'admin') {
+        return ['admin'].includes(role);
+      }
+      return role === allowed;
+    });
+
+    if (hasAccess) {
       return next();
     }
 

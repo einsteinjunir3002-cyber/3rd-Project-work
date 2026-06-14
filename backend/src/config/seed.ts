@@ -67,10 +67,31 @@ const seed = async () => {
       role: 'admin'
     });
 
+    const elikemMentor = new User({
+      name: 'Dr. Elikem Adadevoh',
+      email: 'elikem@smartlearn.edu',
+      passwordHash,
+      role: 'industry_partner',
+      companyName: 'Accra Venture Capital',
+      industrySector: 'FinTech & Scaleups',
+      title: 'Dr.'
+    });
+
+    const naaMentor = new User({
+      name: 'Naa Ayeley Komey',
+      email: 'naa@smartlearn.edu',
+      passwordHash,
+      role: 'alumni',
+      companyName: 'AgriFlow Ltd',
+      graduationYear: '2021'
+    });
+
     await studentUser.save();
     await lecturerUser.save();
     await adminUser.save();
-    console.log('👤 Seeded users: Student, Lecturer, Admin.');
+    await elikemMentor.save();
+    await naaMentor.save();
+    console.log('👤 Seeded users: Student, Lecturer, Admin, Mentors.');
 
     // 3. Create Default Courses
     const coursesData = [

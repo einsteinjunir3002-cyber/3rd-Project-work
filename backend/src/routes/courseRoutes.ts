@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
-import { getCourses, getNotes, uploadNote, getStudents } from '../controllers/courseController';
+import { getCourses, getNotes, uploadNote, getStudents, getMentors } from '../controllers/courseController';
 import { authenticateToken, requireRole } from '../middleware/auth';
 
 const router = Router();
@@ -34,6 +34,7 @@ const upload = multer({
 router.get('/', authenticateToken, getCourses);
 router.get('/notes', authenticateToken, getNotes);
 router.get('/students', authenticateToken, requireRole(['lecturer', 'admin']), getStudents);
+router.get('/mentors', authenticateToken, getMentors);
 
 // Only lecturers can upload note assets
 router.post(

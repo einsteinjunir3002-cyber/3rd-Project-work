@@ -1,3 +1,5 @@
+process.env.JWT_SECRET = 'test_jwt_secret_for_unit_tests';
+
 import request from 'supertest';
 import app from '../app';
 import { connectDB, closeDB } from '../config/db';

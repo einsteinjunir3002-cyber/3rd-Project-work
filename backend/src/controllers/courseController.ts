@@ -170,3 +170,27 @@ export const getStudents = async (req: AuthenticatedRequest, res: Response) => {
     return res.status(500).json({ message: 'Internal server error fetching students.' });
   }
 };
+
+export const getMentors = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const mentors = await User.find({ 
+      role: { $in: ['alumni', 'industry_partner', 'career_advisor'] } 
+    }).select('name email role title graduationYear companyName industrySector advisorExpertise');
+    
+    const mapped = mentors.map((m) => ({
+      id: m._id.toString(),
+      name: m.name,
+      email: m.email,
+      role: m.role,
+      title: m.title || '',
+      graduationYear: m.graduationYear || '',
+      companyName: m.companyName || '',
+      industrySector: m.industrySector || '',
+      advisorExpertise: m.advisorExpertise || '',
+    }));
+    return res.status(200).json(mapped);
+  } catch (err) {
+    console.error('getMentors error:', err);
+    return res.status(500).json({ message: 'Internal server error fetching mentors.' });
+  }
+};

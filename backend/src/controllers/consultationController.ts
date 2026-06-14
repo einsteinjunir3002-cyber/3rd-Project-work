@@ -15,7 +15,10 @@ export const bookConsultation = async (req: AuthenticatedRequest, res: Response)
 
   try {
     // Check if lecturer exists
-    const lecturer = await User.findOne({ _id: lecturerId, role: 'lecturer' });
+    const lecturer = await User.findOne({ 
+      _id: lecturerId, 
+      role: { $in: ['lecturer', 'alumni', 'industry_partner', 'career_advisor'] } 
+    });
     if (!lecturer) {
       return res.status(404).json({ message: 'Lecturer not found.' });
     }
@@ -60,7 +63,9 @@ export const getConsultations = async (req: AuthenticatedRequest, res: Response)
   if (!userId) return res.status(401).json({ message: 'Unauthorized.' });
 
   try {
-    const filter: any = userRole === 'student' ? { studentId: userId } : { lecturerId: userId };
+    const filter: any = ['student', 'researcher', 'entrepreneur', 'prospective_student'].includes(userRole) 
+      ? { studentId: userId } 
+      : { lecturerId: userId };
     
     const consultations = await Consultation.find(filter)
       .populate('studentId', 'name email')

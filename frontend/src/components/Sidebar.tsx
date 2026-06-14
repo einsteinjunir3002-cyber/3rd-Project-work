@@ -53,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onThemeToggle, isDar
   if (!user) return null;
 
   // Determine active view mode dynamically
-  const isStudent = ['student', 'researcher', 'entrepreneur'].includes(user.role) || (user.role === 'admin' && adminView === 'student');
+  const isStudent = ['student', 'researcher', 'entrepreneur', 'prospective_student'].includes(user.role) || (user.role === 'admin' && adminView === 'student');
   const isLecturer = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(user.role) || (user.role === 'admin' && adminView === 'lecturer');
 
   const activeTab = isStudent 
@@ -142,6 +142,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onThemeToggle, isDar
     filteredStudentNav = filteredStudentNav.map(item => 
       item.id === 'student-dashboard' ? { ...item, label: 'Founder Dashboard', icon: Lightbulb } : item
     );
+  } else if (user.role === 'prospective_student') {
+    filteredStudentNav = studentNav.filter(item => 
+      ['student-dashboard', 'student-universities', 'student-forum', 'student-career-guidance'].includes(item.id)
+    );
+    filteredStudentNav = filteredStudentNav.map(item => {
+      if (item.id === 'student-dashboard') return { ...item, label: 'Admissions Desk', icon: LayoutDashboard };
+      if (item.id === 'student-universities') return { ...item, label: 'University Explorer', icon: BookOpen };
+      if (item.id === 'student-forum') return { ...item, label: 'Community Board', icon: MessageSquare };
+      if (item.id === 'student-career-guidance') return { ...item, label: 'Admission Advisor', icon: Sparkles };
+      return item;
+    });
   }
 
   let filteredLecturerNav = lecturerNav;
@@ -187,6 +198,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onThemeToggle, isDar
     avatarSrc = `https://api.dicebear.com/7.x/shapes/svg?seed=${user.name}`;
   } else if (user.role === 'career_advisor') {
     avatarSrc = `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+  } else if (user.role === 'prospective_student') {
+    avatarSrc = `https://api.dicebear.com/7.x/personas/svg?seed=${user.name}`;
   } else {
     avatarSrc = isStudent ? 'picture/avatar_student.svg' : 'picture/avatar_lecturer.svg';
   }
@@ -200,6 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onThemeToggle, isDar
     alumni: 'Alumni Member',
     industry_partner: 'Industry Partner',
     career_advisor: 'Career Advisor',
+    prospective_student: 'Prospective Student',
   };
   const roleLabel = roleLabelMap[user.role] || user.role;
 

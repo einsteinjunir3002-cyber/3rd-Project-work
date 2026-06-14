@@ -16,7 +16,7 @@ export const AuthPage: React.FC = () => {
   
   // Auth Form State
   const [email, setEmail] = useState(() => localStorage.getItem('preferred_email') || '');
-  const [password, setPassword] = useState(() => localStorage.getItem('preferred_email') ? 'password' : '');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<User['role']>('student');
   const [rememberMe, setRememberMe] = useState(false);
@@ -36,6 +36,8 @@ export const AuthPage: React.FC = () => {
   const [companyName, setCompanyName] = useState('');
   const [industrySector, setIndustrySector] = useState('');
   const [advisorExpertise, setAdvisorExpertise] = useState('');
+  const [intendedMajor, setIntendedMajor] = useState('');
+  const [highSchool, setHighSchool] = useState('');
 
   // Status & Messages
   const [loading, setLoading] = useState(false);
@@ -111,7 +113,9 @@ export const AuthPage: React.FC = () => {
           graduationYear,
           companyName,
           industrySector,
-          advisorExpertise
+          advisorExpertise,
+          intendedMajor,
+          highSchool
         });
         if (response.success) {
           setMessage(response.message);
@@ -258,22 +262,23 @@ export const AuthPage: React.FC = () => {
                     <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">
                       Select Your Profession / Role
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {[
                         { id: 'student', label: '🎓 Student' },
+                        { id: 'prospective_student', label: '🏫 Prospective' },
                         { id: 'lecturer', label: '💼 Lecturer' },
                         { id: 'researcher', label: '🔬 Researcher' },
                         { id: 'entrepreneur', label: '💡 Entrepreneur' },
                         { id: 'alumni', label: '🎓 Alumni' },
                         { id: 'industry_partner', label: '🏢 Partner' },
-                        { id: 'career_advisor', label: '👔 Career Advisor' },
-                        { id: 'admin', label: '🛠️ Administrator' }
+                        { id: 'career_advisor', label: '👔 Advisor' },
+                        { id: 'admin', label: '🛠️ Admin' }
                       ].map(r => (
                         <button
                           key={r.id}
                           type="button"
                           onClick={() => setRole(r.id as any)}
-                          className={`py-2.5 px-3 border rounded-xl text-left text-[11px] font-bold transition-all cursor-pointer truncate ${role === r.id ? 'border-violet-600 bg-violet-600/10 text-violet-400' : 'border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700'}`}
+                          className={`py-2.5 px-2 border rounded-xl text-left text-[10px] font-bold transition-all cursor-pointer truncate ${role === r.id ? 'border-violet-600 bg-violet-600/10 text-violet-400' : 'border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700'}`}
                         >
                           {r.label}
                         </button>
@@ -286,13 +291,21 @@ export const AuthPage: React.FC = () => {
                     <motion.div className="grid grid-cols-2 gap-2" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
                       <div className="relative">
                         <Building className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
-                        <input
-                          type="text"
-                          placeholder="Department"
+                        <select
                           value={department}
                           onChange={(e) => setDepartment(e.target.value)}
-                          className="w-full pl-10 pr-2 py-3 bg-slate-950 border border-slate-800/60 rounded-xl text-xs text-slate-200 focus:border-violet-500 focus:outline-none transition-all font-semibold"
-                        />
+                          className="w-full pl-10 pr-2 py-3 bg-slate-950 border border-slate-800/60 rounded-xl text-xs text-slate-200 focus:border-violet-500 focus:outline-none transition-all font-semibold cursor-pointer"
+                        >
+                          <option value="Computer Science">Computer Science</option>
+                          <option value="Electrical Engineering">Electrical Engineering</option>
+                          <option value="Mechanical Engineering">Mechanical Engineering</option>
+                          <option value="Business Administration">Business Administration</option>
+                          <option value="Medicine & Surgery">Medicine & Surgery</option>
+                          <option value="Nursing">Nursing</option>
+                          <option value="Law">Law</option>
+                          <option value="Mathematics">Mathematics</option>
+                          <option value="Architecture">Architecture</option>
+                        </select>
                       </div>
                       <div className="relative">
                         <Bookmark className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
@@ -302,6 +315,34 @@ export const AuthPage: React.FC = () => {
                           value={studentId}
                           onChange={(e) => setStudentId(e.target.value)}
                           className="w-full pl-10 pr-2 py-3 bg-slate-950 border border-slate-800/60 rounded-xl text-xs text-slate-200 focus:border-violet-500 focus:outline-none transition-all font-semibold"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Prospective Student profile setup */}
+                  {role === 'prospective_student' && (
+                    <motion.div className="grid grid-cols-2 gap-2" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
+                      <div className="relative">
+                        <Building className="absolute left-4 top-3.5 w-4.5 h-4.5 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Intended Major"
+                          value={intendedMajor}
+                          onChange={(e) => setIntendedMajor(e.target.value)}
+                          className="w-full pl-10 pr-2 py-3 bg-slate-950 border border-slate-800/60 rounded-xl text-xs text-slate-200 focus:border-violet-500 focus:outline-none transition-all font-semibold"
+                          required
+                        />
+                      </div>
+                      <div className="relative">
+                        <Bookmark className="absolute left-4 top-3.5 w-4.5 h-4.5 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="High School"
+                          value={highSchool}
+                          onChange={(e) => setHighSchool(e.target.value)}
+                          className="w-full pl-10 pr-2 py-3 bg-slate-950 border border-slate-800/60 rounded-xl text-xs text-slate-200 focus:border-violet-500 focus:outline-none transition-all font-semibold"
+                          required
                         />
                       </div>
                     </motion.div>

@@ -49,7 +49,11 @@ export const askAi = async (req: AuthenticatedRequest, res: Response) => {
       systemInstruction = 'You are an elite academic AI Research Assistant at Kwame Nkrumah University of Science and Technology (KNUST) or University of Ghana. Help students analyze methodology, find literature gaps, synthesize studies, and format citations in APA 7th, Harvard, IEEE, or MLA styles.';
     } else if (mode === 'innovation') {
       systemInstruction = 'You are an expert startup incubator advisor and business model validator. Evaluate student venture profiles, provide feedback on value propositions, outline Ghanaian regulatory compliance steps (FDA, GSA, etc.), suggest marketing strategies, and map pathways to local funding (Ashesi Venture Incubator, Kumasi Hive, MEST, UG Legon Hub).';
+    } else if (mode === 'admissions') {
+      systemInstruction = 'You are an expert academic admissions advisor for Ghanaian universities. Help prospective students understand WASSCE grade cut-off eligibility, intended majors, scholarships, preparation steps, and application requirements.';
     }
+
+    systemInstruction += ' Speak in pure English and DO NOT welcome or greet the user with "Akwaaba" or any other non-English word under any circumstances unless explicitly requested by the user.';
 
     const responseText = await AiService.generateText(message, {
       mode,

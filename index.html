@@ -1948,6 +1948,7 @@
           <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Select Role / Profession</label>
           <select id="signup-role-select" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem; cursor:pointer;" onchange="setSignupRole(this.value)">
             <option value="student">Student</option>
+            <option value="prospective_student">Prospective Student</option>
             <option value="lecturer">Lecturer</option>
             <option value="researcher">Researcher</option>
             <option value="entrepreneur">Entrepreneur</option>
@@ -1962,10 +1963,29 @@
         <div id="signup-student-fields" style="display:flex; gap:8px; margin-bottom:16px;">
           <div style="flex:1;">
             <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Department</label>
-            <input type="text" id="signup-dept" class="form-control" value="Computer Science" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
+            <select id="signup-dept" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem; cursor:pointer;">
+              <option value="Computer Science">Computer Science</option>
+              <option value="Electrical Engineering">Electrical Engineering</option>
+              <option value="Mechanical Engineering">Mechanical Engineering</option>
+              <option value="Business Administration">Business Administration</option>
+              <option value="Medicine & Surgery">Medicine & Surgery</option>
+              <option value="Nursing">Nursing</option>
+              <option value="Law">Law</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Architecture">Architecture</option>
+            </select></div>
           <div style="flex:1;">
             <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">ID Number</label>
             <input type="text" id="signup-stdid" class="form-control" placeholder="E.g. SL-20984" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>
+
+        <!-- Prospective Student-only metadata inputs -->
+        <div id="signup-prospective-student-fields" style="display:none; gap:8px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Intended Major</label>
+            <input type="text" id="signup-intended-major" class="form-control" placeholder="E.g. Computer Science" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">High School</label>
+            <input type="text" id="signup-highschool" class="form-control" placeholder="E.g. Achimota School" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>
 
         <!-- Lecturer-only metadata inputs -->
         <div id="signup-lecturer-fields" style="display:none; gap:8px; margin-bottom:16px;">

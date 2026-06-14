@@ -190,6 +190,61 @@ export const StudentHub: React.FC = () => {
   const [careerScores, setCareerScores] = useState({ programming: 0, business: 0, datascience: 0, engineering: 0, healthcare: 0, law: 0 });
   const [suggestedCareer, setSuggestedCareer] = useState<any>(null);
 
+  // Prospective Student States
+  const [wassceGrades, setWassceGrades] = useState<Record<string, string>>({
+    math: 'A1',
+    english: 'A1',
+    science: 'A1',
+    social: 'A1',
+    elective1: 'A1',
+    elective2: 'A1',
+    elective3: 'A1',
+  });
+  const [wassceElectiveNames, setWassceElectiveNames] = useState<Record<string, string>>({
+    elective1: 'Elective Mathematics',
+    elective2: 'Physics',
+    elective3: 'Chemistry',
+  });
+  const [scholarshipSearch, setScholarshipSearch] = useState('');
+  const [prepChecklist, setPrepChecklist] = useState([
+    { id: 'wassce', text: 'Validate WASSCE grades & calculate aggregate', done: false },
+    { id: 'career', text: 'Take AI Career Personality Discovery Test', done: false },
+    { id: 'explore', text: 'Research top Ghanaian university options & tuition fees', done: false },
+    { id: 'statement', text: 'Draft Admissions personal statement outline', done: false },
+    { id: 'scholarship', text: 'Search & bookmark eligible tertiary scholarships', done: false },
+    { id: 'advisor', text: 'Chat with AI Admissions Advisor for application tips', done: false },
+  ]);
+  const [admissionsChatHistory, setAdmissionsChatHistory] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([
+    { sender: 'ai', text: 'Welcome to your AI Admissions Advisor! I can help you analyze WASSCE requirements, suggest majors, compare Ghanaian universities, and answer application questions. How can I assist you today?' }
+  ]);
+  const [admissionsChatMessage, setAdmissionsChatMessage] = useState('');
+  const [admissionsChatLoading, setAdmissionsChatLoading] = useState(false);
+
+  const toggleChecklist = (id: string) => {
+    setPrepChecklist(prev => prev.map(item => item.id === id ? { ...item, done: !item.done } : item));
+  };
+
+  const handleSendAdmissionsMessage = async () => {
+    if (!admissionsChatMessage.trim()) return;
+    const msg = admissionsChatMessage;
+    setAdmissionsChatMessage('');
+    setAdmissionsChatHistory(prev => [...prev, { sender: 'user', text: msg }]);
+    setAdmissionsChatLoading(true);
+
+    try {
+      const response = await axios.post('/api/ai/chat', { 
+        mode: 'admissions', 
+        message: msg 
+      });
+      setAdmissionsChatHistory(prev => [...prev, { sender: 'ai', text: response.data.response }]);
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || 'Error communicating with Admissions Advisor.';
+      setAdmissionsChatHistory(prev => [...prev, { sender: 'ai', text: `⚠️ **Admissions Advisor Error:** ${errorMsg}` }]);
+    } finally {
+      setAdmissionsChatLoading(false);
+    }
+  };
+
   const quizQuestions = [
     { text: 'What kind of academic tasks do you enjoy the most?', options: [
       { text: 'Coding programs and designing database systems', score: 'programming' },
@@ -234,12 +289,16 @@ export const StudentHub: React.FC = () => {
   ];
 
   const handleQuizSelection = (scoreKey: string) => {
-    setCareerScores(prev => ({ ...prev, [scoreKey]: (prev[scoreKey as keyof typeof prev] || 0) + 1 }));
+    const updatedScores = {
+      ...careerScores,
+      [scoreKey]: (careerScores[scoreKey as keyof typeof careerScores] || 0) + 1
+    };
+    setCareerScores(updatedScores);
     if (currentQ < 4) {
       setCurrentQ(currentQ + 1);
     } else {
       // Quiz finished - compile top category
-      const top = Object.entries(careerScores).reduce((a, b) => b[1] > a[1] ? b : a)[0];
+      const top = Object.entries(updatedScores).reduce((a, b) => b[1] > a[1] ? b : a)[0];
       
       const careersDb = {
         programming: {
@@ -524,6 +583,19 @@ export const StudentHub: React.FC = () => {
   const [newStartup, setNewStartup] = useState({ name: '', industry: 'AgriTech', description: '' });
   const [selectedMentor, setSelectedMentor] = useState<any | null>(null);
   const [mentorMessage, setMentorMessage] = useState('');
+  const [mentors, setMentors] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchMentors = async () => {
+      try {
+        const res = await axios.get('/api/courses/mentors');
+        setMentors(res.data);
+      } catch (err) {
+        console.error('Error fetching mentors:', err);
+      }
+    };
+    fetchMentors();
+  }, []);
 
   // AI Research Assistant Handler Functions
   const handleResearchSearch = async () => {
@@ -657,11 +729,19 @@ export const StudentHub: React.FC = () => {
     showToast('🤝 Request sent to the founder to collaborate on this startup team!', 'success');
   };
 
-  const handleContactMentor = () => {
-    if (!mentorMessage.trim()) return;
-    showToast(`📩 Message sent to ${selectedMentor?.name}. They will review and contact you!`, 'success');
-    setSelectedMentor(null);
-    setMentorMessage('');
+  const handleContactMentor = async () => {
+    if (!mentorMessage.trim() || !selectedMentor) return;
+    try {
+      await sendChatMessage(mentorMessage, selectedMentor.id);
+      showToast(`📩 Message sent to ${selectedMentor.name}. They will review and contact you!`, 'success');
+      setActiveRecipient(selectedMentor.id);
+      setTab('student', 'student-chat');
+    } catch (err) {
+      showToast('Failed to send message to mentor.', 'error');
+    } finally {
+      setSelectedMentor(null);
+      setMentorMessage('');
+    }
   };
 
   return (
@@ -672,7 +752,7 @@ export const StudentHub: React.FC = () => {
         <div>
           <span className="text-violet-500 font-bold text-xs uppercase tracking-wider">Workspace Desk</span>
           <h2 className="text-2xl font-black font-sans mt-1">
-            {user?.role === 'researcher' ? 'Research Workspace Desk' : user?.role === 'entrepreneur' ? 'Founder Venture Desk' : 'Student Portal Space'}
+            {user?.role === 'researcher' ? 'Research Workspace Desk' : user?.role === 'entrepreneur' ? 'Founder Venture Desk' : user?.role === 'prospective_student' ? 'Admissions Desk Hub' : 'Student Portal Space'}
           </h2>
         </div>
         <div className="flex items-center gap-3">
@@ -818,6 +898,141 @@ export const StudentHub: React.FC = () => {
                   )}
                 </div>
               </div>
+            ) : user?.role === 'prospective_student' ? (
+              // 🏫 PROSPECTIVE STUDENT DASHBOARD VIEW (Admissions Desk Hub)
+              <div className="lg:col-span-8 flex flex-col gap-6">
+                {/* WASSCE Score Aggregator Widget */}
+                <div className="glass p-6 bg-gradient-to-br from-teal-950/20 to-slate-950/10">
+                  <h3 className="font-extrabold text-base mb-1 text-slate-100 flex items-center gap-2">
+                    🏫 WASSCE Grade Aggregator & Cut-Off Checker
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mb-4">
+                    Select your Core and Elective subject grades to calculate your tertiary entry aggregate (lower score is better).
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Core Subjects */}
+                    <div className="flex flex-col gap-3">
+                      <span className="text-[10px] font-black text-teal-400 uppercase tracking-wider block">Core Subjects</span>
+                      {[
+                        { id: 'math', label: 'Core Mathematics' },
+                        { id: 'english', label: 'English Language' },
+                        { id: 'science', label: 'Integrated Science' },
+                        { id: 'social', label: 'Social Studies' }
+                      ].map(sub => (
+                        <div key={sub.id} className="flex justify-between items-center bg-slate-950/40 p-2.5 rounded-xl border border-slate-850">
+                          <span className="text-xs font-semibold text-slate-300">{sub.label}</span>
+                          <select
+                            value={wassceGrades[sub.id]}
+                            onChange={(e) => setWassceGrades(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                            className="bg-slate-900 border border-slate-800 text-xs rounded-lg p-1.5 focus:outline-none text-slate-200 cursor-pointer font-bold"
+                          >
+                            {['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'].map(g => (
+                              <option key={g} value={g}>{g}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Elective Subjects */}
+                    <div className="flex flex-col gap-3">
+                      <span className="text-[10px] font-black text-teal-400 uppercase tracking-wider block">Elective Subjects</span>
+                      {['elective1', 'elective2', 'elective3'].map(elId => (
+                        <div key={elId} className="flex gap-2 items-center bg-slate-950/40 p-2.5 rounded-xl border border-slate-850">
+                          <input
+                            type="text"
+                            value={wassceElectiveNames[elId]}
+                            onChange={(e) => setWassceElectiveNames(prev => ({ ...prev, [elId]: e.target.value }))}
+                            placeholder="Elective Name"
+                            className="bg-transparent text-xs font-semibold text-slate-300 focus:outline-none border-b border-slate-800 hover:border-slate-700/60 flex-1 py-0.5"
+                          />
+                          <select
+                            value={wassceGrades[elId]}
+                            onChange={(e) => setWassceGrades(prev => ({ ...prev, [elId]: e.target.value }))}
+                            className="bg-slate-900 border border-slate-800 text-xs rounded-lg p-1.5 focus:outline-none text-slate-200 cursor-pointer font-bold shrink-0"
+                          >
+                            {['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'].map(g => (
+                              <option key={g} value={g}>{g}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Aggregate display */}
+                  <div className="mt-6 pt-5 border-t border-slate-800/40 flex flex-wrap justify-between items-center gap-4">
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Calculated Aggregate</span>
+                      <h4 className="text-3xl font-black text-teal-400 mt-1">
+                        Aggregate {(() => {
+                          const gradeToPoint = (grade: string): number => {
+                            const map: Record<string, number> = { A1: 1, B2: 2, B3: 3, C4: 4, C5: 5, C6: 6, D7: 7, E8: 8, F9: 9 };
+                            return map[grade] || 9;
+                          };
+                          const pMath = gradeToPoint(wassceGrades.math);
+                          const pEnglish = gradeToPoint(wassceGrades.english);
+                          const pScience = gradeToPoint(wassceGrades.science);
+                          const pSocial = gradeToPoint(wassceGrades.social);
+                          const bestCoreScienceOrSocial = Math.min(pScience, pSocial);
+                          const coreSum = pMath + pEnglish + bestCoreScienceOrSocial;
+
+                          const pEl1 = gradeToPoint(wassceGrades.elective1);
+                          const pEl2 = gradeToPoint(wassceGrades.elective2);
+                          const pEl3 = gradeToPoint(wassceGrades.elective3);
+                          const electiveSum = pEl1 + pEl2 + pEl3;
+                          return coreSum + electiveSum;
+                        })()}
+                      </h4>
+                    </div>
+
+                    <div className="p-3 bg-teal-950/20 border border-teal-500/20 rounded-xl leading-relaxed text-[10px] text-teal-300 font-semibold max-w-sm">
+                      💡 Cut-off Tip: KNUST CS cut-off is usually 8-9, Ashesi CS is 12-14, UG Legon CS is 9-11. Use the University Explorer tab to compare eligibility ranges!
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ghanaian Scholarship Directory */}
+                <div className="glass p-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+                    <div>
+                      <h3 className="font-extrabold text-base text-slate-100">🎓 Ghana Tertiary Scholarships Directory</h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Explore GNPC, government, and corporate scholarship opportunities.</p>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search scholarships..."
+                      value={scholarshipSearch}
+                      onChange={(e) => setScholarshipSearch(e.target.value)}
+                      className="px-3 py-1.5 bg-slate-950 border border-slate-800/80 rounded-xl text-xs text-slate-350 focus:outline-none placeholder-slate-600 font-semibold w-full md:w-48"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-3.5 max-h-[300px] overflow-y-auto pr-1">
+                    {[
+                      { name: 'Mastercard Foundation Scholars Program', provider: 'Ashesi University / UG Legon', coverage: 'Full Tuition, Accommodation, Stipend & Laptop', eligibility: 'Aggregate 6-12, proven financial need, leadership potential.' },
+                      { name: 'Ghana Scholarship Secretariat (Local Tertiary)', provider: 'Government of Ghana', coverage: 'Partial Tuition subsidy', eligibility: 'Ghanaian citizen, admitted to public tertiary institution.' },
+                      { name: 'GNPC Scholarship (Undergraduate)', provider: 'Ghana National Petroleum Corporation', coverage: 'Full Tuition, accommodation & book allowance', eligibility: 'Aggregate 6-15, Science/Technology/Engineering major preferred.' },
+                      { name: 'Tullow Group Scholarship Scheme', provider: 'Tullow Ghana / Joint Venture Partners', coverage: 'Full Tuition, stipend & mentoring', eligibility: 'Engineering, Geosciences, or Environment majors, high academic performance.' },
+                      { name: 'MTN Ghana Foundation Tertiary Scholarship', provider: 'MTN Ghana', coverage: 'Tuition & accommodation support', eligibility: 'Aggregate 6-12, proof of financial need.' },
+                    ].filter(s =>
+                      s.name.toLowerCase().includes(scholarshipSearch.toLowerCase()) ||
+                      s.provider.toLowerCase().includes(scholarshipSearch.toLowerCase()) ||
+                      s.eligibility.toLowerCase().includes(scholarshipSearch.toLowerCase())
+                    ).map((sch, sIdx) => (
+                      <div key={sIdx} className="p-4 bg-slate-905/40 dark:bg-slate-950/40 border border-slate-850 rounded-2xl text-[10px] leading-relaxed">
+                        <div className="flex justify-between items-center mb-1 flex-wrap gap-2">
+                          <h5 className="font-extrabold text-slate-200 text-xs">{sch.name}</h5>
+                          <span className="px-2 py-0.5 bg-violet-600/10 text-violet-400 border border-violet-800/30 text-[8px] rounded font-bold uppercase">{sch.provider}</span>
+                        </div>
+                        <p className="text-slate-300 font-bold mt-1.5">💰 Coverage: {sch.coverage}</p>
+                        <p className="text-slate-400 font-semibold mt-1">🎯 Eligibility: {sch.eligibility}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             ) : (
               // 🎓 STANDARD STUDENT DASHBOARD VIEW
               <div className="lg:col-span-8 flex flex-col gap-6">
@@ -960,6 +1175,49 @@ export const StudentHub: React.FC = () => {
                         <li>Tech Stack Scalability Verified</li>
                       </ul>
                     </div>
+                  </div>
+                </>
+              ) : user?.role === 'prospective_student' ? (
+                // 🏫 PROSPECTIVE STUDENT SIDEBAR CARD (Checklist progress)
+                <>
+                  <div className="glass p-6 flex flex-col gap-5 bg-gradient-to-br from-slate-900/40 to-slate-950/30">
+                    <div className="text-center">
+                      <Award className="w-8 h-8 text-teal-400 mx-auto mb-2 animate-bounce" style={{ animationDuration: '3s' }} />
+                      <h3 className="font-extrabold text-sm">Admissions Prep</h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Track your college onboarding steps</p>
+                    </div>
+
+                    <div className="py-4 bg-slate-950/80 border border-slate-800/60 rounded-2xl text-center">
+                      <span className="text-3xl font-black text-teal-400">
+                        {Math.round((prepChecklist.filter(item => item.done).length / prepChecklist.length) * 100)}%
+                      </span>
+                      <span className="text-[10px] block text-slate-500 font-bold uppercase mt-1">Checklist Completed</span>
+                    </div>
+
+                    <div className="text-[11px] leading-relaxed text-slate-400">
+                      <p className="font-bold text-slate-300 mb-2">My Checklist Tasks:</p>
+                      <div className="flex flex-col gap-2.5">
+                        {prepChecklist.map(item => (
+                          <label key={item.id} className="flex items-start gap-2.5 cursor-pointer text-slate-300 font-semibold select-none">
+                            <input
+                              type="checkbox"
+                              checked={item.done}
+                              onChange={() => toggleChecklist(item.id)}
+                              className="rounded bg-slate-950 border-slate-800 text-teal-600 focus:ring-0 w-3.5 h-3.5 mt-0.5 cursor-pointer"
+                            />
+                            <span className={item.done ? 'line-through text-slate-500 font-medium' : ''}>
+                              {item.text}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {prepChecklist.every(item => item.done) && (
+                      <div className="p-3 bg-teal-500/10 border border-teal-500/25 rounded-xl text-center font-black text-[10px] text-teal-400 animate-pulse">
+                        🚀 Admissions Ready! All onboarding milestones cleared.
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
@@ -1227,137 +1485,280 @@ export const StudentHub: React.FC = () => {
 
         {/* INTERACTIVE CAREER QUIZ TABS */}
         {currentStudentTab === 'student-career-guidance' && (
-          <motion.div 
-            key="career"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            className="flex flex-col gap-6"
-          >
-            <div className="glass p-8">
-              <div className="text-center max-w-lg mx-auto mb-8">
-                <Sparkles className="w-8 h-8 text-violet-500 mx-auto mb-2" />
-                <h3 className="font-extrabold text-base">AI Career Interest quiz</h3>
-                <p className="text-[11px] text-slate-400 mt-1">Answer 5 personality questions below. SmartLearn Advisor mathematically optimizes your preferences, suggesting Ghanaian programs, campuses, and plots an academic track map!</p>
+          user?.role === 'prospective_student' ? (
+            <motion.div 
+              key="career-prospective"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+            >
+              {/* Left Column: Career Discovery Personality Test */}
+              <div className="lg:col-span-6 flex flex-col gap-6">
+                <div className="glass p-6 h-full flex flex-col justify-between">
+                  <div>
+                    <div className="text-center max-w-sm mx-auto mb-6">
+                      <Sparkles className="w-7 h-7 text-violet-500 mx-auto mb-2 animate-pulse" />
+                      <h3 className="font-extrabold text-base">Program & Career Discovery Center</h3>
+                      <p className="text-[10px] text-slate-400 mt-1">Answer 5 questions to map your academic strengths to optimal tertiary majors and pathways.</p>
+                    </div>
+
+                    {!quizActive && !quizFinished && (
+                      <div className="text-center py-8">
+                        <button
+                          type="button"
+                          onClick={() => { setQuizActive(true); setQuizFinished(false); setCurrentQ(0); }}
+                          className="px-5 py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-violet-600/10 hover:shadow-violet-600/25 transition-all cursor-pointer"
+                        >
+                          Start Discovery Quiz
+                        </button>
+                      </div>
+                    )}
+
+                    {quizActive && !quizFinished && (
+                      <div className="max-w-md mx-auto p-4 bg-slate-950/40 rounded-3xl border border-slate-800/60 shadow-xl">
+                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-4">
+                          <div 
+                            className="h-full bg-violet-600 transition-all duration-300"
+                            style={{ width: `${((currentQ + 1) / 5) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-500 block mb-1">Question {currentQ + 1} of 5</span>
+                        <h4 className="font-extrabold text-xs mb-3 leading-relaxed">{quizQuestions[currentQ].text}</h4>
+                        
+                        <div className="flex flex-col gap-2">
+                          {quizQuestions[currentQ].options.map((opt, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => handleQuizSelection(opt.score)}
+                              className="w-full p-3 bg-slate-900 border border-slate-800/60 hover:border-violet-500/35 hover:bg-violet-600/5 text-left rounded-xl text-[10px] font-semibold text-slate-350 hover:text-slate-100 transition-all cursor-pointer leading-relaxed"
+                            >
+                              {opt.text}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {quizFinished && suggestedCareer && (
+                      <div className="p-5 bg-violet-600/5 rounded-3xl border border-violet-500/25 leading-relaxed text-[11px] max-w-md mx-auto">
+                        <h4 className="font-black text-xs text-violet-400 text-center mb-1 uppercase tracking-wider">🎯 AI Recommendation</h4>
+                        <h5 className="font-black text-sm text-white text-center mb-4">{suggestedCareer.title}</h5>
+                        
+                        <p className="text-slate-350 font-semibold mb-3 leading-relaxed">{suggestedCareer.description}</p>
+                        
+                        <div className="flex flex-col gap-2 border-t border-slate-800/40 pt-3 text-[10px]">
+                          <p className="text-slate-400"><strong className="text-slate-300">Recommended Majors:</strong> {suggestedCareer.programs.join(', ')}</p>
+                          <p className="text-slate-400"><strong className="text-slate-300">Top Universities:</strong> {suggestedCareer.universities.join(', ')}</p>
+                          <p className="text-slate-400"><strong className="text-slate-300">Job Demand:</strong> {suggestedCareer.demand}</p>
+                          <p className="text-slate-400"><strong className="text-slate-300">Salary Range:</strong> {suggestedCareer.salary}</p>
+                        </div>
+                        
+                        <button
+                          type="button"
+                          onClick={resetQuiz}
+                          className="w-full mt-4 py-2 border border-slate-800 hover:bg-slate-800 text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                        >
+                          Retake Discovery Quiz
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Active quiz sliding pages */}
-              {!quizActive && !quizFinished && (
-                <div className="text-center py-8">
-                  <button
-                    onClick={() => { setQuizActive(true); setQuizFinished(false); setCurrentQ(0); }}
-                    className="px-6 py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-violet-600/20 hover:shadow-violet-600/35 transition-all cursor-pointer"
-                  >
-                    Start AI Diagnostic Quiz
-                  </button>
-                </div>
-              )}
-
-              {quizActive && !quizFinished && (
-                <div className="max-w-md mx-auto p-6 bg-slate-950/40 rounded-3xl border border-slate-800/60 shadow-xl">
-                  {/* Progress bar */}
-                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-6">
-                    <div 
-                      className="h-full bg-violet-600 transition-all duration-300"
-                      style={{ width: `${((currentQ + 1) / 5) * 100}%` }}
-                    />
+              {/* Right Column: AI Admissions Advisor Chat */}
+              <div className="lg:col-span-6 flex flex-col gap-6">
+                <div className="glass p-6 min-h-[450px] max-h-[550px] flex flex-col justify-between relative">
+                  <div>
+                    <h3 className="font-extrabold text-base text-slate-100 mb-1 flex items-center gap-2">
+                      🤖 AI Admissions Advisor
+                    </h3>
+                    <p className="text-[10px] text-slate-400 mb-4">
+                      Consult our dedicated neural assistant for cut-off points, requirements, and application tips.
+                    </p>
                   </div>
-                  
-                  <span className="text-[10px] font-bold text-slate-500 block mb-2">Question {currentQ + 1} of 5</span>
-                  <h4 className="font-extrabold text-sm mb-4 leading-relaxed">{quizQuestions[currentQ].text}</h4>
-                  
-                  <div className="flex flex-col gap-2">
-                    {quizQuestions[currentQ].options.map((opt, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleQuizSelection(opt.score)}
-                        className="w-full p-4 bg-slate-900 border border-slate-800/60 hover:border-violet-500/35 hover:bg-violet-600/5 text-left rounded-xl text-xs font-semibold text-slate-300 hover:text-slate-100 transition-all cursor-pointer leading-relaxed"
+
+                  <div className="flex-grow overflow-y-auto flex flex-col gap-2.5 mb-4 pr-1 max-h-[320px]">
+                    {admissionsChatHistory.map((item, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`p-3.5 max-w-[85%] rounded-2xl leading-relaxed text-[11px] font-semibold ${
+                          item.sender === 'user' 
+                            ? 'bg-violet-600 text-white ml-auto rounded-tr-none' 
+                            : 'bg-slate-950 border border-slate-850 text-slate-205 mr-auto rounded-tl-none'
+                        }`}
                       >
-                        {opt.text}
-                      </button>
+                        <div className="whitespace-pre-line leading-relaxed font-semibold">
+                          {item.text}
+                        </div>
+                      </div>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Quiz finished - results visual boards */}
-              {quizFinished && suggestedCareer && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col gap-8 max-w-2xl mx-auto"
-                >
-                  <div className="p-6 bg-violet-600/5 border border-violet-500/20 rounded-3xl relative overflow-hidden">
-                    <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest block mb-2">Recommended Career Path</span>
-                    <h3 className="text-xl font-black text-white">{suggestedCareer.title}</h3>
-                    <p className="text-[11px] text-slate-400 mt-2 leading-relaxed font-semibold">{suggestedCareer.description}</p>
                     
-                    <div className="grid grid-cols-2 gap-4 mt-6 border-t border-slate-800/40 pt-4 text-xs font-bold leading-relaxed">
-                      <div>
-                        <span className="text-[10px] text-slate-500 block uppercase mb-0.5">Average Income (GH)</span>
-                        <span className="text-slate-200">{suggestedCareer.salary}</span>
+                    {admissionsChatLoading && (
+                      <div className="p-3.5 bg-slate-950 border border-slate-850 text-slate-400 mr-auto rounded-2xl rounded-tl-none text-[11px] flex items-center gap-2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-500" />
+                        Advisor is formulating answer...
                       </div>
-                      <div>
-                        <span className="text-[10px] text-slate-500 block uppercase mb-0.5">Syllabus Demand</span>
-                        <span className="text-slate-200">{suggestedCareer.demand}</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-6 bg-slate-900/30 border border-slate-800/40 rounded-2xl">
-                      <h4 className="font-extrabold text-sm mb-3">Recommended Campuses</h4>
-                      <ul className="flex flex-col gap-2 text-[11px] font-semibold text-slate-300">
-                        {suggestedCareer.universities.map((uni: string, idx: number) => (
-                          <li key={idx} className="flex items-center gap-1.5">
-                            📍 <strong>{uni}</strong> - High placements indexes
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="p-6 bg-slate-900/30 border border-slate-800/40 rounded-2xl">
-                      <h4 className="font-extrabold text-sm mb-3">Core Prerequisite Skills</h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {suggestedCareer.skills.map((skill: string, idx: number) => (
-                          <span key={idx} className="px-2.5 py-1 bg-slate-950 text-slate-400 font-bold border border-slate-800/60 text-[9px] rounded-lg">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Flow chart academic mapping */}
-                  <div className="p-6 bg-slate-900/30 border border-slate-800/40 rounded-2xl">
-                    <h4 className="font-extrabold text-sm mb-4">Academic Flow Diagram</h4>
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 font-bold text-xs text-center">
-                      <div className="flex-1 p-3 bg-slate-950 border border-slate-800/60 rounded-xl w-full">
-                        Core Coding Foundation (CS101)
-                      </div>
-                      <div className="text-violet-500 font-bold hidden md:block">➔</div>
-                      <div className="flex-1 p-3 bg-violet-600/10 border border-violet-500/25 text-violet-400 rounded-xl w-full">
-                        Department Admission (3.82 CGPA verified)
-                      </div>
-                      <div className="text-violet-500 font-bold hidden md:block">➔</div>
-                      <div className="flex-1 p-3 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-xl w-full">
-                        {suggestedCareer.programs[0]}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-center mt-2">
+                  <div className="flex gap-2 border-t border-slate-800/40 pt-3.5">
+                    <input
+                      type="text"
+                      placeholder="Ask Advisor about cut-off marks, fees, requirements..."
+                      value={admissionsChatMessage}
+                      onChange={(e) => setAdmissionsChatMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSendAdmissionsMessage();
+                      }}
+                      className="flex-1 px-3.5 py-2.5 bg-slate-950 border border-slate-800/60 rounded-xl text-xs placeholder-slate-500 text-slate-200 focus:border-violet-500 focus:outline-none transition-all font-semibold"
+                    />
                     <button
-                      onClick={resetQuiz}
-                      className="px-5 py-2.5 border border-slate-800 hover:bg-slate-800 text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      onClick={handleSendAdmissionsMessage}
+                      disabled={admissionsChatLoading}
+                      className="p-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl transition-all cursor-pointer shadow-lg shadow-violet-600/10 flex items-center justify-center shrink-0"
                     >
-                      Take Quiz Again
+                      <Send className="w-4 h-4" />
                     </button>
                   </div>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="career"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="flex flex-col gap-6"
+            >
+              <div className="glass p-8">
+                <div className="text-center max-w-lg mx-auto mb-8">
+                  <Sparkles className="w-8 h-8 text-violet-500 mx-auto mb-2" />
+                  <h3 className="font-extrabold text-base">AI Career Interest quiz</h3>
+                  <p className="text-[11px] text-slate-400 mt-1">Answer 5 personality questions below. SmartLearn Advisor mathematically optimizes your preferences, suggesting Ghanaian programs, campuses, and plots an academic track map!</p>
+                </div>
+
+                {/* Active quiz sliding pages */}
+                {!quizActive && !quizFinished && (
+                  <div className="text-center py-8">
+                    <button
+                      onClick={() => { setQuizActive(true); setQuizFinished(false); setCurrentQ(0); }}
+                      className="px-6 py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-violet-600/20 hover:shadow-violet-600/35 transition-all cursor-pointer"
+                    >
+                      Start AI Diagnostic Quiz
+                    </button>
+                  </div>
+                )}
+
+                {quizActive && !quizFinished && (
+                  <div className="max-w-md mx-auto p-6 bg-slate-950/40 rounded-3xl border border-slate-800/60 shadow-xl">
+                    {/* Progress bar */}
+                    <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-6">
+                      <div 
+                        className="h-full bg-violet-600 transition-all duration-300"
+                        style={{ width: `${((currentQ + 1) / 5) * 100}%` }}
+                      />
+                    </div>
+                    
+                    <span className="text-[10px] font-bold text-slate-500 block mb-2">Question {currentQ + 1} of 5</span>
+                    <h4 className="font-extrabold text-sm mb-4 leading-relaxed">{quizQuestions[currentQ].text}</h4>
+                    
+                    <div className="flex flex-col gap-2">
+                      {quizQuestions[currentQ].options.map((opt, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleQuizSelection(opt.score)}
+                          className="w-full p-4 bg-slate-900 border border-slate-800/60 hover:border-violet-500/35 hover:bg-violet-600/5 text-left rounded-xl text-xs font-semibold text-slate-300 hover:text-slate-100 transition-all cursor-pointer leading-relaxed"
+                        >
+                          {opt.text}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quiz finished - results visual boards */}
+                {quizFinished && suggestedCareer && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col gap-8 max-w-2xl mx-auto"
+                  >
+                    <div className="p-6 bg-violet-600/5 border border-violet-500/20 rounded-3xl relative overflow-hidden">
+                      <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest block mb-2">Recommended Career Path</span>
+                      <h3 className="text-xl font-black text-white">{suggestedCareer.title}</h3>
+                      <p className="text-[11px] text-slate-400 mt-2 leading-relaxed font-semibold">{suggestedCareer.description}</p>
+                      
+                      <div className="grid grid-cols-2 gap-4 mt-6 border-t border-slate-800/40 pt-4 text-xs font-bold leading-relaxed">
+                        <div>
+                          <span className="text-[10px] text-slate-500 block uppercase mb-0.5">Average Income (GH)</span>
+                          <span className="text-slate-200">{suggestedCareer.salary}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-500 block uppercase mb-0.5">Syllabus Demand</span>
+                          <span className="text-slate-200">{suggestedCareer.demand}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-6 bg-slate-900/30 border border-slate-800/40 rounded-2xl">
+                        <h4 className="font-extrabold text-sm mb-3">Recommended Campuses</h4>
+                        <ul className="flex flex-col gap-2 text-[11px] font-semibold text-slate-300">
+                          {suggestedCareer.universities.map((uni: string, idx: number) => (
+                            <li key={idx} className="flex items-center gap-1.5">
+                              📍 <strong>{uni}</strong> - High placements indexes
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="p-6 bg-slate-900/30 border border-slate-800/40 rounded-2xl">
+                        <h4 className="font-extrabold text-sm mb-3">Core Prerequisite Skills</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {suggestedCareer.skills.map((skill: string, idx: number) => (
+                            <span key={idx} className="px-2.5 py-1 bg-slate-950 text-slate-400 font-bold border border-slate-800/60 text-[9px] rounded-lg">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Flow chart academic mapping */}
+                    <div className="p-6 bg-slate-900/30 border border-slate-800/40 rounded-2xl">
+                      <h4 className="font-extrabold text-sm mb-4">Academic Flow Diagram</h4>
+                      <div className="flex flex-col md:flex-row items-center justify-between gap-4 font-bold text-xs text-center">
+                        <div className="flex-1 p-3 bg-slate-950 border border-slate-800/60 rounded-xl w-full">
+                          Core Coding Foundation (CS101)
+                        </div>
+                        <div className="text-violet-500 font-bold hidden md:block">➔</div>
+                        <div className="flex-1 p-3 bg-violet-600/10 border border-violet-500/25 text-violet-400 rounded-xl w-full">
+                          Department Admission (3.82 CGPA verified)
+                        </div>
+                        <div className="text-violet-500 font-bold hidden md:block">➔</div>
+                        <div className="flex-1 p-3 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-xl w-full">
+                          {suggestedCareer.programs[0]}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-center mt-2">
+                      <button
+                        onClick={resetQuiz}
+                        className="px-5 py-2.5 border border-slate-800 hover:bg-slate-800 text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Take Quiz Again
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )
         )}
 
         {/* TIMETABLE CALENDAR GRID PLANNERS */}
@@ -1641,8 +2042,8 @@ export const StudentHub: React.FC = () => {
             exit={{ opacity: 0, y: -15 }}
             className="grid grid-cols-1 lg:grid-cols-12 gap-6"
           >
-            {/* Left Column: Lecturers to chat with */}
-            <div className="lg:col-span-4 flex flex-col gap-3">
+            {/* Left Column: Lecturers and Mentors to chat with */}
+            <div className="lg:col-span-4 flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-1">
               <h3 className="font-extrabold text-sm mb-1 px-1">My Faculty Contacts</h3>
                {courses.map((c) => (
                  <button
@@ -1665,6 +2066,31 @@ export const StudentHub: React.FC = () => {
                   </div>
                 </button>
               ))}
+
+              {mentors.length > 0 && (
+                <>
+                  <h3 className="font-extrabold text-sm mt-4 mb-1 px-1">My Mentors</h3>
+                  {mentors.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => setActiveRecipient(m.id)}
+                      className={`w-full p-4 border text-left rounded-2xl transition-all cursor-pointer flex items-center gap-3 ${
+                        activeChatRecipientId === m.id ? 'border-violet-600 bg-violet-600/10 text-slate-100' : 'border-slate-800 bg-slate-900/30 text-slate-400 hover:border-slate-700/60'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-850 flex items-center justify-center text-sm font-black border border-violet-500/20">
+                        {m.role === 'alumni' ? '🎓' : '💼'}
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-xs">{m.name}</h4>
+                        <p className="text-[9px] text-slate-500 mt-0.5 font-bold uppercase">
+                          {m.role === 'alumni' ? 'Alumni' : 'Industry Partner'} - {m.companyName || m.industrySector}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
 
             {/* Right Chat Dialog Viewport */}
@@ -1694,7 +2120,7 @@ export const StudentHub: React.FC = () => {
                       </div>
                     ))}
                     
-                    {typingStatus['60d5ec4b1234567890abcdef'] && (
+                    {activeChatRecipientId && typingStatus[activeChatRecipientId] && (
                       <p className="text-[10px] text-slate-500 animate-pulse font-bold px-1">Lecturer is typing...</p>
                     )}
                   </div>
@@ -1819,7 +2245,7 @@ export const StudentHub: React.FC = () => {
                     required
                   >
                     <option value="">Select Lecturer...</option>
-                    {courses.map(c => <option key={c.id} value="60d5ec4b1234567890abcdef">{c.instructor}</option>)}
+                    {courses.map(c => <option key={c.id} value={c.instructorId || ''}>{c.instructor}</option>)}
                   </select>
                 </div>
 
@@ -2613,30 +3039,39 @@ export const StudentHub: React.FC = () => {
                   <p className="text-[10px] text-slate-400 mb-4">Connect with Ghanaian tech leaders and corporate partners. Book consultation checks or pitch drafts.</p>
 
                   <div className="flex flex-col gap-3">
-                    {[
-                      { name: 'Dr. Elikem Adadevoh', title: 'Managing Partner, Accra Venture Capital', sector: 'FinTech & Scaleups', intro: 'Over 15 years funding local digital services. Focus on Susu platforms and scaling regulatory compliance.' },
-                      { name: 'Naa Ayeley Komey', title: 'Founder & CEO, AgriFlow Ltd', sector: 'AgriTech & Supply Chain', intro: 'Ashesi alumnus. Specializes in building IoT farm trackers and sourcing micro-finance in Kumasi.' }
-                    ].map((mentor, idx) => (
-                      <div key={idx} className="p-3.5 bg-slate-950/60 border border-slate-850 rounded-xl text-[10px] leading-relaxed flex gap-3 items-start">
-                        <div className="w-10 h-10 rounded-full bg-violet-600/10 border border-violet-500/20 flex items-center justify-center text-lg shrink-0 font-bold text-slate-300">
-                          👤
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-center mb-0.5">
-                            <h5 className="font-bold text-slate-200">{mentor.name}</h5>
-                            <span className="text-[8px] text-slate-500 font-bold">{mentor.sector}</span>
+                    {mentors.map((mentor, idx) => {
+                      const titleText = mentor.role === 'alumni' 
+                        ? `Founder/Alum, ${mentor.companyName || 'AgriFlow Ltd'} (${mentor.graduationYear || '2021'})` 
+                        : `Partner/Advisor, ${mentor.companyName || 'Accra Venture Capital'}`;
+                      const sectorText = mentor.industrySector || (mentor.role === 'alumni' ? 'AgriTech & Supply Chain' : 'FinTech & Scaleups');
+                      const introText = mentor.name?.includes('Elikem') 
+                        ? 'Over 15 years funding local digital services. Focus on Susu platforms and scaling regulatory compliance.' 
+                        : mentor.name?.includes('Naa')
+                        ? 'Ashesi alumnus. Specializes in building IoT farm trackers and sourcing micro-finance in Kumasi.'
+                        : 'Provides mentorship in technology, entrepreneurship, and career planning.';
+
+                      return (
+                        <div key={mentor.id || idx} className="p-3.5 bg-slate-950/60 border border-slate-850 rounded-xl text-[10px] leading-relaxed flex gap-3 items-start">
+                          <div className="w-10 h-10 rounded-full bg-violet-600/10 border border-violet-500/20 flex items-center justify-center text-lg shrink-0 font-bold text-slate-300">
+                            👤
                           </div>
-                          <span className="text-[9px] text-violet-400 font-bold block mb-1">{mentor.title}</span>
-                          <p className="text-slate-400 font-medium leading-normal">{mentor.intro}</p>
-                          <button
-                            onClick={() => setSelectedMentor(mentor)}
-                            className="mt-2 text-[9px] font-black text-violet-400 hover:underline inline-flex items-center gap-1"
-                          >
-                            ✉️ Write message to Mentor
-                          </button>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-center mb-0.5">
+                              <h5 className="font-bold text-slate-200">{mentor.name}</h5>
+                              <span className="text-[8px] text-slate-500 font-bold">{sectorText}</span>
+                            </div>
+                            <span className="text-[9px] text-violet-400 font-bold block mb-1">{titleText}</span>
+                            <p className="text-slate-400 font-medium leading-normal">{introText}</p>
+                            <button
+                              onClick={() => setSelectedMentor({ ...mentor, title: titleText, sector: sectorText, intro: introText })}
+                              className="mt-2 text-[9px] font-black text-violet-400 hover:underline inline-flex items-center gap-1"
+                            >
+                              ✉️ Write message to Mentor
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

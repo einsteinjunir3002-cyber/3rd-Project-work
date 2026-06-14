@@ -58,6 +58,8 @@ export const AdminHub: React.FC = () => {
   const [stdIdInput, setStdIdInput] = useState('');
   const [titleInput, setTitleInput] = useState('Dr.');
   const [officeInput, setOfficeInput] = useState('');
+  const [intendedMajorInput, setIntendedMajorInput] = useState('');
+  const [highSchoolInput, setHighSchoolInput] = useState('');
 
   // Bulk Import
   const [csvText, setCsvText] = useState('');
@@ -260,6 +262,8 @@ export const AdminHub: React.FC = () => {
         studentIdNumber: stdIdInput,
         title: titleInput,
         office: officeInput,
+        intendedMajor: intendedMajorInput,
+        highSchool: highSchoolInput
       });
       triggerUiNotification(response.data.message, 'success');
       setShowCreateModal(false);
@@ -268,6 +272,8 @@ export const AdminHub: React.FC = () => {
       setPasswordInput('');
       setStdIdInput('');
       setOfficeInput('');
+      setIntendedMajorInput('');
+      setHighSchoolInput('');
       fetchUsers();
     } catch (err: any) {
       triggerUiNotification(err.response?.data?.message || 'Error creating account.', 'error');
@@ -643,6 +649,7 @@ export const AdminHub: React.FC = () => {
                               usr.role === 'superadmin' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 
                               usr.role === 'admin' ? 'bg-violet-500/10 text-violet-400 border border-violet-500/20' : 
                               usr.role === 'lecturer' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 
+                              usr.role === 'prospective_student' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 
                               'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                             }`}>
                                {usr.role}
@@ -651,6 +658,8 @@ export const AdminHub: React.FC = () => {
                           <td className="p-4 text-slate-400">
                             {usr.role === 'student' ? (
                               <span>Dept: {usr.department || 'CS'} • ID: {usr.studentIdNumber || 'N/A'}</span>
+                            ) : usr.role === 'prospective_student' ? (
+                              <span>Major: {usr.intendedMajor || 'N/A'} • School: {usr.highSchool || 'N/A'}</span>
                             ) : usr.role === 'lecturer' ? (
                               <span>Dept: {usr.department || 'CS'} • Office: {usr.office || 'N/A'}</span>
                             ) : (
@@ -709,6 +718,7 @@ export const AdminHub: React.FC = () => {
                       <label>Assign Role</label>
                       <select value={roleInput} onChange={(e) => setRoleInput(e.target.value)} className="p-2.5 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none">
                         <option value="student">Student</option>
+                        <option value="prospective_student">Prospective Student</option>
                         <option value="lecturer">Lecturer</option>
                         <option value="admin">Administrator</option>
                         {user?.role === 'superadmin' && <option value="superadmin">Super Administrator</option>}
@@ -718,11 +728,33 @@ export const AdminHub: React.FC = () => {
                       <div className="grid grid-cols-2 gap-2">
                         <div className="flex flex-col gap-1">
                           <label>Department</label>
-                          <input type="text" value={deptInput} onChange={(e) => setDeptInput(e.target.value)} className="p-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg" />
+                          <select value={deptInput} onChange={(e) => setDeptInput(e.target.value)} className="p-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer">
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Electrical Engineering">Electrical Engineering</option>
+                            <option value="Mechanical Engineering">Mechanical Engineering</option>
+                            <option value="Business Administration">Business Administration</option>
+                            <option value="Medicine & Surgery">Medicine & Surgery</option>
+                            <option value="Nursing">Nursing</option>
+                            <option value="Law">Law</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Architecture">Architecture</option>
+                          </select>
                         </div>
                         <div className="flex flex-col gap-1">
                           <label>Student ID</label>
                           <input type="text" value={stdIdInput} onChange={(e) => setStdIdInput(e.target.value)} className="p-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg" />
+                        </div>
+                      </div>
+                    )}
+                    {roleInput === 'prospective_student' && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col gap-1">
+                          <label>Intended Major</label>
+                          <input type="text" value={intendedMajorInput} onChange={(e) => setIntendedMajorInput(e.target.value)} className="p-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label>High School</label>
+                          <input type="text" value={highSchoolInput} onChange={(e) => setHighSchoolInput(e.target.value)} className="p-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg" />
                         </div>
                       </div>
                     )}

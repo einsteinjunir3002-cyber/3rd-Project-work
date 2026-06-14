@@ -5,17 +5,27 @@ import crypto from 'crypto';
 import User from '../models/User';
 import { AuthenticatedRequest } from '../middleware/auth';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey1234567890!';
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET is not set in environment variables!');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 export const signUp = async (req: Request, res: Response) => {
   const { 
     name, email, password, role, department, studentIdNumber, title, office,
-    startupName, businessIdea, researchArea, institution, graduationYear, companyName, industrySector, advisorExpertise 
+    startupName, businessIdea, researchArea, institution, graduationYear, companyName, industrySector, advisorExpertise,
+    intendedMajor, highSchool
   } = req.body;
 
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: 'Name, email, password and role are required.' });
+  }
+
+  // Validate role before account creation
+  const allowedRoles = ['student', 'lecturer', 'admin', 'superadmin', 'researcher', 'entrepreneur', 'alumni', 'industry_partner', 'career_advisor', 'prospective_student'];
+  if (!allowedRoles.includes(role)) {
+    return res.status(400).json({ message: 'Invalid role assignment.' });
   }
 
   try {
@@ -59,6 +69,9 @@ export const signUp = async (req: Request, res: Response) => {
       userData.companyName = companyName || 'Global Innovations Inc';
     } else if (role === 'career_advisor') {
       userData.advisorExpertise = advisorExpertise || 'Academic & Career Planning';
+    } else if (role === 'prospective_student') {
+      userData.intendedMajor = intendedMajor || 'Computer Science';
+      userData.highSchool = highSchool || 'Achimota School';
     }
 
     const newUser = new User(userData);
@@ -101,6 +114,8 @@ export const signUp = async (req: Request, res: Response) => {
         companyName: newUser.companyName,
         industrySector: newUser.industrySector,
         advisorExpertise: newUser.advisorExpertise,
+        intendedMajor: newUser.intendedMajor,
+        highSchool: newUser.highSchool,
       },
     });
   } catch (err: any) {

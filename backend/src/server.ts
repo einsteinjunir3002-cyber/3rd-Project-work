@@ -2,11 +2,14 @@ import http from 'http';
 import { Server } from 'socket.io';
 import app from './app';
 import { connectDB } from './config/db';
+import { runRoleAudit } from './services/auditEngine';
 
 const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB Atlas
-connectDB();
+connectDB().then(() => {
+  runRoleAudit(app);
+});
 
 
 // Wrap express server in http connection to support WebSockets

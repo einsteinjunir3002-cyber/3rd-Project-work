@@ -159,7 +159,7 @@ function navigateTo(shellId) {
   if (shellId === 'portal-shell') { document.body.setAttribute('data-theme', appState.theme); updateSidebarDetails(); renderStateData(); }
   window.scrollTo(0,0); }
 function switchTab(role, tabId) {
-  const isStudentRole = ['student', 'researcher', 'entrepreneur'].includes(appState.role) || appState.role === 'admin';
+  const isStudentRole = ['student', 'researcher', 'entrepreneur', 'prospective_student'].includes(appState.role) || appState.role === 'admin';
   const isLecturerRole = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(appState.role) || appState.role === 'admin';
   if (role === 'lecturer' && !isLecturerRole) return showToastNotification('Access Denied: Lecturer role required.');
   if (role === 'student' && !isStudentRole) return showToastNotification('Access Denied: Student role required.');
@@ -210,6 +210,7 @@ switchAuthTab = tab => {
 setSignupRole = role => {
   activeSignupRole = role;
   D.show('signup-student-fields', role === 'student');
+  D.show('signup-prospective-student-fields', role === 'prospective_student');
   D.show('signup-lecturer-fields', role === 'lecturer');
   D.show('signup-researcher-fields', role === 'researcher');
   D.show('signup-entrepreneur-fields', role === 'entrepreneur');
@@ -251,6 +252,9 @@ async function handlePrototypeSignUp() {
   if (activeSignupRole === 'student') {
     payload.department = D.val('signup-dept') || 'Computer Science';
     payload.studentIdNumber = D.val('signup-stdid') || `SL-${Math.floor(100000 + Math.random() * 900000)}`;
+  } else if (activeSignupRole === 'prospective_student') {
+    payload.intendedMajor = D.val('signup-intended-major') || 'Computer Science';
+    payload.highSchool = D.val('signup-highschool') || 'Achimota School';
   } else if (activeSignupRole === 'lecturer') { 
     payload.title = D.val('signup-title'); 
     payload.office = D.val('signup-office') || 'Office Block C'; 
@@ -291,7 +295,7 @@ function setUserRole(role) {
       </select>` : ''; }
   if (role === 'admin') setAdminPrototypeView('admin');
   else {
-    const isStudentWorkspace = ['student', 'researcher', 'entrepreneur'].includes(role);
+    const isStudentWorkspace = ['student', 'researcher', 'entrepreneur', 'prospective_student'].includes(role);
     const isLecturerWorkspace = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(role);
     document.querySelectorAll('.student-only').forEach(el => el.style.display = (isStudentWorkspace ? 'flex' : 'none')); 
     document.querySelectorAll('.lecturer-only').forEach(el => el.style.display = (isLecturerWorkspace ? 'flex' : 'none')); 
@@ -365,6 +369,9 @@ function updateSidebarDetails() {
   } else if (role === 'student') {
     avatarEl.src = appState.user.avatar || 'picture/avatar_student.jpg';
     roleEl.textContent = `${appState.user.department || 'Computer Science'} Student`;
+  } else if (role === 'prospective_student') {
+    avatarEl.src = appState.user.avatar || 'picture/avatar_student.jpg';
+    roleEl.textContent = 'Prospective Student';
   } else if (role === 'researcher') {
     avatarEl.src = appState.user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${appState.user.name}`;
     roleEl.textContent = `${appState.user.researchArea || 'AI'} Researcher`;
@@ -387,7 +394,7 @@ function updateSidebarDetails() {
 }
 
 function customizeSidebarMenuItems(role) {
-  const isStudentWorkspace = ['student', 'researcher', 'entrepreneur'].includes(role);
+  const isStudentWorkspace = ['student', 'researcher', 'entrepreneur', 'prospective_student'].includes(role);
   const isLecturerWorkspace = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(role);
   const isAdminWorkspace = role === 'admin';
 
@@ -405,6 +412,12 @@ function customizeSidebarMenuItems(role) {
       } else if (role === 'entrepreneur') {
         visible = ['student-dashboard', 'student-innovation', 'student-forum', 'student-ai-assistant', 'student-contacts', 'student-settings'].includes(tab);
         if (tab === 'student-dashboard') el.textContent = '💡 Founder Dashboard';
+      } else if (role === 'prospective_student') {
+        visible = ['student-dashboard', 'student-universities', 'student-forum', 'student-ai-assistant', 'student-settings'].includes(tab);
+        if (tab === 'student-dashboard') el.textContent = '🏫 Admissions Desk';
+        if (tab === 'student-universities') el.textContent = '🏛️ University Explorer';
+        if (tab === 'student-forum') el.textContent = '💬 Community Board';
+        if (tab === 'student-ai-assistant') el.textContent = '🤖 Admission Advisor';
       } else {
         if (tab === 'student-dashboard') el.textContent = '📊 Dashboard Overview';
       }
@@ -1775,7 +1788,9 @@ function joinSpaStartupTeam(id) {
   }
 }
 
+let currentMentorName = '';
 function openSpaMentorModal(name) {
+  currentMentorName = name;
   D.html('spa-mentor-modal-title', `Message to Mentor: ${name}`);
   D.val('spa-mentor-message-text', '');
   D.show('spa-mentor-modal', true);
@@ -1786,8 +1801,49 @@ function sendSpaMentorMessage() {
   if (!message) {
     return showToastNotification('Please enter a message to send.');
   }
+
+  // Determine email and role details
+  let mentorEmail = 'elikem@smartlearn.edu';
+  let mentorRole = 'Partner/Advisor, Accra Venture Capital';
+  if (currentMentorName.toLowerCase().includes('naa')) {
+    mentorEmail = 'naa@smartlearn.edu';
+    mentorRole = 'Founder/Alum, AgriFlow Ltd (2021)';
+  } else if (!currentMentorName.toLowerCase().includes('elikem')) {
+    mentorEmail = currentMentorName.toLowerCase().replace(/[^a-z0-9]/g, '') + '@smartlearn.edu';
+    mentorRole = 'Mentor / Industry Partner';
+  }
+
+  // 1. Add to facultyContacts if not present
+  if (!appState.facultyContacts.some(c => c.email === mentorEmail)) {
+    appState.facultyContacts.push({
+      name: currentMentorName,
+      role: mentorRole,
+      email: mentorEmail,
+      status: 'Online',
+      avatar: 'avatar_lecturer.jpg',
+      room: 'Off-Campus',
+      hours: 'By Appointment'
+    });
+  }
+
+  // 2. Add message to facultyChats
+  if (!appState.facultyChats[mentorEmail]) {
+    appState.facultyChats[mentorEmail] = [];
+  }
+  appState.facultyChats[mentorEmail].push({
+    sender: 'student',
+    text: message,
+    timestamp: 'Just now'
+  });
+
+  // 3. Save offline state
+  saveOfflineState();
+
+  // 4. Hide Modal
   D.show('spa-mentor-modal', false);
-  showToastNotification('Message sent successfully to mentor!');
+
+  // 5. Navigate to Chat interface
+  startFacultyChat(currentMentorName);
 }
 
 function initApplication() {

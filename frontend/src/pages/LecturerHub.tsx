@@ -877,7 +877,7 @@ export const LecturerHub: React.FC = () => {
                       <span className="text-[8px] text-slate-400 block mt-1 text-right">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   ))}
-                  {typingStatus['60d5ec4b1234567890abcdef'] && (
+                  {activeChatRecipientId && typingStatus[activeChatRecipientId] && (
                     <p className="text-[10px] text-slate-500 animate-pulse font-bold px-1">Student is typing...</p>
                   )}
                 </div>

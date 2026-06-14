@@ -64,6 +64,8 @@ export const getUsers = async (req: AuthenticatedRequest, res: Response) => {
       studentIdNumber: u.studentIdNumber,
       title: u.title,
       office: u.office,
+      intendedMajor: u.intendedMajor,
+      highSchool: u.highSchool,
       createdAt: u.createdAt,
     }));
     return res.status(200).json(mapped);
@@ -74,7 +76,7 @@ export const getUsers = async (req: AuthenticatedRequest, res: Response) => {
 
 // Create User
 export const createUser = async (req: AuthenticatedRequest, res: Response) => {
-  const { name, email, password, role, department, studentIdNumber, title, office } = req.body;
+  const { name, email, password, role, department, studentIdNumber, title, office, intendedMajor, highSchool } = req.body;
   try {
     const exists = await User.findOne({ email });
     if (exists) {
@@ -91,6 +93,8 @@ export const createUser = async (req: AuthenticatedRequest, res: Response) => {
       studentIdNumber,
       title,
       office,
+      intendedMajor,
+      highSchool
     });
     await newUser.save();
 
@@ -103,7 +107,7 @@ export const createUser = async (req: AuthenticatedRequest, res: Response) => {
 
 // Edit User
 export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
-  const { userId, name, email, role, department, studentIdNumber, title, office } = req.body;
+  const { userId, name, email, role, department, studentIdNumber, title, office, intendedMajor, highSchool } = req.body;
   try {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found.' });
@@ -116,6 +120,8 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
     user.studentIdNumber = studentIdNumber || user.studentIdNumber;
     user.title = title || user.title;
     user.office = office || user.office;
+    user.intendedMajor = intendedMajor || user.intendedMajor;
+    user.highSchool = highSchool || user.highSchool;
 
     await user.save();
     const newInfo = `Email: ${user.email}, Role: ${user.role}, Name: ${user.name}`;

@@ -4,7 +4,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'student' | 'lecturer' | 'admin' | 'superadmin' | 'researcher' | 'entrepreneur' | 'alumni' | 'industry_partner' | 'career_advisor';
+  role: 'student' | 'lecturer' | 'admin' | 'superadmin' | 'researcher' | 'entrepreneur' | 'alumni' | 'industry_partner' | 'career_advisor' | 'prospective_student';
   studentIdNumber?: string;
   department?: string;
   projectedGpa?: number;
@@ -19,6 +19,8 @@ export interface User {
   companyName?: string;
   industrySector?: string;
   advisorExpertise?: string;
+  intendedMajor?: string;
+  highSchool?: string;
 }
 
 export interface Course {
