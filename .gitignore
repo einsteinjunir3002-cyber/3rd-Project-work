@@ -1,0 +1,49 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+.env.backup
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+
+# Large binaries
+pnpm.exe
+*.exe
+*.dll
+*.so
+*.dylib
+*.log
+*.tmp
+*.zip
+*.tar.gz

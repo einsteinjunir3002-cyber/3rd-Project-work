@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="100%" height="100%">
+  <defs>
+    <linearGradient id="upsaSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2563eb" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="400" height="250" fill="url(#upsaSky)"/>
+
+  <!-- City Skyline Backing -->
+  <rect x="20" y="160" width="40" height="90" fill="#1e293b" opacity="0.5"/>
+  <rect x="320" y="140" width="50" height="110" fill="#1e293b" opacity="0.5"/>
+
+  <!-- Ground -->
+  <rect x="0" y="220" width="400" height="30" fill="#1e293b"/>
+
+  <!-- UPSA Modern High-Rise Academic Tower -->
+  <g transform="translate(110, 30)">
+    <!-- Base -->
+    <rect x="10" y="170" width="160" height="20" fill="#334155" stroke="#475569" stroke-width="1.5"/>
+    
+    <!-- Main High Rise Block -->
+    <rect x="25" y="20" width="130" height="150" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+    
+    <!-- Large Corporate Glass Window Facade -->
+    <rect x="40" y="30" width="100" height="120" fill="url(#glassGrad)" stroke="#2563eb" stroke-width="1"/>
+    
+    <!-- Window Grid Overlay -->
+    <path d="M 40,50 L 140,50 M 40,70 L 140,70 M 40,90 L 140,90 M 40,110 L 140,110 M 40,130 L 140,130" stroke="#38bdf8" stroke-width="0.5" opacity="0.6"/>
+    <path d="M 60,30 L 60,150 M 80,30 L 80,150 M 100,30 L 100,150 M 120,30 L 120,150" stroke="#38bdf8" stroke-width="0.5" opacity="0.6"/>
+
+    <!-- Top architectural crown panel -->
+    <rect x="20" y="5" width="140" height="15" fill="#1e3a8a"/>
+    <rect x="40" y="0" width="100" height="5" fill="#f59e0b"/>
+  </g>
+
+  <!-- Ground pathways & lights -->
+  <ellipse cx="200" cy="235" rx="160" ry="12" fill="#0f172a" opacity="0.8"/>
+  <circle cx="90" cy="225" r="4" fill="#f59e0b"/>
+  <circle cx="310" cy="225" r="4" fill="#f59e0b"/>
+
+  <!-- UPSA Tag -->
+  <rect x="15" y="15" width="70" height="30" rx="4" fill="#1e3a8a" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="50" y="34" font-family="system-ui, sans-serif" font-size="10" fill="#ffffff" font-weight="bold" text-anchor="middle">UPSA</text>
+</svg>

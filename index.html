@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartLearn AI - Intelligent Learning Management System for Ghana</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="An AI-powered Learning Management System featuring personalized tutoring, GPA prediction, career identification, and university recommendation systems in Ghana.">
+  <meta name="keywords" content="LMS, AI, Education, Ghana, Ashesi, KNUST, UG, Legon, Career Guidance, GPA Predictor">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* ── GPA University Custom Dropdown ─────────────────────────────── */
+    .gpu-wrap { position: relative; width: 100%; font-size: 0.8rem; }
+    .gpu-trigger {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 12px; height: 38px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text-main); cursor: pointer; user-select: none;
+      transition: border-color 0.2s;
+    }
+    .gpu-trigger:hover { border-color: var(--primary); }
+    .gpu-trigger .gpu-chevron { font-size: 0.65rem; color: var(--text-muted); transition: transform 0.2s; }
+    .gpu-wrap.open .gpu-chevron { transform: rotate(180deg); }
+    .gpu-trigger .gpu-scale-badge {
+      font-size: 0.62rem; font-weight: 700; padding: 2px 6px;
+      border-radius: 999px; background: rgba(124,58,237,0.12);
+      color: var(--primary); margin-left: 8px; white-space: nowrap; flex-shrink: 0;
+    }
+    .gpu-panel {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      max-height: 280px; overflow-y: auto; z-index: 9999;
+      background: #ffffff; border: 1px solid #d1d5db;
+      border-radius: var(--radius-md); box-shadow: 0 10px 36px rgba(0,0,0,0.22);
+    }
+    .gpu-wrap.open .gpu-panel { display: block; }
+    .gpu-group-header {
+      font-size: 0.65rem; font-weight: 700; color: var(--text-muted);
+      padding: 8px 12px 4px; text-transform: uppercase; letter-spacing: 0.05em;
+      border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    .gpu-group-header:first-child { border-top: none; margin-top: 0; }
+    .gpu-option {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; cursor: pointer; position: relative;
+      transition: background 0.15s; gap: 8px;
+    }
+    .gpu-option:hover { background: rgba(124,58,237,0.08); }
+    .gpu-option.selected { background: rgba(124,58,237,0.13); color: var(--primary); font-weight: 600; }
+    .gpu-option-name { flex: 1; font-size: 0.78rem; }
+    .gpu-option-badge {
+      font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 999px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .gpu-option-badge.gpa4 { background: rgba(16,185,129,0.12); color: #10b981; }
+    .gpu-option-badge.cwa  { background: rgba(245,158,11,0.12);  color: #f59e0b; }
+
+    /* ── Hover Tooltip ────────────────────────────────────────────── */
+    .gpu-tooltip {
+      display: none; position: fixed; z-index: 99999;
+      max-width: 240px; padding: 11px 15px;
+      background: #1e1b4b;
+      border: 1px solid #4f46e5; border-radius: 10px;
+      color: #e2e8f0; font-size: 0.71rem; line-height: 1.55;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.55);
+      pointer-events: none; animation: tooltipFadeIn 0.2s ease;
+    }
+    .gpu-tooltip strong { color: #a5b4fc; display: block; margin-bottom: 5px; font-size: 0.74rem; }
+    @keyframes tooltipFadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+    [data-theme="dark"] .gpu-panel  { background: #1e1b4b; border-color: #3730a3; }
+    [data-theme="dark"] .gpu-option:hover { background: rgba(124,58,237,0.18); }
+  </style>
+</head>
+<body data-theme="light">
+<div id="landing-shell" class="landing-shell">
+
+    <!-- Navigation Bar -->
+    <header class="landing-header glass">
+      <div class="container">
+        <a href="#" class="logo">
+          <div class="logo-icon">S</div>
+          <span class="gradient-text">SmartLearn AI</span>
+        </a>
+        <ul class="nav-links">
+          <li><a href="#features" class="nav-link" onclick="closeLandingMenu()">Features</a></li>
+          <li><a href="#universities" class="nav-link" onclick="closeLandingMenu()">Ghana Universities</a></li>
+          <li><a href="#testimonials" class="nav-link" onclick="closeLandingMenu()">Roadmap</a></li>
+          <li><a href="#announcements" class="nav-link" onclick="closeLandingMenu()">Announcements</a></li></ul>
+        <div class="header-actions">
+          <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal()" title="Open the portal authentication sign-in and sign-up form">Enter Portal 🚀</button>
+          <button class="action-icon-btn mobile-only" onclick="toggleLandingMenu()" style="display: none; font-size: 1.25rem;" title="Toggle landing page mobile menu">☰</button></div></div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <span class="badge badge-primary" style="margin-bottom: 16px;">Next-Gen Academic System</span>
+          <h1>Empowering Ghanaian Students with <span class="gradient-text">Smart AI Learning</span></h1>
+          <p>An intelligent Learning Management System designed to accelerate research, explain past questions, recommend university majors, predict GPA progression, and bridge students directly with lecturers.</p>
+          <div class="hero-cta">
+            <button class="btn btn-primary" onclick="openAuthModal()">Enter SmartLearn Portal 🚀</button></div></div>
+        <div class="hero-graphic">
+          <!-- Responsive High-Quality Photographic Illustration -->
+          <img src="picture/hero_illustration.jpg" alt="SmartLearn AI Illustration"></div></div></section>
+
+    <!-- AI Features Section -->
+    <section id="features" class="features-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>Why SmartLearn AI is Unique</h2>
+          <p>We combine learning management tools with advanced intelligence to solve everyday student bottlenecks.</p></div>
+        <div class="features-grid">
+
+          <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>AI Multi-Mode Tutor</h3>
+            <p>Switch between study assistants, career advisors, assignment checkers, and programming code debuggers seamlessly.</p></div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>GPA Predictor & Planner</h3>
+            <p>Slide grade variables and instantly view projected cumulative scores along with custom stress management planners.</p></div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>Career Path Finder</h3>
+            <p>Take personality interest questions to map matching jobs and recommended universities across Ghana.</p></div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📂</div>
+            <h3>Past Questions Explainer</h3>
+            <p>Search past questions by code, download PDF templates, or let the AI explain solutions step-by-step.</p></div>
+
+          <div class="feature-card">
+            <div class="feature-icon">💬</div>
+            <h3>Discussion Forums</h3>
+            <p>Engage in course conversations, upload files, upvote top academic inputs, and chat with teaching assistants.</p></div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🎤</div>
+            <h3>Voice-to-Text Notes</h3>
+            <p>Record lecturers explaining concepts and automatically transcribe them into dynamic study checklists.</p></div></div></div></section>
+
+    <!-- Ghana Universities Preview Hub -->
+    <section id="universities" style="padding: 60px 0; background: var(--bg-surface);">
+      <div class="container">
+        <div class="section-header">
+          <h2>🏛️ Featured Universities Showcase</h2>
+          <p>Select any Ghanaian university card to check programs, fee ranges, and scholarships.</p></div>
+        <div class="uni-preview-grid" id="landing-uni-grid">
+          <div style="text-align: center; color: var(--text-muted); padding: 40px 0; grid-column: 1 / -1;">
+            Loading dynamic university showcase...
+          </div></div>
+        <div style="text-align: center; margin-top: 40px;" id="show-more-unis-container">
+          <button class="btn btn-primary" id="toggle-unis-btn" onclick="toggleLandingUniversities()">Show More Universities ⬇️</button></div></div></section>
+
+    <!-- Testimonials Section (Roadmap) -->
+    <section id="testimonials" class="testimonials-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>🚀 SmartLearn AI - Upcoming Launch Roadmap</h2>
+          <p>We are building a premium educational ecosystem for tertiary institutions in Ghana. Explore our release timeline:</p></div>
+        <div class="testimonials-grid">
+
+          <div class="testimonial-card glass">
+            <div style="font-size: 1.5rem; margin-bottom: 12px;">🛠️ Phase 1</div>
+            <h4 style="font-size: 1.1rem; margin-bottom: 8px; color: var(--primary);">UI Design & Prototypes</h4>
+            <p class="testimonial-text" style="font-size: 0.88rem; font-style: normal; color: var(--text-muted);">
+              Creating full-fidelity responsive interfaces, setting up glassmorphism themes, planning database structures, and testing offline fallback mechanisms.
+            </p>
+            <div style="margin-top: 16px; font-size: 0.75rem; color: var(--success); font-weight: 700;">✓ Completed & Verified</div></div>
+
+          <div class="testimonial-card glass">
+            <div style="font-size: 1.5rem; margin-bottom: 12px;">🧪 Phase 2</div>
+            <h4 style="font-size: 1.1rem; margin-bottom: 8px; color: var(--secondary);">Faculty Testing & Integration</h4>
+            <p class="testimonial-text" style="font-size: 0.88rem; font-style: normal; color: var(--text-muted);">
+              Linking custom Student and Lecturer portals, introducing real-time chat forums, expanding career predictors, and running security/biometric trials.
+            </p>
+            <div style="margin-top: 16px; font-size: 0.75rem; color: var(--warning); font-weight: 700;">⚡ Active Development</div></div>
+
+          <div class="testimonial-card glass">
+            <div style="font-size: 1.5rem; margin-bottom: 12px;">🌍 Phase 3</div>
+            <h4 style="font-size: 1.1rem; margin-bottom: 8px; color: var(--accent);">National Rollout</h4>
+            <p class="testimonial-text" style="font-size: 0.88rem; font-style: normal; color: var(--text-muted);">
+              Deploying secure Express database nodes to cloud servers, linking with local academic boards, and registering partner universities across Ghana.
+            </p>
+            <div style="margin-top: 16px; font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">📅 Planned for Q3 2026</div></div></div></div></section>
+
+    <!-- Announcements Section -->
+    <section id="announcements" class="container" style="padding: 60px 0;">
+      <div class="section-header">
+        <h2>Latest Academic Announcements</h2>
+        <p>Stay up to date with updates from national university boards and advisors.</p></div>
+      <div class="announcement-box glass">
+        <div class="announcement-meta">📢 Posted 3 days ago by Administration Office</div>
+        <h4>National Scholarship Scheme Registrations Open</h4>
+        <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.5;">
+          All final year tertiary students across Ghana can now submit their applications for study bursaries and tuition aids. Check the Scholarship Board in the student dashboard under opportunities!
+        </p></div>
+      <div class="announcement-box glass">
+        <div class="announcement-meta">📢 Posted 1 week ago by Academic Board</div>
+        <h4>Inter-University AI Hackathon Accra 2026</h4>
+        <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.5;">
+          SmartLearn AI is proud to sponsor this year's hackathon! Register your team of three in your course discussion board to build local AI solutions for Ghana's primary health services.
+        </p></div></section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      <div class="container footer-grid">
+        <div class="footer-col">
+          <h4 style="color:#fff;">SmartLearn AI</h4>
+          <p>Building the future of smart educational interfaces and intelligent guidance portals across high-schools and tertiary colleges in Ghana.</p></div>
+        <div class="footer-col">
+          <h4>For Students</h4>
+          <ul>
+            <li><a href="#" onclick="openAuthModal()">Career Interest Quiz</a></li>
+            <li><a href="#" onclick="openAuthModal()">GPA Predictor Sliders</a></li>
+            <li><a href="#" onclick="openAuthModal()">AI Academic Tutor</a></li></ul></div>
+        <div class="footer-col">
+          <h4>For Lecturers</h4>
+          <ul>
+            <li><a href="#" onclick="openAuthModal()">Roster Analytics</a></li>
+            <li><a href="#" onclick="openAuthModal()">PDF Notes Publisher</a></li>
+            <li><a href="#" onclick="openAuthModal()">Grading Center</a></li></ul></div>
+        <div class="footer-col">
+          <h4>Support & Dev</h4>
+          <p>SmartLearn final year project trial. Designed by Google DeepMind partner developer.</p></div></div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 SmartLearn AI - Intelligent LMS Ghana. All rights reserved.</p></div>
+    </footer></div>
+<div id="portal-shell" class="portal-shell hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="portal-sidebar">
+      <div class="sidebar-logo">
+        <a href="#" class="logo" onclick="navigateTo('landing-shell')">
+          <div class="logo-icon">S</div>
+          <span class="gradient-text" style="font-size:1.25rem;">SmartLearn</span>
+        </a></div>
+
+      <!-- Profile Widget -->
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar">
+          <img id="sidebar-user-avatar" src="picture/avatar_student.jpg" alt="Avatar"></div>
+        <div class="sidebar-user-info">
+          <h4 id="sidebar-user-name">Kofi Mensah</h4>
+          <p id="sidebar-user-role">Student</p></div></div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+
+        <!-- STUDENT CHANNELS -->
+        <div class="sidebar-nav-item active student-only" data-tab="student-dashboard" onclick="switchTab('student', 'student-dashboard')" title="View current grades, GPA predictions, study plans, and class roster status">📊 Dashboard Overview</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-courses" onclick="switchTab('student', 'student-courses')" title="Access registered lectures and download note slides">📚 Courses & Notes</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-assignments" onclick="switchTab('student', 'student-assignments')" title="View deadlines and submit final course assignments">📤 Assignment Submission</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-ai-assistant" onclick="switchTab('student', 'student-ai-assistant')" title="Chat with AI Study, Career, Assignment or Programming tutors">🤖 AI Academic Chat</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-past-questions" onclick="switchTab('student', 'student-past-questions')" title="Search past questions and get step-by-step AI answers">📂 Past Question Explainer</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-career-guidance" onclick="switchTab('student', 'student-career-guidance')" title="Take the career matching quiz and view tertiary recommendations">🎯 Career & Unis Finder</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-programs" onclick="switchTab('student', 'student-programs')" title="Explore BSc major course requirements and job markets in Ghana">🎓 Program Selection</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-universities" onclick="switchTab('student', 'student-universities')" title="Browse admission guidelines and tuition fee estimates for public/private universities">🏛️ Ghana Universities</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-research" onclick="switchTab('student', 'student-research')" title="Access research papers, check methodology gaps, and format citations.">🔬 AI Research Portal</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-innovation" onclick="switchTab('student', 'student-innovation')" title="Pitch business ideas, check commercial viability, and match with alumni mentors.">💡 Student Innovation Hub</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-contacts" onclick="switchTab('student', 'student-contacts')" title="Directly message course instructors or book live consultations">📞 Contact Faculty</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-faculty-chat" onclick="switchTab('student', 'student-faculty-chat')" title="Chat directly with active professors and teaching assistants">💬 Faculty Chat Forum</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-timetable" onclick="switchTab('student', 'student-timetable')" title="View upcoming scheduled classes and term reminders">📅 Timetable & Planner</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-forum" onclick="switchTab('student', 'student-forum')" title="Engage in community study groups and post academic threads">💬 Discussion Forum</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-settings" onclick="switchTab('student', 'student-settings')" title="Manage your student account, choose a username, and upload your profile picture">⚙️ Profile Settings</div>
+
+        <!-- ADMIN CHANNELS -->
+        <div class="sidebar-nav-item active admin-only" data-tab="admin-dashboard" onclick="switchTab('admin', 'admin-dashboard')" title="Dashboard Overview" style="display: none;">📊 Dashboard Overview</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-users" onclick="switchTab('admin', 'admin-users')" title="User Management" style="display: none;">👥 User Management</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-roles" onclick="switchTab('admin', 'admin-roles')" title="Role Management" style="display: none;">🎛️ Role Management</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-departments" onclick="switchTab('admin', 'admin-departments')" title="Department Management" style="display: none;">📍 Department Management</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-faculties" onclick="switchTab('admin', 'admin-faculties')" title="Faculty Management" style="display: none;">🕸️ Faculty Management</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-courses" onclick="switchTab('admin', 'admin-courses')" title="Course Management" style="display: none;">📚 Course Management</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-academic" onclick="switchTab('admin', 'admin-academic')" title="Academic Control Center" style="display: none;">📅 Academic Management</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-research" onclick="switchTab('admin', 'admin-research')" title="Research Portfolio Management" style="display: none;">🔬 Research Management</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-startups" onclick="switchTab('admin', 'admin-startups')" title="Entrepreneurship Hub" style="display: none;">💡 Entrepreneurship Hub</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-careers" onclick="switchTab('admin', 'admin-careers')" title="Career Placement Hub" style="display: none;">💼 Career Services</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-ai" onclick="switchTab('admin', 'admin-ai')" title="AI Services & API Management" style="display: none;">🤖 AI Management</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-analytics" onclick="switchTab('admin', 'admin-analytics')" title="Real-time Analytics Center" style="display: none;">📈 Analytics Center</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-communications" onclick="switchTab('admin', 'admin-communications')" title="Announcements & Alerts" style="display: none;">💬 Communication Center</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-security" onclick="switchTab('admin', 'admin-security')" title="Failed Logins & Session Sentinel" style="display: none;">🛡️ Security Center</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-audit" onclick="switchTab('admin', 'admin-audit')" title="Administrative Audit Logs" style="display: none;">📜 Audit Logs</div>
+        <div class="sidebar-nav-item admin-only" data-tab="admin-settings" onclick="switchTab('admin', 'admin-settings')" title="Global Platform Settings" style="display: none;">⚙️ System Settings</div>
+
+        <!-- LECTURER CHANNELS -->
+        <div class="sidebar-nav-item active lecturer-only" data-tab="lecturer-dashboard" onclick="switchTab('lecturer', 'lecturer-dashboard')" title="Monitor student performance analytics and enrollment roster lists">📊 Lecturer Dashboard</div>
+        <div class="sidebar-nav-item lecturer-only" data-tab="lecturer-materials" onclick="switchTab('lecturer', 'lecturer-materials')" title="Upload new course note PDF slides for students">📤 Upload Lecture Notes</div>
+        <div class="sidebar-nav-item lecturer-only" data-tab="lecturer-assignments" onclick="switchTab('lecturer', 'lecturer-assignments')" title="Publish assignments, guidelines, and set deadline calendar alerts">📝 Create Assignment</div>
+        <div class="sidebar-nav-item lecturer-only" data-tab="lecturer-grading" onclick="switchTab('lecturer', 'lecturer-grading')" title="Evaluate and grade student task submissions and view AI plagiarism screenings">💯 Grade Submissions</div>
+        <div class="sidebar-nav-item lecturer-only" data-tab="lecturer-settings" onclick="switchTab('lecturer', 'lecturer-settings')" title="Manage your lecturer account, choose a username, and upload your profile picture">⚙️ Profile Settings</div></nav>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="handlePrototypeLogout()" title="Log out from your current portal session and return to landing page">🚪 Log Out</button></div></aside>
+
+    <!-- Main Workspace Content -->
+    <main class="portal-main">
+
+      <!-- Top Action Navigation Bar -->
+      <div class="portal-navbar">
+        <button class="action-icon-btn mobile-only" id="sidebar-toggle-btn" onclick="toggleMobileSidebar()" style="display: none; margin-right: 12px; font-size: 1.25rem;" title="Toggle portal sidebar navigation">
+          ☰
+        </button>
+        <div class="portal-search-bar">
+          🔍 <input type="text" placeholder="Search courses, past questions, careers..."></div>
+
+        <div class="portal-nav-actions">
+          <!-- Role Switcher Container -->
+          <div id="portal-role-switcher-container" style="display:inline-block; margin-right:12px;"></div>
+
+          <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
+
+          <!-- Notifications Bell -->
+          <button class="action-icon-btn" onclick="alert('Viewing Alerts: New note uploaded by Dr. Kwame Mensah!')" title="View latest alerts and updates">
+            🔔 <span class="notification-dot"></span>
+          </button></div></div>
+<!-- View 1: Student Dashboard -->
+      <section id="student-dashboard" class="portal-view student-view active">
+        <h2>Welcome back, <span id="dashboard-welcome-name" class="gradient-text">Kofi Mensah</span>!</h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Track your grades, GPA projections, and customized AI study schedules.</p>
+
+        <!-- Metric Row -->
+        <div class="metrics-row">
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(37,99,235,0.1); color: var(--primary);">📈</div>
+            <div class="metric-info">
+              <p>Current CGPA</p>
+              <h3 id="student-cgpa-display">3.82</h3></div></div>
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(16,185,129,0.1); color: var(--success);">📅</div>
+            <div class="metric-info">
+              <p>Class Attendance</p>
+              <h3 id="student-attendance-display">95%</h3></div></div>
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(245,158,11,0.1); color: var(--warning);">📝</div>
+            <div class="metric-info">
+              <p>Finished Assignments</p>
+              <h3>5</h3></div></div>
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(239,68,68,0.1); color: var(--danger);">🚨</div>
+            <div class="metric-info">
+              <p>Pending Deadlines</p>
+              <h3>2</h3></div></div></div>
+
+        <!-- Dashboard Columns -->
+        <div class="dashboard-grid">
+
+          <!-- Left Column widgets -->
+          <div>
+            <!-- GPA Predictor Slider Gauge -->
+            <div class="widget glass">
+              <div class="widget-header">
+                <h3>📊 Interactive GPA Predictor</h3>
+                <span class="badge badge-primary">Smart Calculator</span>
+              </div>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">Select your university, then drag the grade sliders to compute your projected GPA or CWA instantly.</p>
+
+              <!-- University Selector (custom dropdown rendered by JS) -->
+              <div style="margin-bottom:16px;">
+                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:600; display:block; margin-bottom:6px;">🏫 Your University</label>
+                <div id="gpa-uni-dropdown-container"></div>
+              </div>
+
+              <div class="gpa-calculator">
+                <div class="slider-group">
+                  <div class="slider-label"><span>CS101: Programming Concepts</span> <span id="val-cs101">A (4.0)</span></div>
+                  <input type="range" min="0" max="4" step="0.5" value="4" class="slider-input" id="gpa-slide-cs101" oninput="updateGpaPredictor()">
+                </div>
+                <div class="slider-group">
+                  <div class="slider-label"><span>MATH102: Calculus &amp; Algebra</span> <span id="val-math102">B+ (3.5)</span></div>
+                  <input type="range" min="0" max="4" step="0.5" value="3.5" class="slider-input" id="gpa-slide-math102" oninput="updateGpaPredictor()">
+                </div>
+                <div class="slider-group">
+                  <div class="slider-label"><span>ENG201: Software Engineering</span> <span id="val-eng201">A (4.0)</span></div>
+                  <input type="range" min="0" max="4" step="0.5" value="4" class="slider-input" id="gpa-slide-eng201" oninput="updateGpaPredictor()">
+                </div>
+                <div class="slider-group">
+                  <div class="slider-label"><span>BUA202: Business Administration</span> <span id="val-bua202">B (3.0)</span></div>
+                  <input type="range" min="0" max="4" step="0.5" value="3" class="slider-input" id="gpa-slide-bua202" oninput="updateGpaPredictor()">
+                </div>
+                <div class="gpa-result-gauge">
+                  <p style="font-size:0.9rem; color:var(--text-muted);" id="gpa-result-label">Predicted Term GPA Score</p>
+                  <div class="gpa-score" id="predicted-gpa-score">3.63</div>
+                  <div id="gpa-honours-band" style="margin-top:10px; width:100%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mood & Stress Tracker -->
+            <div class="widget glass">
+              <h3>🧠 Mood & Psychological Stress Check</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px;">
+                How are you feeling today? Tap an emoji to check stress levels and receive matching advice.
+              </p>
+              <div class="mood-check-container">
+                <div class="mood-selectors">
+                  <button class="mood-btn" onclick="selectMood('😊', 'Excellent')">😊</button>
+                  <button class="mood-btn" onclick="selectMood('😐', 'Neutral')">😐</button>
+                  <button class="mood-btn" onclick="selectMood('😫', 'Stressed')">😫</button>
+                  <button class="mood-btn" onclick="selectMood('🤯', 'Overwhelmed')">🤯</button></div>
+
+                <div class="form-group">
+                  <label>Or set your exact academic stress level percentage:</label>
+                  <input type="range" min="0" max="100" value="25" class="slider-input" id="stress-range-input" oninput="updateStressMeter(this.value)">
+                  <div class="stress-level-indicator">
+                    <div class="stress-level-fill" id="stress-fill-bar"></div></div></div>
+
+                <div id="mood-response-box"><!-- JS suggestions load here -->                </div></div></div></div>
+
+          <!-- Right Column widgets -->
+          <div>
+            <!-- Timetable & Events quick widget -->
+            <div class="widget glass">
+              <div class="widget-header">
+                <h3>📅 Today's Schedule</h3>
+                <span class="badge badge-success">Live</span></div>
+              <div class="timetable-list">
+                <div class="timetable-item">
+                  <div class="timetable-time">09:00 AM</div>
+                  <div class="timetable-details">
+                    <h5>CS101 - Lecture</h5>
+                    <p>LH 201 • Dr. Kwame Mensah</p></div></div>
+                <div class="timetable-item" style="border-left-color: var(--secondary)">
+                  <div class="timetable-time">01:00 PM</div>
+                  <div class="timetable-details">
+                    <h5>ENG201 - Lab Session</h5>
+                    <p>ICT Lab B • TA Joseph</p></div></div></div></div>
+
+            <!-- AI Study Planner -->
+            <div class="widget glass">
+              <h3>⏰ AI Daily Study Planner</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">
+                Enter how many hours you plan to study today, and the AI will optimize your schedule.
+              </p>
+              <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <input type="number" id="plan-hours-input" value="4" min="1" max="12" class="form-control" style="width:80px;">
+                <button class="btn btn-primary btn-sm" onclick="generateDailyStudyPlan()">Generate Study Plan</button></div>
+              <div id="generated-study-plan-box"><!-- JS Plan loads here -->              </div></div>
+
+            <!-- Opportunities & Internships board -->
+            <div class="widget glass">
+              <h3>💼 Internships & Job Opportunities</h3>
+              <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; margin-top:12px; font-size:0.9rem;">
+                <li style="padding-bottom:10px; border-bottom:1px solid var(--border);">
+                  <div style="display:flex; justify-content:space-between;"><strong>Software Eng Intern</strong> <span class="badge badge-success">Intern</span></div>
+                  <span style="font-size:0.75rem; color:var(--text-muted)">Hubtel Ghana - Accra</span>
+                </li>
+                <li>
+                  <div style="display:flex; justify-content:space-between;"><strong>Graduate National Service</strong> <span class="badge badge-primary">NSP</span></div>
+                  <span style="font-size:0.75rem; color:var(--text-muted)">Ecobank Corporate HQ - Accra</span>
+                </li></ul></div></div></div></section>
+
+      <!-- View 2: Student Courses & Notes -->
+      <section id="student-courses" class="portal-view student-view">
+        <h2>Your Registered <span class="gradient-text">Courses & Lecture Material</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">View curriculum, download PDF notes, or request immediate AI summaries.</p>
+
+        <div class="course-grid" id="student-courses-grid"><!-- Dynamically populated from JS -->        </div>
+
+        <h3 style="margin-top: 40px; margin-bottom: 16px;">📖 Available Lecture Slides</h3>
+        <div id="student-notes-list"><!-- Dynamically populated from JS -->        </div></section>
+
+      <!-- View 3: Student AI Academic Chat -->
+      <section id="student-ai-assistant" class="portal-view student-view">
+        <h2>SmartLearn <span class="gradient-text">AI Academic Tutor</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 20px;">Ask academic queries, translate files, evaluate buggy code, or run plagiarism checks.</p>
+
+        <div class="ai-chat-layout glass">
+          <!-- Mode sidebar selector -->
+          <div class="ai-sidebar" style="border-right:1px solid var(--border);">
+            <h4 style="font-size:0.9rem; color:var(--text-muted); margin-bottom:10px;">Select AI Assistant Mode</h4>
+            <button class="ai-mode-btn active" data-mode="study" onclick="setAiMode('study')">🤖 Study Assistant</button>
+            <button class="ai-mode-btn" data-mode="career" onclick="setAiMode('career')">💼 Career Advisor</button>
+            <button class="ai-mode-btn" data-mode="helper" onclick="setAiMode('helper')">✍️ Assignment Helper</button>
+            <button class="ai-mode-btn" data-mode="tutor" onclick="setAiMode('tutor')">💻 Programming Tutor</button>
+
+            <!-- AI API Settings Panel -->
+            <div id="ai-api-settings-container" class="ai-api-settings" style="margin-top: auto; padding-top: 16px; border-top: 1px dashed var(--border);">
+              <h4 style="font-size:0.85rem; color:var(--text-muted); margin-bottom:8px; display:flex; align-items:center; gap:6px;">⚙️ AI Provider</h4>
+
+              <!-- Provider Selector -->
+              <div class="form-group" style="margin-bottom:8px;">
+                <label style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">Provider</label>
+                <select id="ai-provider-select" class="form-control" style="font-size:0.75rem; height:32px; padding:0 8px; border-radius:var(--radius-sm); cursor:pointer;" onchange="onAiProviderChange()">
+                  <option value="groq" selected>⚡ Groq (Free — Fast)</option>
+                  <option value="keyless">🆓 Keyless (Pollinations)</option>
+                  <option value="gemini">🟦 Google Gemini</option>
+                  <option value="openai">🟩 OpenAI (ChatGPT)</option>
+                  <option value="openrouter">🟧 OpenRouter (Free models)</option>
+                </select>
+              </div>
+
+              <!-- API Key Input -->
+              <div class="form-group" id="ai-key-group" style="margin-bottom:8px; display:none;">
+                <label id="ai-key-label" style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">API Key</label>
+                <div style="position:relative; display:flex; align-items:center;">
+                  <input type="password" id="gemini-key-input" placeholder="Paste API key..." class="form-control" style="font-size:0.75rem; padding:8px 32px 8px 10px; height:32px; border-radius:var(--radius-sm);" oninput="saveAiProvider()">
+                  <button type="button" onclick="toggleKeyVisibility()" style="position:absolute; right:8px; background:none; border:none; cursor:pointer; font-size:0.85rem; color:var(--text-light); padding:0;">👁️</button>
+                </div>
+              </div>
+
+              <!-- Model Selector (OpenRouter / Groq) -->
+              <div class="form-group" id="ai-model-group" style="margin-bottom:8px; display:none;">
+                <label id="ai-model-label" style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">Model</label>
+                <select id="ai-model-select" class="form-control" style="font-size:0.72rem; height:32px; padding:0 6px; border-radius:var(--radius-sm);" onchange="saveAiProvider()">
+                  <optgroup label="─ OpenRouter (Free) ─" id="model-group-openrouter">
+                    <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (Free)</option>
+                    <option value="google/gemma-2-9b-it:free">Gemma 2 9B (Free)</option>
+                    <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (Free)</option>
+                    <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
+                    <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini (Free)</option>
+                    <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B (Free)</option>
+                  </optgroup>
+                  <optgroup label="─ Groq (Free) ─" id="model-group-groq">
+                    <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant ⚡</option>
+                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile</option>
+                    <option value="gemma2-9b-it">Gemma 2 9B</option>
+                    <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <!-- Provider help links -->
+              <p id="ai-provider-hint" style="font-size:0.65rem; color:var(--text-light); line-height:1.4; margin-bottom:8px;">
+                No key? <a href="https://aistudio.google.com/" target="_blank" style="color:var(--primary); text-decoration:underline;">Get Gemini key free</a> · <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--primary); text-decoration:underline;">OpenRouter</a>
+              </p>
+
+              <!-- Export Config Button (Admin only) -->
+              <button type="button" id="btn-copy-config" class="btn btn-secondary" style="width:100%; font-size:0.68rem; height:28px; padding:0 8px; margin-bottom:8px; border-radius:var(--radius-sm); border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; background:rgba(255,255,255,0.05); color:var(--text-muted);" onmouseover="this.style.color='var(--text-main)';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='var(--text-muted)';this.style.background='rgba(255,255,255,0.05)'" onclick="copyPermanentConfig()" title="Export current key and settings as a code block to paste in assets/js/app.js">
+                📋 Export Config to Code
+              </button>
+
+              <!-- Offline Demo Mode Badge -->
+              <div id="offline-demo-indicator" style="display:none; margin-bottom:8px; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.25); border-radius:8px; padding:6px 12px; align-items:center; gap:8px; color:#fbbf24; font-size:0.7rem; font-weight:700; user-select:none;">
+                <span class="pulse-dot" style="width:6px; height:6px; background:#fbbf24; border-radius:50%; display:inline-block; box-shadow:0 0 6px #fbbf24; animation:offline-pulse-animation 1.5s infinite;"></span>
+                <span>🔌 Offline Demo Mode</span>
+              </div>
+
+              <!-- Status Badge -->
+              <div id="api-status-badge" style="font-size:0.68rem; font-weight:700; display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:var(--radius-sm); background:rgba(16,185,129,0.1); color:var(--success); transition:var(--transition);">
+                <span style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--success); display:inline-block;"></span> Active: Keyless
+              </div>
+            </div></div>
+
+          <!-- Message Window -->
+          <div class="ai-chat-container">
+            <div class="chat-messages" id="ai-chat-messages"><!-- Load default greeting inside JS -->            </div>
+
+            <div class="chat-input-area">
+              <input type="text" id="ai-chat-input" placeholder="Ask anything about recursion, GPA calculation, or coding syntax..." onkeypress="if(event.key === 'Enter') sendAiMessage()">
+              <button class="btn btn-primary" onclick="sendAiMessage()">Send 🚀</button></div></div></div></section>
+
+      <!-- View 4: Student Past Questions Search & explainer -->
+      <section id="student-past-questions" class="portal-view student-view">
+        <h2>📂 Past Questions <span class="gradient-text">Search & Solutions Explainer</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Type your course code to view past examinations and request complete step-by-step solutions.</p>
+
+        <div class="glass" style="padding:24px; margin-bottom:32px;">
+          <div style="display:flex; gap:12px;">
+            <input type="text" id="pq-search-input" placeholder="Search by course code (e.g. CS101, MATH102)..." class="form-control" style="max-width:400px;" oninput="searchPastQuestions()">
+            <button class="btn btn-primary" onclick="searchPastQuestions()">Search 🔍</button></div></div>
+
+        <h3 style="margin-bottom:16px;">Search Results</h3>
+        <div id="pq-results-list">
+          <p style="color:var(--text-muted); text-align:center; padding:20px;">Type a course code (like CS101) in the search box to view past examinations.</p></div></section>
+
+      <!-- View 5: Student Career Guidance & interest quiz -->
+      <section id="student-career-guidance" class="portal-view student-view">
+        <h2>🎯 Career Interest & <span class="gradient-text">University Major Advisor</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Take our interest quiz to analyze your skills and get matched to Ghanaian tertiary paths.</p>
+
+        <div class="career-layout">
+
+          <!-- Left Column - Wizard Form -->
+          <div class="widget glass question-wizard">
+
+            <div class="wizard-progress">
+              <div class="wizard-progress-bar" id="career-progress-bar"></div></div>
+
+            <div id="career-quiz-box">
+              <div id="career-quiz-slide-container"></div>
+              <div style="margin-top:30px; display:flex; justify-content:space-between;">
+                <button class="btn btn-secondary" onclick="resetCareerQuiz()">Reset</button>
+                <button class="btn btn-primary" id="career-next-btn" onclick="nextCareerQuestion()" disabled>Next Question ➡️</button></div></div>
+
+            <!-- Quiz Results (Hidden by default) -->
+            <div id="career-result-box" style="display:none; text-align:left;">
+              <span class="badge badge-success">AI Match Recommendations</span>
+              <h3 id="career-result-title" style="font-size:1.6rem; margin:12px 0 8px;">Recommended Track: Computer Science</h3>
+              <p id="career-result-desc" style="color:var(--text-muted); font-size:0.95rem; line-height:1.5; margin-bottom:20px;">
+                You are heavily oriented towards software systems engineering.
+              </p>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+                <div class="glass" style="padding:12px;">
+                  <span style="font-size:0.75rem; color:var(--text-light);">EST. LOCAL SALARY</span>
+                  <p id="career-result-salary" style="font-weight:700; color:var(--success); font-size:1.1rem; margin-top:4px;">GH₵ 8,000 - 20,000</p></div>
+                <div class="glass" style="padding:12px;">
+                  <span style="font-size:0.75rem; color:var(--text-light);">JOB DEMAND LEVEL</span>
+                  <p id="career-result-demand" style="font-weight:700; color:var(--primary); font-size:1.1rem; margin-top:4px;">Critically High</p></div></div>
+
+              <h4 style="font-size:1rem; margin-bottom:8px;">Core Skills to Build:</h4>
+              <div id="career-result-skills" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"><!-- Plotted dynamically -->              </div>
+
+              <h4 style="font-size:1rem; margin-bottom:8px;">Top Ghanaian Universities offering this:</h4>
+              <ul id="career-result-unis" style="list-style:none; display:flex; flex-direction:column; gap:8px; font-size:0.9rem;"><!-- Plotted dynamically -->              </ul>
+
+              <button class="btn btn-secondary btn-sm" style="margin-top:24px; width:100%;" onclick="resetCareerQuiz()">Retake Interest Quiz 🔄</button></div></div>
+
+          <!-- Right Column - Visual Path mapping -->
+          <div class="widget glass career-visualizer">
+            <h3>📈 Career Path Visualization Map</h3>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px;">Renders paths linking secondary study to job tracks.</p>
+
+            <div class="career-node-map">
+              <svg class="node-connector">
+                <!-- Connectors SVG -->
+                <line x1="60" y1="105" x2="150" y2="50" stroke="var(--primary)" stroke-width="2" stroke-dasharray="4,4"/>
+                <line x1="60" y1="105" x2="150" y2="170" stroke="var(--border)" stroke-width="1.5"/>
+                <line x1="220" y1="50" x2="280" y2="105" stroke="var(--secondary)" stroke-width="2"/>
+                <line x1="220" y1="170" x2="280" y2="105" stroke="var(--border)" stroke-width="1"/>
+              </svg>
+
+              <div class="visual-node node-start">Core Interests</div>
+              <div class="visual-node node-mid1">BSc University</div>
+              <div class="visual-node node-mid2">Electives</div>
+              <div class="visual-node node-end" id="visual-node-end">Pending Result</div></div></div></div></section>
+
+      <!-- View 6: Student Timetable Schedule -->
+      <section id="student-timetable" class="portal-view student-view">
+        <h2>📅 Student Timetable & <span class="gradient-text">AI Monthly Planner</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">View your lectures, assignment deadlines, and exam reminders across our calendar board.</p>
+
+        <div class="widget glass">
+          <div class="widget-header">
+            <h3>May 2026</h3>
+            <span class="badge badge-primary">Current Term</span></div>
+
+          <div class="calendar-grid" id="portal-calendar-grid"><!-- Dynamic calendar grids populating inside JS -->          </div></div></section>
+
+      <!-- View 7: Student Forum -->
+      <section id="student-forum" class="portal-view student-view">
+        <h2>💬 SmartLearn AI <span class="gradient-text">Discussion Board</span></h2>
+        <p style="color:var(--text-muted); margin-bottom:24px;">Ask questions, exchange research PDF notes, and receive lecturer-moderated guidance.</p>
+
+        <div class="dashboard-grid">
+
+          <!-- Left Column - Threads List -->
+          <div>
+            <div id="forum-posts-container"><!-- Dynamically populated from JS -->            </div></div>
+
+          <!-- Right Column - Thread Poster -->
+          <div class="widget glass" style="height: fit-content;">
+            <h3>📝 Start a New Thread</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">
+              Publish an academic query to get answers from classmates and lecturers.
+            </p>
+
+            <div class="form-group">
+              <label>Thread Title</label>
+              <input type="text" id="new-thread-title" class="form-control" placeholder="E.g. Struggling with Calculus integrals limit..."></div>
+
+            <div class="form-group">
+              <label>Category</label>
+              <select id="new-thread-category" class="form-control">
+                <option value="Computer Science">Computer Science</option>
+                <option value="Business & Finance">Business & Finance</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="General Science">General Science</option>
+              </select></div>
+
+            <div class="form-group">
+              <label>Post Description Details</label>
+              <textarea id="new-thread-body" class="form-control" rows="4" placeholder="Explain your academic problem step-by-step so others can replicate..."></textarea></div>
+
+            <button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="createForumThread()">Publish Thread 🚀</button></div></div></section>
+
+      <!-- View 7B: Student Program Selection Page -->
+      <section id="student-programs" class="portal-view student-view">
+        <h2>🎓 Academic & <span class="gradient-text">Program Opportunities</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Browse core course catalogs, required technical skills, local career markets, and compute your AI compatibility score.</p>
+
+        <div class="course-grid"><!-- Dynamically populated from JS -->        </div>
+
+        <!-- AI Suitability Results Area -->
+        <div id="ai-suitability-display-box" style="margin-top: 32px;"></div></section>
+
+      <!-- View 7C: Student Ghana Universities Recommendation Page -->
+      <section id="student-universities" class="portal-view student-view">
+        <h2>🏛️ Ghana <span class="gradient-text">Universities Hub</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Explore detailed admission requirements, estimated fees, local scholarships, and reviews from real campus students.</p>
+
+        <!-- Search and filters row -->
+        <div class="glass" style="padding: 20px; border-radius: var(--radius-md); margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;">
+          <div style="flex: 1; min-width: 280px; position: relative;">
+            <input type="text" id="uni-search-input" placeholder="Search universities by name or location..." class="form-control" style="width: 100%; padding: 12px 16px 12px 40px; font-size: 0.85rem;" oninput="filterUniversitiesList()">
+            <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">🔍</span></div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm uni-filter-btn active" id="filter-uni-all" onclick="filterUniversitiesType('All')">All</button>
+            <button class="btn btn-secondary btn-sm uni-filter-btn" id="filter-uni-public" onclick="filterUniversitiesType('Public')">Public</button>
+            <button class="btn btn-secondary btn-sm uni-filter-btn" id="filter-uni-private" onclick="filterUniversitiesType('Private')">Private</button></div></div>
+
+        <!-- Dynamic Grid Container -->
+        <div class="uni-preview-grid" id="uni-dynamic-grid-container">
+          <div style="text-align: center; color: var(--text-muted); padding: 40px 0; grid-column: 1 / -1;">
+            <div class="typing-dots"><span></span><span></span><span></span></div> Loading dynamic university directories...
+          </div></div></section>
+
+      <!-- View 7D: Student Contact Faculty Page -->
+      <section id="student-contacts" class="portal-view student-view">
+        <h2>📞 Faculty Contacts & <span class="gradient-text">Counseling Scheduler</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Send real-time inquiries, review professor office hours, or request personal Zoom guidance calls.</p>
+
+        <div class="dashboard-grid">
+
+          <!-- Faculty lists -->
+          <div>
+            <div class="widget glass">
+              <h3 style="margin-bottom:16px;">Active Professors & TAs Directory</h3>
+              <div class="timetable-list" id="student-contacts-directory-list"><!-- Dynamically populated from JS -->              </div></div></div>
+
+          <!-- Video consultation bookings -->
+          <div class="widget glass" style="height: fit-content;">
+            <h3>📅 Book Video Consultation</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">
+              Coordinate a direct Zoom review with academic advisors or counseling psychologists.
+            </p>
+
+            <div class="form-group">
+              <label>Select Staff Member</label>
+              <select id="consult-recipient" class="form-control">
+                <option value="Dr. Kwame Mensah">Dr. Kwame Mensah (CS Coordinator)</option>
+                <option value="Dr. Sophia Tetteh">Dr. Sophia Tetteh (Academic Counselor)</option>
+                <option value="Prof. Ama Serwaa">Prof. Ama Serwaa (Calculus Lead)</option>
+              </select></div>
+
+            <div class="form-group">
+              <label>Consultation Date</label>
+              <input type="date" id="consult-date" class="form-control" value="2026-05-28"></div>
+
+            <div class="form-group">
+              <label>Topic / Academic Focus</label>
+              <input type="text" id="consult-purpose" class="form-control" placeholder="E.g. GPA prediction help or project guidelines check"></div>
+
+            <button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="scheduleFacultyCall()">Schedule Faculty Session 🚀</button></div></div></section>
+
+      <!-- View 7E: Dedicated Assignment Submission Page -->
+      <section id="student-assignments" class="portal-view student-view">
+        <h2>📤 Dedicated <span class="gradient-text">Assignment Submission Center</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">View deadline countdowns, submit files, check version revisions, and review instructor grades and AI pre-feedback logs.</p>
+
+        <div id="dedicated-assignments-deck"><!-- Dynamically populated from JS state -->        </div></section>
+
+      <!-- View 7G: Faculty & TA Chat Forum -->
+      <section id="student-faculty-chat" class="portal-view student-view">
+        <h2>💬 Faculty & TA <span class="gradient-text">Chat Directory</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Chat directly with active professors, coordinators, and teaching assistants in real-time.</p>
+
+        <div class="dashboard-grid" style="grid-template-columns: 280px 1fr; gap: 20px;">
+          <!-- Left Column: Active Faculty Directory -->
+          <div class="widget glass" style="padding: 16px; height: 500px; display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 12px; font-size: 1.05rem;">Contacts</h3>
+            <div id="faculty-chat-contacts-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"><!-- Dynamic Contacts will be listed here -->            </div></div>
+
+          <!-- Right Column: Active Chat Area -->
+          <div class="widget glass" style="padding: 20px; height: 500px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div id="active-faculty-chat-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+              <div id="active-chat-avatar" class="instructor-avatar" style="width: 40px; height: 40px; border-radius: var(--radius-full); overflow: hidden;">
+                <img src="picture/avatar_lecturer.jpg" style="width: 100%; height: 100%; object-fit: cover;"></div>
+              <div>
+                <h4 id="active-chat-name" style="font-size: 0.95rem; margin: 0;">Dr. Kwame Mensah</h4>
+                <p id="active-chat-status" style="font-size: 0.75rem; color: var(--success); margin: 0;">🟢 Online (CS101 Coordinator)</p></div></div>
+
+            <!-- Messages Log -->
+            <div id="faculty-chat-log" style="flex: 1; overflow-y: auto; padding: 8px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; background: rgba(0,0,0,0.1); border-radius: var(--radius-sm);"><!-- Chat bubbles -->            </div>
+
+            <!-- Input Row -->
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="faculty-chat-input" placeholder="Type a message..." class="form-control" style="flex: 1; padding: 10px 14px; font-size: 0.85rem;" onkeypress="if(event.key === 'Enter') sendFacultyChatMessage()">
+              <button class="btn btn-primary btn-sm" onclick="sendFacultyChatMessage()">Send 🚀</button></div></div></div></section>
+
+      <!-- View 7H: AI Research Assistant Portal -->
+      <section id="student-research" class="portal-view student-view">
+        <h2>🔬 AI Research Portal & <span class="gradient-text">Academic Assistant</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Conduct university-level research with neural support. Search global databases, critique methodology, and compile reference bibliographies.</p>
+
+        <div class="dashboard-grid">
+          <!-- Left Column - Search & Citations -->
+          <div style="display:flex; flex-direction:column; gap:20px;">
+            
+            <!-- Paper Search -->
+            <div class="widget glass">
+              <h3>🔍 Search Research Papers (EuropePMC)</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">Search articles and publications directly from academic indexes.</p>
+              
+              <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <input type="text" id="spa-research-search-input" class="form-control" placeholder="E.g. AgriTech, renewable energy Ghana...">
+                <button class="btn btn-primary btn-sm" onclick="spaSearchResearch()">Search</button>
+              </div>
+
+              <div id="spa-research-results-list" style="display:flex; flex-direction:column; gap:12px; max-height:300px; overflow-y:auto; padding-right:4px;">
+                <p style="color:var(--text-muted); text-align:center; padding:20px; font-size:0.8rem;">Enter keywords above to pull publication files.</p>
+              </div>
+            </div>
+
+            <!-- Citation Generator -->
+            <div class="widget glass">
+              <h3>📋 Reference & Citation Generator</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">Generate standard bibliographies for your reports.</p>
+              
+              <div class="form-group">
+                <label>Article Title</label>
+                <input type="text" id="cite-title" class="form-control" placeholder="E.g. Sustainable Solar Microgrids...">
+              </div>
+              <div class="form-group">
+                <label>Authors (LastName, F. M.)</label>
+                <input type="text" id="cite-authors" class="form-control" placeholder="E.g. Mensah, K., Osei, A.">
+              </div>
+              <div class="form-group">
+                <label>Journal / Publisher</label>
+                <input type="text" id="cite-journal" class="form-control" placeholder="E.g. West African Journal of Engineering">
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
+                <div class="form-group" style="margin:0;">
+                  <label>Year</label>
+                  <input type="text" id="cite-year" class="form-control" placeholder="2025">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label>Vol/Issue</label>
+                  <input type="text" id="cite-volume" class="form-control" placeholder="3(1)">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label>Pages</label>
+                  <input type="text" id="cite-pages" class="form-control" placeholder="12-25">
+                </div>
+              </div>
+
+              <div style="display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+                <button class="btn btn-secondary btn-sm" id="btn-cite-apa" onclick="setSpaCitationFormat('APA')" style="flex:1; font-size:0.75rem;">APA</button>
+                <button class="btn btn-secondary btn-sm" id="btn-cite-harvard" onclick="setSpaCitationFormat('Harvard')" style="flex:1; font-size:0.75rem;">Harvard</button>
+                <button class="btn btn-secondary btn-sm" id="btn-cite-ieee" onclick="setSpaCitationFormat('IEEE')" style="flex:1; font-size:0.75rem;">IEEE</button>
+                <button class="btn btn-secondary btn-sm" id="btn-cite-mla" onclick="setSpaCitationFormat('MLA')" style="flex:1; font-size:0.75rem;">MLA</button>
+              </div>
+
+              <button class="btn btn-primary" style="width:100%; margin-bottom:12px;" onclick="spaGenerateCitation()">Generate Citation</button>
+
+              <div id="spa-citation-output-box" class="glass" style="display:none; padding:12px; font-size:0.8rem; background:rgba(0,0,0,0.2); border-radius:var(--radius-sm); border:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                <span id="spa-citation-text" style="font-family:monospace; user-select:all; line-height:1.4;"></span>
+                <button class="btn btn-secondary btn-sm" onclick="copySpaCitation()" style="font-size:0.7rem; padding:4px 8px;">Copy</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Critique & Summarizer -->
+          <div style="display:flex; flex-direction:column; gap:20px;">
+            
+            <!-- Literature critique -->
+            <div class="widget glass">
+              <h3>🧬 Lit Review & Methodology Gap Finder</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">Request AI feedback on your research scope and local contextual boundaries.</p>
+
+              <div class="form-group">
+                <label>Research Topic Title</label>
+                <input type="text" id="spa-research-topic" class="form-control" placeholder="E.g. Mobile money susus in Makola Accra...">
+              </div>
+              <div class="form-group">
+                <label>Domain</label>
+                <select id="spa-research-domain" class="form-control">
+                  <option>Computer Science & ICT</option>
+                  <option>Agriculture & Food Security</option>
+                  <option>Renewable Energy & Power Systems</option>
+                  <option>Business & Developmental Finance</option>
+                  <option>Health Informatics & Medicine</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Methodology Outline</label>
+                <textarea id="spa-research-draft" class="form-control" rows="4" placeholder="Explain your data gathering, sample size, or software algorithm approaches..."></textarea>
+              </div>
+
+              <button class="btn btn-primary" style="width:100%;" onclick="spaAnalyzeMethodology()">Analyze Methodology & Local Gaps ➔</button>
+
+              <div id="spa-methodology-result" class="glass" style="display:none; margin-top:16px; padding:16px; font-size:0.8rem; line-height:1.5; white-space:pre-line; max-height:250px; overflow-y:auto;">
+              </div>
+            </div>
+
+            <!-- Abstract Summarizer -->
+            <div class="widget glass">
+              <h3>📑 Scientific Abstract Summarizer</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">Paste a long abstract to extract key findings and limits.</p>
+
+              <div class="form-group">
+                <textarea id="spa-abstract-input" class="form-control" rows="4" placeholder="Paste research paper abstract here..."></textarea>
+              </div>
+
+              <button class="btn btn-primary" style="width:100%;" onclick="spaSummarizeAbstract()">Analyze & Summarize Abstract ➔</button>
+
+              <div id="spa-abstract-result" class="glass" style="display:none; margin-top:16px; padding:16px; font-size:0.8rem; line-height:1.5; white-space:pre-line;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 7I: Student Innovation & Entrepreneurship Hub -->
+      <section id="student-innovation" class="portal-view student-view">
+        <h2>💡 Student Innovation & <span class="gradient-text">Entrepreneurship Hub</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Turn your final-year research into commercial startups. Pitch business ideas, get AI model reviews, and review tertiary incubator tracks.</p>
+
+        <div class="dashboard-grid">
+          <!-- Left Column - Plan Validator & Directory -->
+          <div style="display:flex; flex-direction:column; gap:20px;">
+            
+            <!-- Business Plan Optimizer -->
+            <div class="widget glass">
+              <h3>🚀 Startup Pitch & Business Plan Validator</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">SmartLearn AI evaluates product-market fit, lists local risks, and details regulatory compliance.</p>
+
+              <div class="form-group">
+                <label>Business Name / Project</label>
+                <input type="text" id="spa-startup-name" class="form-control" placeholder="E.g. SusuSmart Savings Hub...">
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                <div class="form-group" style="margin:0;">
+                  <label>Venture Industry</label>
+                  <select id="spa-startup-industry" class="form-control">
+                    <option>AgriTech</option>
+                    <option>FinTech</option>
+                    <option>EdTech</option>
+                    <option>CleanEnergy</option>
+                    <option>HealthTech & Medical</option>
+                    <option>SaaS & ICT</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label>Target Audience in Ghana</label>
+                  <input type="text" id="spa-startup-audience" class="form-control" placeholder="E.g. farmers in Ashanti Region...">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Pitch Summary / Value Proposition</label>
+                <textarea id="spa-startup-desc" class="form-control" rows="4" placeholder="Explain the problem solved and monetization plan..."></textarea>
+              </div>
+
+              <button class="btn btn-primary" style="width:100%;" onclick="spaValidateBusiness()">Evaluate Business Viability ➔</button>
+
+              <div id="spa-business-result" class="glass" style="display:none; margin-top:16px; padding:16px; font-size:0.8rem; line-height:1.5; white-space:pre-line; max-height:250px; overflow-y:auto;">
+              </div>
+            </div>
+
+            <!-- Incubators Directory -->
+            <div class="widget glass">
+              <h3>🏛️ Tertiary Incubators & Accelerators Pathways</h3>
+              <div class="timetable-list" style="margin-top:16px; gap:12px; display:flex; flex-direction:column;">
+                <div style="border-bottom:1px solid var(--border); padding-bottom:8px;">
+                  <h4 style="font-size:0.85rem; margin:0; display:flex; justify-content:space-between;"><strong>Ashesi Venture Incubator (AVI)</strong> <span style="font-size:0.7rem; color:var(--primary);">Berekuso</span></h4>
+                  <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">1 year cohort. Business coaching, mentorship, and GHS 25,000 equity-free seed funding.</p>
+                </div>
+                <div style="border-bottom:1px solid var(--border); padding-bottom:8px;">
+                  <h4 style="font-size:0.85rem; margin:0; display:flex; justify-content:space-between;"><strong>KNUST Kumasi Hive</strong> <span style="font-size:0.7rem; color:var(--secondary);">Kumasi</span></h4>
+                  <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Maker space and IoT lab equipment testing. Direct connections to regional angel syndicates.</p>
+                </div>
+                <div>
+                  <h4 style="font-size:0.85rem; margin:0; display:flex; justify-content:space-between;"><strong>MEST Africa Hub</strong> <span style="font-size:0.7rem; color:var(--accent);">Accra</span></h4>
+                  <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Pre-seed tech startup incubator. Software entrepreneurship training and up to $100k capital.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Showcase & Mentors -->
+          <div style="display:flex; flex-direction:column; gap:20px;">
+            
+            <!-- Marketplace Showcase -->
+            <div class="widget glass">
+              <h3>🛒 Student Startups Showcase Marketplace</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">Upvote student startups or apply to join their technical development teams.</p>
+              
+              <!-- Simple submit form -->
+              <div class="glass" style="padding:16px; border-radius:var(--radius-sm); border:1px solid var(--border); margin-bottom:16px; background:rgba(0,0,0,0.15);">
+                <h4 style="font-size:0.85rem; margin-bottom:10px; color:var(--primary);">List Your Project</h4>
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                  <input type="text" id="spa-pub-name" class="form-control" placeholder="Project Name..." style="font-size:0.75rem;">
+                  <select id="spa-pub-industry" class="form-control" style="font-size:0.75rem;">
+                    <option>AgriTech</option> <option>FinTech</option> <option>CleanEnergy</option> <option>SaaS & ICT</option>
+                  </select>
+                </div>
+                <textarea id="spa-pub-desc" class="form-control" rows="2" placeholder="Brief pitch of product or algorithm..." style="font-size:0.75rem; margin-bottom:8px;"></textarea>
+                <button class="btn btn-primary btn-sm" style="width:100%;" onclick="spaPublishStartup()">Publish Startup ➔</button>
+              </div>
+
+              <div id="spa-startups-showcase-list" style="display:flex; flex-direction:column; gap:12px; max-height:280px; overflow-y:auto;">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- Alumni Mentors -->
+            <div class="widget glass">
+              <h3>👨‍💼 Alumni & Industry Mentors Network</h3>
+              <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px; margin-bottom:16px;">Directly contact tech leads or book draft consultations.</p>
+              
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="border-bottom:1px solid var(--border); padding-bottom:10px; display:flex; gap:12px;">
+                  <div style="font-size:1.5rem;">👨‍💼</div>
+                  <div>
+                    <h4 style="font-size:0.85rem; margin:0;">Dr. Elikem Adadevoh</h4>
+                    <p style="font-size:0.7rem; color:var(--primary); font-weight:700; margin:2px 0;">Accra Venture Capital Partner (FinTech)</p>
+                    <button class="btn btn-secondary btn-sm" style="font-size:0.65rem; padding:4px 8px; margin-top:4px;" onclick="openSpaMentorModal('Dr. Elikem Adadevoh')">✉️ Contact Mentor</button>
+                  </div>
+                </div>
+                <div style="display:flex; gap:12px;">
+                  <div style="font-size:1.5rem;">👩‍💼</div>
+                  <div>
+                    <h4 style="font-size:0.85rem; margin:0;">Naa Ayeley Komey</h4>
+                    <p style="font-size:0.7rem; color:var(--secondary); font-weight:700; margin:2px 0;">CEO AgriFlow, Ashesi Alumna (AgriTech)</p>
+                    <button class="btn btn-secondary btn-sm" style="font-size:0.65rem; padding:4px 8px; margin-top:4px;" onclick="openSpaMentorModal('Naa Ayeley Komey')">✉️ Contact Mentor</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulated Modal dialog for writing to mentor -->
+        <div id="spa-mentor-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); align-items:center; justify-content:center; z-index:99999;">
+          <div class="glass" style="width:100%; max-width:400px; padding:24px; position:relative; border-radius:var(--radius-md); box-shadow:0 10px 36px rgba(0,0,0,0.4);">
+            <h3 id="spa-mentor-modal-title">Write message to Mentor</h3>
+            <p style="color:var(--text-muted); font-size:0.75rem; margin-top:4px; margin-bottom:16px;">Request advisory feedback on your project proposal.</p>
+            <textarea id="spa-mentor-message-text" class="form-control" rows="5" placeholder="E.g., I am a final-year student working on..."></textarea>
+            <div style="display:flex; justify-content:end; gap:8px; margin-top:16px;">
+              <button class="btn btn-secondary btn-sm" onclick="D.show('spa-mentor-modal', false)">Cancel</button>
+              <button class="btn btn-primary btn-sm" onclick="sendSpaMentorMessage()">Send Message</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 7F: Student Settings & Profile -->
+      <section id="student-settings" class="portal-view student-view">
+        <h2>⚙️ Profile <span class="gradient-text">Settings</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Manage your account details, choose a unique username, upload your profile picture, and configure other student options.</p>
+
+        <div class="dashboard-grid">
+          <!-- Left Column - Details Form -->
+          <div class="widget glass">
+            <h3>Update Profile Information</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;">Keep your student portal name, username, and identifiers updated.</p>
+
+            <form id="student-settings-form" onsubmit="event.preventDefault(); saveUserSettings('student');">
+              <div class="form-group">
+                <label>Academic Name</label>
+                <input type="text" id="settings-student-name" class="form-control" placeholder="Full Name" required></div>
+              <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="settings-student-username" class="form-control" placeholder="Choose a username (e.g. kofimensah99)" required></div>
+              <div class="form-group">
+                <label>Department</label>
+                <input type="text" id="settings-student-dept" class="form-control" placeholder="Department name"></div>
+              <div class="form-group">
+                <label>Student ID Number</label>
+                <input type="text" id="settings-student-idnum" class="form-control" placeholder="ID Number"></div>
+              <button type="submit" class="btn btn-primary" style="margin-top:16px;" title="Click to save your updated profile details">Save Changes 💾</button></form></div>
+
+          <!-- Right Column - Picture & Account Settings -->
+          <div class="widget glass" style="text-align:center;">
+            <h3>Profile Picture</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;">Upload a photo for identification in the portal classes.</p>
+
+            <div style="margin:0 auto 20px; width:120px; height:120px; border-radius:50%; overflow:hidden; border:4px solid var(--primary); background:rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:center;">
+              <img id="settings-student-avatar-preview" src="picture/avatar_student.jpg" alt="Preview" style="width:100%; height:100%; object-fit:cover;"></div>
+
+            <div class="form-group">
+              <input type="file" id="settings-student-avatar-file" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this, 'student')">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('settings-student-avatar-file').click()" title="Select an image file from your device">Upload New Image 📸</button></div>
+            <p style="font-size:0.75rem; color:var(--text-light); margin-top:8px;">Supported formats: JPG, PNG, GIF. Max file size: 5 MB.</p></div></div></section>
+<!-- View 8: Lecturer Overview & Analytics -->
+      <section id="lecturer-dashboard" class="portal-view lecturer-view">
+        <h2>Welcome back, <span id="lecturer-welcome-name" class="gradient-text">Faculty Member</span>!</h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Publish lesson modules, grade submitted assets, and check student progress.</p>
+
+        <!-- Metric Row -->
+        <div class="metrics-row">
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(37,99,235,0.1); color: var(--primary);">👥</div>
+            <div class="metric-info">
+              <p>Active Roster</p>
+              <h3>142 Students</h3></div></div>
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(16,185,129,0.1); color: var(--success);">📊</div>
+            <div class="metric-info">
+              <p>Class Average GPA</p>
+              <h3 id="class-average-gpa-display">3.24</h3></div></div>
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(245,158,11,0.1); color: var(--warning);">📤</div>
+            <div class="metric-info">
+              <p>Notes Published</p>
+              <h3>14 Modules</h3></div></div>
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(239,68,68,0.1); color: var(--danger);">💯</div>
+            <div class="metric-info">
+              <p>Grading Queue</p>
+              <h3 id="lecturer-grading-queue-count">1 Submission</h3></div></div></div>
+
+        <!-- Student Roster table -->
+        <div class="widget glass">
+          <h3>📈 Class Enrollment & Performance Roster</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;">
+            A list of all enrolled students, their average attendance, GPA status, and academic warning indicators.
+          </p>
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Registered Courses</th>
+                  <th>Attendance Rate</th>
+                  <th>Average CGPA</th>
+                  <th>Status Rating</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="lecturer-students-table-body"><!-- JS populated -->              </tbody>
+            </table></div></div></section>
+
+      <!-- View 9: Lecturer Upload Lecture Notes -->
+      <section id="lecturer-materials" class="portal-view lecturer-view">
+        <h2>📤 Publish <span class="gradient-text">New Lecture Notes</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Publish lecture PDF slides. SmartLearn AI will instantly notify student dashboards.</p>
+
+        <div class="glass" style="padding:32px; max-width:600px; margin: 0 auto;">
+          <h3 style="margin-bottom:20px;">Lesson Document Publisher</h3>
+
+          <div class="form-group">
+            <label>Lecture Notes Title</label>
+            <input type="text" id="lecturer-note-title" class="form-control" placeholder="E.g. Lecture 3: Advanced Relational Databases"></div>
+
+          <div class="form-group">
+            <label>Select Target Course Code</label>
+            <select id="lecturer-note-course" class="form-control">
+              <option value="CS101">CS101 - Coding Concepts</option>
+              <option value="MATH102">MATH102 - Calculus & Algebra</option>
+              <option value="ENG201">ENG201 - Software Engineering</option>
+            </select></div>
+
+          <!-- Drag and drop simulation area -->
+          <div style="border: 2px dashed var(--border); padding: 32px; border-radius: var(--radius-sm); text-align: center; margin: 20px 0; background: var(--bg-base);">
+            <div style="font-size: 2rem; margin-bottom: 8px;">📄</div>
+            <strong>Drag your study PDF / ZIP files here</strong>
+            <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 4px;">Max file size: 15 MB. Supported formats: PDF, DOCX, ZIP.</p></div>
+
+          <button class="btn btn-primary" style="width: 100%;" onclick="simulateLecturerUploadNote()">Publish Lecture Note 🚀</button></div></section>
+
+      <!-- View 10: Lecturer Create Assignment -->
+      <section id="lecturer-assignments" class="portal-view lecturer-view">
+        <h2>📝 Publish <span class="gradient-text">Assignments & Tasks</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Create test guidelines and publish deadline timers to students' dashboards.</p>
+
+        <div class="glass" style="padding:32px; max-width:600px; margin: 0 auto;">
+          <h3 style="margin-bottom:20px;">Assignment Creator</h3>
+
+          <div class="form-group">
+            <label>Assignment Title</label>
+            <input type="text" id="lecturer-asg-title" class="form-control" placeholder="E.g. Assignment 3: Writing SQL queries"></div>
+
+          <div class="form-group">
+            <label>Target Course Code</label>
+            <select id="lecturer-asg-course" class="form-control">
+              <option value="CS101">CS101 - Coding Concepts</option>
+              <option value="MATH102">MATH102 - Calculus & Algebra</option>
+              <option value="ENG201">ENG201 - Software Engineering</option>
+            </select></div>
+
+          <div class="form-group">
+            <label>Deadline Date</label>
+            <input type="date" id="lecturer-asg-deadline" class="form-control" value="2026-06-05"></div>
+
+          <button class="btn btn-primary" style="width: 100%; margin-top:16px;" onclick="simulateLecturerCreateAsg()">Publish Assignment Guidelines 📝</button></div></section>
+
+      <!-- View 11: Lecturer Grading Queue -->
+      <section id="lecturer-grading" class="portal-view lecturer-view">
+        <h2>💯 Student <span class="gradient-text">Grading Center Queue</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Evaluate student uploads, run automated plagiarism assessments, and award grades.</p>
+
+        <div class="glass" style="padding:20px; margin-bottom:32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; border-left:4px solid var(--success);">
+          <div>
+            <span class="badge badge-success">Automated Plagiarism Screening</span>
+            <h4 style="margin-top:6px; font-size:1.05rem;">SmartLearn AI Copy Screening System is ACTIVE</h4>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">All incoming Student uploads are cross-referenced across online databases.</p></div>
+          <span style="font-weight:700; color:var(--success); font-size:1.15rem;">Active Shield</span></div>
+
+        <h3 style="margin-bottom:16px;">Submissions Awaiting Evaluation</h3>
+        <div id="lecturer-submissions-list"><!-- Dynamically populated from JS -->        </div></section>
+
+      <!-- View 12: Lecturer Settings & Profile -->
+      <section id="lecturer-settings" class="portal-view lecturer-view">
+        <h2>⚙️ Profile <span class="gradient-text">Settings</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Manage your teaching credentials, office coordinates, and custom profile photo.</p>
+
+        <div class="dashboard-grid">
+          <!-- Left Column - Details Form -->
+          <div class="widget glass">
+            <h3>Update Lecturer Profile</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;">Keep your office hours and class coordinates updated for students.</p>
+
+            <form id="lecturer-settings-form" onsubmit="event.preventDefault(); saveUserSettings('lecturer');">
+              <div class="form-group">
+                <label>Academic Name</label>
+                <input type="text" id="settings-lecturer-name" class="form-control" placeholder="Full Name" required></div>
+              <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="settings-lecturer-username" class="form-control" placeholder="Choose a username" required></div>
+              <div class="form-group">
+                <label>Office Location</label>
+                <input type="text" id="settings-lecturer-office" class="form-control" placeholder="E.g. Block C, Rm 4"></div>
+              <button type="submit" class="btn btn-primary" style="margin-top:16px;" title="Save your updated lecturer settings and username details">Save Changes 💾</button></form></div>
+
+          <!-- Right Column - Picture -->
+          <div class="widget glass" style="text-align:center;">
+            <h3>Lecturer Profile Photo</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;">Upload a professional face profile photo for student recognition.</p>
+
+            <div style="margin:0 auto 20px; width:120px; height:120px; border-radius:50%; overflow:hidden; border:4px solid var(--primary); background:rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:center;">
+              <img id="settings-lecturer-avatar-preview" src="picture/avatar_lecturer.jpg" alt="Preview" style="width:100%; height:100%; object-fit:cover;"></div>
+
+            <div class="form-group">
+              <input type="file" id="settings-lecturer-avatar-file" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this, 'lecturer')">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('settings-lecturer-avatar-file').click()" title="Select an image file from your device">Upload New Image 📸</button></div>
+            <p style="font-size:0.75rem; color:var(--text-light); margin-top:8px;">Supported formats: JPG, PNG, GIF. Max file size: 5 MB.</p></div></div></section>
+
+      <!-- View 13: Admin Settings Panel -->
+      <!-- View 13A: Admin Dashboard Overview -->
+      <section id="admin-dashboard" class="portal-view admin-view">
+        <h2>Welcome, <span id="admin-welcome-name" class="gradient-text">Administrator</span>!</h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Institutional executive command hub • Student, faculty, and systems oversight.</p>
+
+        <!-- Metric Row -->
+        <div class="metrics-row">
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(124,58,237,0.1); color: var(--secondary);">👥</div>
+            <div class="metric-info">
+              <p>Total Registered Users</p>
+              <h3 id="admin-metric-users">145</h3></div></div>
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(16,185,129,0.1); color: var(--success);">🎓</div>
+            <div class="metric-info">
+              <p>Active Students</p>
+              <h3 id="admin-metric-students">142</h3></div></div>
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(245,158,11,0.1); color: var(--warning);">👩‍🏫</div>
+            <div class="metric-info">
+              <p>Active Lecturers</p>
+              <h3 id="admin-metric-lecturers">3</h3></div></div>
+          <div class="metric-card glass">
+            <div class="metric-icon-box" style="background: rgba(6,182,212,0.1); color: var(--info);">💡</div>
+            <div class="metric-info">
+              <p>Startups Tracked</p>
+              <h3 id="admin-metric-startups">2</h3></div></div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Left Column: System & Security Status -->
+          <div class="widget glass">
+            <h3>🖥️ System Health & Performance</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Real-time diagnostics of the SmartLearn AI server infrastructure.</p>
+            <div class="timetable-list">
+              <div class="timetable-item" style="border-left-color: var(--success); background: rgba(16,185,129,0.02);">
+                <div class="timetable-time" style="color: var(--success);">ONLINE</div>
+                <div class="timetable-details">
+                  <h5>Database Connection (MongoDB)</h5>
+                  <p style="color:var(--text-muted);">Latency: 4ms • State: Fully Synchronized</p></div></div>
+              <div class="timetable-item" style="border-left-color: var(--primary); background: rgba(37,99,235,0.02);">
+                <div class="timetable-time" style="color: var(--primary);">ACTIVE</div>
+                <div class="timetable-details">
+                  <h5>AI Orchestration Router</h5>
+                  <p style="color:var(--text-muted);">Primary: Groq (llama-3) • Status: Operational</p></div></div>
+              <div class="timetable-item" style="border-left-color: var(--warning); background: rgba(245,158,11,0.02);">
+                <div class="timetable-time" style="color: var(--warning);">SECURE</div>
+                <div class="timetable-details">
+                  <h5>Multi-Factor Security Shield</h5>
+                  <p style="color:var(--text-muted);">Brute-force protection: Enforced • Logs: Locked</p></div></div>
+            </div>
+          </div>
+
+          <!-- Right Column: Institution Analytics -->
+          <div class="widget glass flex flex-col justify-between">
+            <h3>📈 Quick Analytics Insights</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">Aggregated outcome figures across Ghana campuses.</p>
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
+              <li style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:8px;">
+                <span>📚 Courses Active</span><strong style="color:var(--primary);">4 Running</strong>
+              </li>
+              <li style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:8px;">
+                <span>🔬 Research Registries</span><strong style="color:var(--secondary);">4 Approved</strong>
+              </li>
+              <li style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:8px;">
+                <span>💼 Grads Employed</span><strong style="color:var(--success);">92% Rate</strong>
+              </li>
+              <li style="display:flex; justify-content:space-between; padding-bottom:4px;">
+                <span>🤖 AI Prompt Requests</span><strong style="color:var(--accent);">412 Total</strong>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13B: User Management Console -->
+      <section id="admin-users" class="portal-view admin-view">
+        <h2>👥 User Accounts & <span class="gradient-text">Directory</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Manage administrative parameters for students, lecturers, mentors, and partners.</p>
+
+        <!-- Actions Bar -->
+        <div class="glass" style="padding:16px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:24px;">
+          <div class="portal-search-bar" style="display:flex; width:300px; margin:0;">
+            🔍 <input type="text" id="admin-search-users-input" placeholder="Search by name, email, department..." oninput="filterAdminUsers()">
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="openAdminCreateUserModal()">➕ Create User</button>
+            <button class="btn btn-secondary btn-sm" onclick="openAdminBulkImportModal()">📂 CSV Bulk Import</button>
+          </div>
+        </div>
+
+        <div class="widget glass">
+          <h3>Active Accounts Directory</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">List of registered logins. Locked/suspended credentials block core workspace access.</p>
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Academic Profile</th>
+                  <th>Designated Role</th>
+                  <th>Department / Office</th>
+                  <th>Security Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-table-body">
+                <!-- JS populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Create User Modal dialog -->
+        <div id="admin-create-user-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); align-items:center; justify-content:center; z-index:99999;">
+          <div class="glass" style="width:100%; max-width:440px; padding:24px; border-radius:var(--radius-md);">
+            <h3>Create User Account</h3>
+            <p style="color:var(--text-muted); font-size:0.75rem; margin-bottom:16px;">Manually configure credentials for institutional logins.</p>
+            <form onsubmit="event.preventDefault(); submitAdminCreateUser();">
+              <div class="form-group">
+                <label>Academic Name</label>
+                <input type="text" id="admin-create-name" class="form-control" required placeholder="Full Name"></div>
+              <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="admin-create-email" class="form-control" required placeholder="name@smartlearn.edu"></div>
+              <div class="form-group">
+                <label>Temporary Password</label>
+                <input type="password" id="admin-create-password" class="form-control" required placeholder="••••••••"></div>
+              <div class="form-group">
+                <label>Role</label>
+                <select id="admin-create-role" class="form-control" onchange="toggleAdminCreateRoleFields()">
+                  <option value="student">Student</option>
+                  <option value="lecturer">Lecturer</option>
+                  <option value="admin">Administrator</option>
+                </select></div>
+              <div id="admin-create-student-fields">
+                <div class="form-group">
+                  <label>Department</label>
+                  <input type="text" id="admin-create-dept" class="form-control" value="Computer Science"></div>
+                <div class="form-group">
+                  <label>Student ID Number</label>
+                  <input type="text" id="admin-create-stdid" class="form-control" placeholder="E.g. SL-20984"></div>
+              </div>
+              <div id="admin-create-lecturer-fields" style="display:none;">
+                <div class="form-group">
+                  <label>Office Location</label>
+                  <input type="text" id="admin-create-office" class="form-control" placeholder="E.g. Block C, Rm 4"></div>
+              </div>
+              <div style="display:flex; justify-content:end; gap:8px; margin-top:20px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="D.show('admin-create-user-modal', false)">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Save Profile</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Bulk Import Modal -->
+        <div id="admin-bulk-import-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); align-items:center; justify-content:center; z-index:99999;">
+          <div class="glass" style="width:100%; max-width:480px; padding:24px; border-radius:var(--radius-md);">
+            <h3>CSV Bulk Import</h3>
+            <p style="color:var(--text-muted); font-size:0.75rem; margin-bottom:12px;">Paste comma-separated rows (Name, Email, Role, Dept, StudentID/Office) to generate batch accounts.</p>
+            <textarea id="admin-bulk-csv-text" class="form-control" rows="8" placeholder="name,email,role,department,studentId&#10;Ama Serwaa,ama@smartlearn.edu,lecturer,Math,Block C Rm 2&#10;Kwame Koduah,kwame@smartlearn.edu,student,CS,SL-88402" style="font-family:monospace; font-size:0.8rem;"></textarea>
+            <div style="display:flex; justify-content:end; gap:8px; margin-top:16px;">
+              <button class="btn btn-secondary btn-sm" onclick="D.show('admin-bulk-import-modal', false)">Cancel</button>
+              <button class="btn btn-primary btn-sm" onclick="submitAdminBulkImport()">Import Accounts 🚀</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13C: Role and Permission Management -->
+      <section id="admin-roles" class="portal-view admin-view">
+        <h2>🎛️ Role & <span class="gradient-text">Permission Control</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Configure security descriptors and map permission sets to platform user roles.</p>
+
+        <div class="dashboard-grid">
+          <!-- Left side: Roles List -->
+          <div class="widget glass">
+            <h3>Designated User Roles</h3>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">Select a role to configure mapping matrix permissions.</p>
+            <div class="timetable-list" id="admin-roles-list-container">
+              <!-- JS populated -->
+            </div>
+          </div>
+
+          <!-- Right side: Edit permissions mapping -->
+          <div class="widget glass" id="admin-edit-permissions-panel" style="display:none;">
+            <h3 id="admin-edit-role-title">Configure Permissions for Role</h3>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:20px;">Check key capabilities to toggle role rights instantly.</p>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;" id="admin-permissions-checkbox-container">
+              <!-- Checkboxes populated by JS -->
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;" onclick="saveAdminRolePermissions()">Apply Permission Changes 💾</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13D: Department Management -->
+      <section id="admin-departments" class="portal-view admin-view">
+        <h2>📍 Department <span class="gradient-text">Management</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Establish and customize departments across institutional faculties.</p>
+
+        <div class="dashboard-grid">
+          <div class="widget glass">
+            <h3>Add New Department</h3>
+            <form onsubmit="event.preventDefault(); submitAdminCreateDept();" style="display:flex; flex-direction:column; gap:12px;">
+              <div class="form-group">
+                <label>Department Name</label>
+                <input type="text" id="admin-dept-name" class="form-control" required placeholder="E.g. Computer Science"></div>
+              <div class="form-group">
+                <label>Department Code</label>
+                <input type="text" id="admin-dept-code" class="form-control" required placeholder="E.g. CS" style="text-transform:uppercase;"></div>
+              <div class="form-group">
+                <label>Select Parent Faculty</label>
+                <select id="admin-dept-faculty" class="form-control">
+                  <!-- JS populated -->
+                </select></div>
+              <button type="submit" class="btn btn-primary" style="margin-top:8px;">Add Department ➕</button>
+            </form>
+          </div>
+
+          <div class="widget glass">
+            <h3>Registered Departments</h3>
+            <div class="table-container" style="max-height: 300px; overflow-y:auto;">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Department</th>
+                    <th>Code</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-depts-table-body">
+                  <!-- JS populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13E: Faculty Management -->
+      <section id="admin-faculties" class="portal-view admin-view">
+        <h2>🕸️ Faculty <span class="gradient-text">Management Center</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Configure public faculties and colleges in the LMS portal schema.</p>
+
+        <div class="dashboard-grid">
+          <div class="widget glass">
+            <h3>Create Parent Faculty</h3>
+            <form onsubmit="event.preventDefault(); submitAdminCreateFaculty();" style="display:flex; flex-direction:column; gap:12px;">
+              <div class="form-group">
+                <label>Faculty Title</label>
+                <input type="text" id="admin-fac-name" class="form-control" required placeholder="E.g. Faculty of Engineering"></div>
+              <div class="form-group">
+                <label>Faculty Code</label>
+                <input type="text" id="admin-fac-code" class="form-control" required placeholder="E.g. FENG" style="text-transform:uppercase;"></div>
+              <button type="submit" class="btn btn-primary" style="margin-top:8px;">Add Faculty ➕</button>
+            </form>
+          </div>
+
+          <div class="widget glass">
+            <h3>Registered Faculties</h3>
+            <div class="table-container" style="max-height: 300px; overflow-y:auto;">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Faculty Name</th>
+                    <th>Code</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-faculties-table-body">
+                  <!-- JS populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13F: Course Management -->
+      <section id="admin-courses" class="portal-view admin-view">
+        <h2>📚 Institutional <span class="gradient-text">Courses Center</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Manage courses, register notes repositories, and allocate code pathways.</p>
+
+        <div class="dashboard-grid">
+          <div class="widget glass">
+            <h3>Add New Course</h3>
+            <form onsubmit="event.preventDefault(); submitAdminCreateCourse();" style="display:flex; flex-direction:column; gap:12px;">
+              <div class="form-group">
+                <label>Course Title</label>
+                <input type="text" id="admin-course-name" class="form-control" required placeholder="E.g. Coding Concepts"></div>
+              <div class="form-group">
+                <label>Course Code</label>
+                <input type="text" id="admin-course-code" class="form-control" required placeholder="E.g. CS101" style="text-transform:uppercase;"></div>
+              <div class="form-group">
+                <label>Assigned Lecturer Name</label>
+                <input type="text" id="admin-course-lecturer" class="form-control" required placeholder="E.g. Dr. Kwame Mensah"></div>
+              <button type="submit" class="btn btn-primary" style="margin-top:8px;">Publish Course 🚀</button>
+            </form>
+          </div>
+
+          <div class="widget glass">
+            <h3>Registered Course Units</h3>
+            <div class="table-container" style="max-height: 300px; overflow-y:auto;">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Code</th>
+                    <th>Instructor</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-courses-table-body">
+                  <!-- JS populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13G: Academic Management & Semesters -->
+      <section id="admin-academic" class="portal-view admin-view">
+        <h2>📅 Academic <span class="gradient-text">Control Center</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Manage semesters, configure GPA/CWA rules, and update calendar policies.</p>
+
+        <div class="dashboard-grid">
+          <div class="widget glass">
+            <h3>Configure grading policies & GPA rules</h3>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">Select the default evaluation metrics used across Ghanaian universities.</p>
+            <div class="form-group">
+              <label>Grading Metric Formula</label>
+              <select class="form-control" onchange="showToastNotification('Grading metric format updated!')">
+                <option value="gpa">Standard GPA (0.0 - 4.0 Scale) - Legon/Ashesi model</option>
+                <option value="cwa">Cumulative Weighted Average (CWA 0 - 100%) - KNUST model</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>GPA Threshold for Pass rating</label>
+              <input type="number" class="form-control" value="2.0" step="0.1" min="1.0" max="3.0">
+            </div>
+            <div class="form-group">
+              <label>Academic Year Session</label>
+              <input type="text" class="form-control" value="2025/2026 Academic Year">
+            </div>
+          </div>
+
+          <div class="widget glass">
+            <h3>Semester Sessions Tracker</h3>
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Semester Name</th>
+                    <th>Timeline</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Semester 1</strong></td>
+                    <td>Aug - Dec 2025</td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Semester 2</strong></td>
+                    <td>Jan - Jun 2026</td>
+                    <td><span class="badge badge-primary">Active Session</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Semester 3 (Summer)</strong></td>
+                    <td>Jul - Aug 2026</td>
+                    <td><span class="badge badge-warning">Upcoming</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13H: Research Management -->
+      <section id="admin-research" class="portal-view admin-view">
+        <h2>🔬 Institutional <span class="gradient-text">Research Management</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Review pending research papers, approve publications, and track innovation grants.</p>
+
+        <div class="widget glass">
+          <h3>Registered Research & Publication Projects</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Approve project funding metrics and verify publication status.</p>
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Project Title</th>
+                  <th>Core Domain</th>
+                  <th>Lead Investigator</th>
+                  <th>Grant Amount</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-research-table-body">
+                <!-- JS populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13I: Entrepreneurship and Incubator -->
+      <section id="admin-startups" class="portal-view admin-view">
+        <h2>💡 Startup Incubation & <span class="gradient-text">Innovation Hub</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Track student innovation submissions, manage mentorship assignments, and support local start-ups.</p>
+
+        <div class="widget glass">
+          <h3>Venture Pitch & Incubation Requests</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Review viability profiles and assign mentors to help students commercialize ideas.</p>
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Venture Name</th>
+                  <th>Industry</th>
+                  <th>Student Founder</th>
+                  <th>Popular Vote</th>
+                  <th>Incubation Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-startups-table-body">
+                <!-- JS populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13J: Career Services -->
+      <section id="admin-careers" class="portal-view admin-view">
+        <h2>💼 Career Placements & <span class="gradient-text">Services</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Manage internship portals, post job descriptions, and audit graduate outcome metrics.</p>
+
+        <div class="dashboard-grid">
+          <div class="widget glass">
+            <h3>Publish Corporate Career Opportunity</h3>
+            <form onsubmit="event.preventDefault(); submitAdminCreateJob();" style="display:flex; flex-direction:column; gap:12px;">
+              <div class="form-group">
+                <label>Job Title / Position</label>
+                <input type="text" id="admin-job-title" class="form-control" required placeholder="E.g. Graduate Software Engineer"></div>
+              <div class="form-group">
+                <label>Company / Institution</label>
+                <input type="text" id="admin-job-company" class="form-control" required placeholder="E.g. AgriFlow Technologies"></div>
+              <div class="form-group">
+                <label>Job Type</label>
+                <select id="admin-job-type" class="form-control">
+                  <option value="Full-time">Full-time Opportunity</option>
+                  <option value="Internship">Student Internship</option>
+                </select></div>
+              <button type="submit" class="btn btn-primary" style="margin-top:8px;">Publish Opportunity 🚀</button>
+            </form>
+          </div>
+
+          <div class="widget glass">
+            <h3>Placement Board</h3>
+            <div class="table-container" style="max-height:300px; overflow-y:auto;">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Opportunity</th>
+                    <th>Employer</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-jobs-table-body">
+                  <!-- JS populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13K: AI Systems Control -->
+      <section id="admin-ai" class="portal-view admin-view">
+        <h2>🤖 AI Systems & <span class="gradient-text">Engine Management</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Configure active LLM backends, manage Gemini/Groq credentials, and monitor API token usage.</p>
+        <div class="glass" style="padding:24px; text-align:center;">
+          <p style="margin-bottom:16px;">AI settings are synchronized across the command center. Click below to view global credentials.</p>
+          <button class="btn btn-primary" onclick="switchTab('admin', 'admin-settings')">Go to Credentials Settings ⚙️</button>
+        </div>
+      </section>
+
+      <!-- View 13L: Real-Time analytics center -->
+      <section id="admin-analytics" class="portal-view admin-view">
+        <h2>📈 Real-Time <span class="gradient-text">Institution Analytics</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Review system performance, student enrollment, and platform metrics.</p>
+
+        <div class="dashboard-grid">
+          <div class="widget glass">
+            <h3>Student Performance Distribution</h3>
+            <div style="height:180px; display:flex; align-items:flex-end; gap:24px; padding:20px 0 10px; border-bottom:2px solid var(--border); margin-bottom:12px;">
+              <div style="flex:1; background:var(--primary); height:85%; border-radius:4px 4px 0 0; text-align:center; position:relative;"><span style="position:absolute; top:-20px; left:0; width:100%; font-size:0.75rem;">CGPA &gt; 3.0</span></div>
+              <div style="flex:1; background:var(--secondary); height:12%; border-radius:4px 4px 0 0; text-align:center; position:relative;"><span style="position:absolute; top:-20px; left:0; width:100%; font-size:0.75rem;">CGPA 2.0-3.0</span></div>
+              <div style="flex:1; background:var(--accent); height:3%; border-radius:4px 4px 0 0; text-align:center; position:relative;"><span style="position:absolute; top:-20px; left:0; width:100%; font-size:0.75rem;">CGPA &lt; 2.0</span></div>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-muted); text-align:center;">85% of active students maintain good academic standing.</p>
+          </div>
+
+          <div class="widget glass">
+            <h3>AI Provider Call Ratios</h3>
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:16px; font-size:0.85rem; padding-top:16px;">
+              <li>🟢 <strong>Groq API usage:</strong> 340 calls (Success: 100%)</li>
+              <li>🔵 <strong>Gemini API usage:</strong> 72 calls (Success: 100%)</li>
+              <li>🆓 <strong>Keyless system calls:</strong> 0 calls</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13M: Institution Communications Center -->
+      <section id="admin-communications" class="portal-view admin-view">
+        <h2>💬 Campus <span class="gradient-text">Communications Center</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Publish notices and alerts directly to student and lecturer dashboard interfaces.</p>
+
+        <div class="glass" style="max-width: 600px; padding:32px; margin:0 auto;">
+          <h3>Publish Official Notice</h3>
+          <div class="form-group">
+            <label>Announcement Heading</label>
+            <input type="text" id="admin-notice-title" class="form-control" placeholder="E.g. Midterm Exams Schedule"></div>
+          <div class="form-group">
+            <label>Announcement Content</label>
+            <textarea id="admin-notice-body" class="form-control" rows="4" placeholder="Type notice details here..."></textarea></div>
+          <button class="btn btn-primary" style="width:100%;" onclick="submitAdminAnnouncement()">Publish Official Bulletin 🚀</button>
+        </div>
+      </section>
+
+      <!-- View 13N: Security Center -->
+      <section id="admin-security" class="portal-view admin-view">
+        <h2>🛡️ Login Security & <span class="gradient-text">Access Keys</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Monitor failed login tracks, lock/unlock accounts, and verify session states.</p>
+
+        <div class="dashboard-grid">
+          <div class="widget glass">
+            <h3>Recent Blocked Activities</h3>
+            <div style="font-size:0.8rem; color:var(--text-muted); padding: 10px 0;" id="admin-security-logs-container">
+              <p>🟢 No security alerts or brute-force logins detected in the last 48 hours.</p>
+            </div>
+          </div>
+
+          <div class="widget glass">
+            <h3>Sentinel Shield Controls</h3>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">Interactive configurations for server login safety.</p>
+            <div class="timetable-list">
+              <div class="timetable-item" style="border-left-color: var(--success); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h5>Rate-Limiting (Brute-force)</h5>
+                  <p style="color:var(--text-muted); font-size:0.75rem;">Max 20 attempts per 10 mins</p>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="showToastNotification('Rate limiting policies are enforced!')">Configure</button>
+              </div>
+              <div class="timetable-item" style="border-left-color: var(--primary); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h5>MFA Policies & Verification</h5>
+                  <p style="color:var(--text-muted); font-size:0.75rem;">Mandatory for administrative logins</p>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="showToastNotification('MFA policy settings verified!')">Verify Status</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13O: Audit Logs Ledger -->
+      <section id="admin-audit" class="portal-view admin-view">
+        <h2>📜 Institutional <span class="gradient-text">Audit Trail</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Immutable ledger of all administrative events, changes, and modifications.</p>
+
+        <div class="glass" style="padding:16px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; border-left: 4px solid var(--warning);">
+          <div>
+            <h4 style="font-size:0.95rem; margin:0;">🔒 Immutable Audit Ledger Active</h4>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-top:2px;">Administrative actions cannot be modified or cleared by any administrator account.</p>
+          </div>
+        </div>
+
+        <div class="widget glass">
+          <h3>Administrative Actions Log</h3>
+          <div class="table-container" style="max-height: 400px; overflow-y:auto;">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Administrator</th>
+                  <th>Action</th>
+                  <th>Timestamp</th>
+                  <th>Previous State</th>
+                  <th>New State</th>
+                </tr>
+              </thead>
+              <tbody id="admin-audits-table-body">
+                <!-- JS populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 13P: Admin Settings Panel -->
+      <section id="admin-settings" class="portal-view admin-view">
+        <h2>System & <span class="gradient-text">AI Configuration</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Manage platform active models, configure fallback API credentials, and test connection endpoints.</p>
+
+        <div class="glass" style="padding:32px; max-width:600px; margin: 0 auto; display:flex; flex-direction:column; gap:20px; text-align:left;">
+          <h3>⚙️ Global AI Settings</h3>
+
+          <div class="form-group">
+            <label>LMS Platform Branding Title</label>
+            <input type="text" id="admin-site-name" class="form-control" value="SmartLearn AI" oninput="saveAdminSettings()">
+          </div>
+
+          <div class="form-group">
+            <label>Active AI Provider</label>
+            <select id="admin-ai-provider" class="form-control" onchange="onAdminProviderChange()">
+              <option value="groq">⚡ Groq (Free — Fast)</option>
+              <option value="keyless">🆓 Keyless (Pollinations)</option>
+              <option value="gemini">🟦 Google Gemini</option>
+              <option value="openai">🟩 OpenAI (ChatGPT)</option>
+              <option value="openrouter">🟧 OpenRouter (Free models)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Active Model Identifier</label>
+            <input type="text" id="admin-ai-model" class="form-control" value="llama-3.1-8b-instant" oninput="saveAdminSettings()">
+          </div>
+
+          <div class="border-t border-slate-800" style="margin: 10px 0; border-top: 1px dashed var(--border);"></div>
+
+          <h4 style="font-size:0.9rem; color:var(--text-light); margin:0;">🔑 API Keys Configuration</h4>
+          <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">Enter credentials below to enable your preferred providers. API keys are saved locally in the browser.</p>
+
+          <div class="form-group">
+            <label>Groq API Key</label>
+            <input type="password" id="admin-key-groq" class="form-control" placeholder="gsk_..." oninput="saveAdminSettings()">
+          </div>
+
+          <div class="form-group">
+            <label>Google Gemini API Key</label>
+            <input type="password" id="admin-key-gemini" class="form-control" placeholder="AIzaSy..." oninput="saveAdminSettings()">
+          </div>
+
+          <div class="form-group">
+            <label>OpenAI API Key</label>
+            <input type="password" id="admin-key-openai" class="form-control" placeholder="sk-..." oninput="saveAdminSettings()">
+          </div>
+
+          <div class="form-group">
+            <label>OpenRouter API Key</label>
+            <input type="password" id="admin-key-openrouter" class="form-control" placeholder="sk-or-v1-..." oninput="saveAdminSettings()">
+          </div>
+
+          <div style="display:flex; gap:12px; margin-top:10px;">
+            <button class="btn btn-secondary" style="flex:1;" onclick="testAdminConnection()">⚡ Test Connection</button>
+            <button class="btn btn-primary" style="flex:1;" onclick="copyPermanentConfigFromAdmin()">📋 Export Config</button>
+          </div>
+        </div>
+      </section></main></div>
+
+  <!-- Authentication Gate Modal -->
+  <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(9,13,22,0.9); backdrop-filter:blur(12px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+    <div class="glass" style="width:100%; max-width:480px; padding:32px; background:var(--bg-surface); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+      <div style="text-align:center; margin-bottom:24px;">
+        <h3 id="auth-modal-title" style="font-size:1.5rem; font-weight:900; margin-bottom:8px; color:#fff;">Sign In to SmartLearn</h3>
+        <p style="color:var(--text-muted); font-size:0.8rem;">Enter your credentials to enter the learning center</p></div>
+
+      <!-- Tab Switcher -->
+      <div style="display:flex; background:rgba(0,0,0,0.3); padding:4px; border-radius:12px; margin-bottom:24px; border:1px solid rgba(255,255,255,0.05);">
+        <button id="tab-signin-btn" style="flex:1; background:var(--primary); color:white; border-radius:8px; border:none; padding:8px; font-weight:700; cursor:pointer;" onclick="switchAuthTab('signin')">Sign In</button>
+        <button id="tab-signup-btn" style="flex:1; background:transparent; color:var(--text-muted); border-radius:8px; border:none; padding:8px; font-weight:700; cursor:pointer;" onclick="switchAuthTab('signup')">Sign Up</button></div>
+
+      <!-- Alerts -->
+      <div id="auth-alert" style="display:none; padding:12px; border-radius:8px; margin-bottom:16px; font-size:0.8rem; font-weight:600; line-height:1.4;"></div>
+
+      <!-- Sign In Form -->
+      <form id="auth-signin-form" onsubmit="event.preventDefault(); handlePrototypeSignIn();">
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Email Address</label>
+          <input type="email" id="signin-email" class="form-control" placeholder="name@smartlearn.edu" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;" required></div>
+        <div class="form-group" style="margin-bottom:20px;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Password</label>
+          <div style="position: relative; display: flex; align-items: center; width: 100%;">
+            <input type="password" id="signin-password" class="form-control" placeholder="••••••••" style="width:100%; padding:10px 40px 10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;" required>
+            <button type="button" onclick="togglePasswordVisibility('signin-password', this)" style="position: absolute; right: 12px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; outline: none; user-select: none; z-index: 10; padding: 0;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button></div></div>
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:12px; font-weight:700; border-radius:10px; margin-bottom:8px; display:block;">Enter Portal Space 🚀</button></form>
+
+      <!-- Sign Up Form -->
+      <form id="auth-signup-form" style="display:none;" onsubmit="event.preventDefault(); handlePrototypeSignUp();">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Full Name</label>
+          <input type="text" id="signup-name" class="form-control" placeholder="John Doe" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;" required></div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Email Address</label>
+          <input type="email" id="signup-email" class="form-control" placeholder="name@smartlearn.edu" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;" required></div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Password</label>
+          <div style="position: relative; display: flex; align-items: center; width: 100%;">
+            <input type="password" id="signup-password" class="form-control" placeholder="••••••••" style="width:100%; padding:10px 40px 10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;" required>
+            <button type="button" onclick="togglePasswordVisibility('signup-password', this)" style="position: absolute; right: 12px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; outline: none; user-select: none; z-index: 10; padding: 0;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button></div></div>
+
+        <!-- Role selection -->
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Select Role / Profession</label>
+          <select id="signup-role-select" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem; cursor:pointer;" onchange="setSignupRole(this.value)">
+            <option value="student">Student</option>
+            <option value="lecturer">Lecturer</option>
+            <option value="researcher">Researcher</option>
+            <option value="entrepreneur">Entrepreneur</option>
+            <option value="alumni">Alumni</option>
+            <option value="industry_partner">Industry Partner</option>
+            <option value="career_advisor">Career Advisor</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+
+        <!-- Student-only metadata inputs -->
+        <div id="signup-student-fields" style="display:flex; gap:8px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Department</label>
+            <input type="text" id="signup-dept" class="form-control" value="Computer Science" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">ID Number</label>
+            <input type="text" id="signup-stdid" class="form-control" placeholder="E.g. SL-20984" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>
+
+        <!-- Lecturer-only metadata inputs -->
+        <div id="signup-lecturer-fields" style="display:none; gap:8px; margin-bottom:16px;">
+          <div style="width:70px;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Title</label>
+            <select id="signup-title" style="width:100%; padding:10px 6px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem; cursor:pointer;">
+              <option>Dr.</option>
+              <option>Prof.</option>
+              <option>Mr.</option>
+              <option>Mrs.</option>
+            </select></div>
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Office Location</label>
+            <input type="text" id="signup-office" class="form-control" placeholder="E.g. Block C, Rm 4" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>
+
+        <!-- Researcher-only inputs -->
+        <div id="signup-researcher-fields" style="display:none; gap:8px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Research Area</label>
+            <input type="text" id="signup-research-area" class="form-control" placeholder="E.g. AI / ML" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Institution</label>
+            <input type="text" id="signup-research-institution" class="form-control" placeholder="E.g. KNUST" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>
+
+        <!-- Entrepreneur-only inputs -->
+        <div id="signup-entrepreneur-fields" style="display:none; gap:8px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Startup Name</label>
+            <input type="text" id="signup-startup-name" class="form-control" placeholder="E.g. SusuSmart" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Business Idea</label>
+            <input type="text" id="signup-business-idea" class="form-control" placeholder="E.g. FinTech" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>
+
+        <!-- Alumni-only inputs -->
+        <div id="signup-alumni-fields" style="display:none; gap:8px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Graduation Year</label>
+            <input type="text" id="signup-grad-year" class="form-control" placeholder="E.g. 2025" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Current Company</label>
+            <input type="text" id="signup-alumni-company" class="form-control" placeholder="E.g. Hubtel" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>
+
+        <!-- Industry Partner-only inputs -->
+        <div id="signup-industry-partner-fields" style="display:none; gap:8px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Company Name</label>
+            <input type="text" id="signup-partner-company" class="form-control" placeholder="E.g. MTN Ghana" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Industry Sector</label>
+            <input type="text" id="signup-partner-sector" class="form-control" placeholder="E.g. Telecom" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>
+
+        <!-- Career Advisor-only inputs -->
+        <div id="signup-career-advisor-fields" style="display:none; margin-bottom:16px;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Advisor Expertise</label>
+          <input type="text" id="signup-advisor-expertise" class="form-control" placeholder="E.g. Tech Careers & Resume Writing" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:12px; font-weight:700; border-radius:10px; margin-bottom:8px; display:block;">Create Academic Account ✨</button></form>
+
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn btn-secondary btn-sm" style="background:transparent; border:none; color:var(--text-muted);" onclick="closeAuthModal()">Close Gate</button></div></div></div>
+
+  <!-- Assignment Submission Modal -->
+  <div id="assignment-submit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center; padding:16px;">
+    <div class="glass" style="width:100%; max-width:500px; padding:32px; background:var(--bg-surface);">
+      <h3 style="margin-bottom:8px;">Submit Assignment</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;" id="modal-asg-title">Assignment Title</p>
+
+      <div class="form-group">
+        <label>Upload Document File</label>
+        <input type="file" id="asg-file-upload" class="form-control" style="padding:8px;">
+        <span style="font-size:0.7rem; color:var(--text-light);">Supported: PDF, DOCX, ZIP, PPT. Max size: 15 MB.</span></div>
+
+      <!-- Plagiarism and AI helper check mock status -->
+      <div class="glass" style="padding:12px; margin:16px 0; background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.15); border-radius:var(--radius-sm);">
+        <p style="font-size:0.75rem; color:var(--success); font-weight:700;">🛡️ SmartLearn AI Pre-Screening Enabled</p>
+        <p style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">Your submission will undergo instant duplication checks across other students.</p></div>
+
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+        <button class="btn btn-secondary btn-sm" onclick="closeSubmitAssignmentModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="simulateSubmitFile()">Submit File 🚀</button></div></div></div>
+
+  <!-- Ghana Universities Admission Requirements Modal -->
+  <div id="uni-requirements-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:1000; align-items:center; justify-content:center; padding:16px;">
+    <div class="glass" style="width:100%; max-width:600px; padding:32px; background:var(--bg-surface); max-height: 90vh; overflow-y: auto; position: relative; border-radius: 20px;">
+      <button onclick="closeUniRequirementsModal()" style="position: absolute; right: 20px; top: 20px; background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; font-weight: 700; transition: color 0.2s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
+
+      <div style="margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+        <span id="uni-modal-badge" class="badge badge-primary" style="font-size: 0.65rem; text-transform: uppercase;">Public</span>
+        <h3 id="uni-modal-name" style="font-size: 1.4rem; margin: 8px 0 4px; font-weight: 900; color: var(--text-color);">University of Ghana</h3>
+        <p id="uni-modal-meta" style="font-size: 0.8rem; color: var(--text-light); margin: 0;">Ranked #1 in Ghana • Established 1948 • Legon, Accra</p></div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; text-align: left;">
+        <div style="padding: 16px; background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.15); border-radius: var(--radius-sm);">
+          <strong style="color: var(--secondary); font-size: 0.8rem; text-transform: uppercase; display: block; margin-bottom: 4px;">📋 Admission WASSCE & A-Level Terms</strong>
+          <p id="uni-modal-requirements" style="color: var(--text-color); margin: 0; font-weight: 600;">WASSCE requirements list here...</p></div>
+
+        <div>
+          <strong style="color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 4px;">🏛️ Academic Standing, Campus Review & Performance</strong>
+          <p id="uni-modal-performance" style="margin: 0; font-weight: 500;">Performance reviews summary...</p></div>
+
+        <div>
+          <strong style="color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 4px;">💰 Estimated School Fees</strong>
+          <p id="uni-modal-fees" style="margin: 0; font-weight: 600; color: var(--success);">Fees range here...</p></div>
+
+        <div>
+          <strong style="color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 8px;">🎓 Financial Aid & Scholarships</strong>
+          <p id="uni-modal-scholarships" style="margin: 0; font-weight: 500;">Scholarships opportunities here...</p></div>
+
+        <div>
+          <strong style="color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 8px;">🎯 AI Mapped Recommendations</strong>
+          <div id="uni-modal-mapped-recs" style="display: flex; flex-wrap: wrap; gap: 6px;"><!-- Badges populated dynamically -->          </div></div>
+
+        <div>
+          <strong style="color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 8px;">📚 Programs Catalog</strong>
+          <div id="uni-modal-programs" style="display: flex; flex-wrap: wrap; gap: 6px;"><!-- Badges populated dynamically -->          </div></div></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; border-top: 1px solid var(--border); padding-top: 20px;">
+        <button class="btn btn-secondary btn-sm" onclick="closeUniRequirementsModal()">Close Window</button>
+        <button class="btn btn-primary btn-sm" onclick="handleCheckCareerMatchClick()">Check Career Match 🎯</button></div></div></div>
+
+  <!-- Scripts -->
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

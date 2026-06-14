@@ -1,0 +1,16 @@
+{
+  "name": "smartlearn-ai-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SmartLearn AI LMS Full-Stack Workspace",
+  "scripts": {
+    "postinstall": "npx pnpm install --dir backend && npx pnpm install --dir frontend",
+    "dev": "concurrently \"npx pnpm --dir backend run dev\" \"npx pnpm --dir frontend run dev\"",
+    "build": "npx pnpm --dir backend run build && npx pnpm --dir frontend run build",
+    "test": "npx pnpm --dir backend run test",
+    "download-pics": "node \"C:\\Users\\einst\\.gemini\\antigravity-ide\\brain\\8a051545-17c4-42de-86f5-6fa581909c73\\scratch\\download_pics.js\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

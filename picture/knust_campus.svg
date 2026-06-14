@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="100%" height="100%">
+  <defs>
+    <linearGradient id="knustSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="techGlow" x1="0" y1="0" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="400" height="250" fill="url(#knustSky)"/>
+  
+  <!-- Technical grid lines -->
+  <path d="M 0,180 L 400,180 M 0,210 L 400,210" stroke="#3b82f6" stroke-width="0.5" opacity="0.2"/>
+
+  <!-- Ground -->
+  <path d="M 0,250 L 0,210 L 400,215 L 400,250 Z" fill="#0f172a"/>
+
+  <!-- KNUST Architectural Tech Structure (Modern library or department design) -->
+  <g transform="translate(80, 50)">
+    <!-- Main concrete tech block -->
+    <rect x="30" y="50" width="180" height="110" fill="#334155" stroke="#475569" stroke-width="2"/>
+    <rect x="20" y="150" width="200" height="15" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+    
+    <!-- Science / Structural pillars -->
+    <rect x="45" y="70" width="10" height="80" fill="#e2e8f0"/>
+    <rect x="80" y="70" width="10" height="80" fill="#e2e8f0"/>
+    <rect x="115" y="70" width="10" height="80" fill="#e2e8f0"/>
+    <rect x="150" y="70" width="10" height="80" fill="#e2e8f0"/>
+    <rect x="185" y="70" width="10" height="80" fill="#e2e8f0"/>
+
+    <!-- Glass facade panels background -->
+    <rect x="55" y="70" width="25" height="80" fill="#0284c7" opacity="0.3"/>
+    <rect x="90" y="70" width="25" height="80" fill="#0284c7" opacity="0.3"/>
+    <rect x="125" y="70" width="25" height="80" fill="#0284c7" opacity="0.3"/>
+    <rect x="160" y="70" width="25" height="80" fill="#0284c7" opacity="0.3"/>
+
+    <!-- Modern angled roof structure -->
+    <polygon points="10,50 230,30 220,50" fill="#d97706"/>
+    <line x1="20" y1="50" x2="220" y2="50" stroke="#f59e0b" stroke-width="3"/>
+
+    <!-- Dynamic digital nodes representing Science/Tech -->
+    <path d="M 230,50 L 270,20 L 310,40" fill="none" stroke="url(#techGlow)" stroke-width="2" stroke-dasharray="3,3"/>
+    <circle cx="270" cy="20" r="6" fill="#06b6d4"/>
+    <circle cx="310" cy="40" r="4" fill="#3b82f6"/>
+    
+    <path d="M 200,100 L 280,100 L 300,120" fill="none" stroke="url(#techGlow)" stroke-width="1.5"/>
+    <circle cx="280" cy="100" r="5" fill="#f43f5e"/>
+    <circle cx="300" cy="120" r="3" fill="#10b981"/>
+  </g>
+
+  <!-- KNUST Emblem Tag -->
+  <rect x="15" y="15" width="70" height="30" rx="4" fill="#0f172a" stroke="#0284c7" stroke-width="1.5"/>
+  <text x="50" y="34" font-family="system-ui, sans-serif" font-size="10" fill="#38bdf8" font-weight="bold" text-anchor="middle">KNUST</text>
+</svg>
