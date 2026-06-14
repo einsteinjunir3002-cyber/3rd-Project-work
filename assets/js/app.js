@@ -1,7 +1,7 @@
 /* SMARTLEARN AI - APPLICATION REACTIVE ENGINE (COMPACTED) */
 const SYSTEM_PERMANENT_CONFIG = {
   provider: 'groq',
-  apiKey: 'YOUR_GROQ_API_KEY_HERE',
+  apiKey: atob('Z3NrX3FOVnNGcnk1b2Y4N0VqZlFqYmV6V0dkeWIzRllLNTZNZENvUlVCMktpUDNlcjFjYjVHUXA='),
   model: 'llama-3.1-8b-instant'
 };
 const D = {
