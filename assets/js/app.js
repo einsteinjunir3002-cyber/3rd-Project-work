@@ -721,73 +721,42 @@ async function executeClientAiRequest(prompt, systemInstruction, mode = 'study')
     );
     const data = await response.json();
     if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) return data.candidates[0].content.parts[0].text;
-    const gErrMsg = data?.error?.message || `Gemini API error ${response.status}`;
-    throw new Error(`Gemini API: ${gErrMsg}`);
+    throw new Error(`Gemini API: ${data?.error?.message || `Gemini error ${response.status}`}`);
   }
 
-  // ── OpenAI ──────────────────────────────────────────────────────────────
-  if (provider === 'openai' && apiKey) {
-    updateApiStatusBadge('openai');
+  // ── OpenAI-compatible providers (OpenAI, OpenRouter, Groq) ──────────────
+  const oaiProviders = ['openai', 'groq', 'openrouter'];
+  if (oaiProviders.includes(provider) && apiKey) {
+    updateApiStatusBadge(provider);
+    const endpoints = {
+      openai: 'https://api.openai.com/v1/chat/completions',
+      groq: 'https://api.groq.com/openai/v1/chat/completions',
+      openrouter: 'https://openrouter.ai/api/v1/chat/completions'
+    };
+    const reqModel = provider === 'openai' ? 'gpt-4o-mini' : (provider === 'groq' ? (model || 'llama-3.1-8b-instant') : (model || 'meta-llama/llama-3.1-8b-instruct:free'));
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
+    if (provider === 'openrouter') {
+      headers['HTTP-Referer'] = 'https://smartlearn.edu.gh';
+      headers['X-Title'] = 'SmartLearn AI';
+    }
     const messages = [
       { role: 'system', content: sysText },
       ...chatSessionHistory.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
       { role: 'user', content: prompt }
     ];
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(endpoints[provider], {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: 'gpt-4o-mini', messages, max_tokens: 2048, temperature: 0.7 })
+      headers,
+      body: JSON.stringify({ model: reqModel, messages, max_tokens: 2048, temperature: 0.7 })
     });
     const data = await response.json();
     if (response.ok && data.choices?.[0]?.message?.content) return data.choices[0].message.content;
-    const oErrMsg = data?.error?.message || `OpenAI API error ${response.status}`;
-    throw new Error(`OpenAI API: ${oErrMsg}`);
-  }
-
-  // ── OpenRouter ──────────────────────────────────────────────────────────
-  if (provider === 'openrouter' && apiKey) {
-    updateApiStatusBadge('openrouter');
-    const activeModel = model || localStorage.getItem('smartlearn_ai_model') || 'meta-llama/llama-3.1-8b-instruct:free';
-    const messages = [
-      { role: 'system', content: sysText },
-      ...chatSessionHistory.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
-      { role: 'user', content: prompt }
-    ];
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': 'https://smartlearn.edu.gh', 'X-Title': 'SmartLearn AI' },
-      body: JSON.stringify({ model: activeModel, messages, max_tokens: 2048 })
-    });
-    const data = await response.json();
-    if (response.ok && data.choices?.[0]?.message?.content) return data.choices[0].message.content;
-    const rErrMsg = data?.error?.message || `OpenRouter error ${response.status}`;
-    throw new Error(`OpenRouter API: ${rErrMsg}`);
-  }
-
-  // ── Groq (Free tier) ──────────────────────────────────────────────────────
-  if (provider === 'groq' && apiKey) {
-    updateApiStatusBadge('groq');
-    const activeGroqModel = model || localStorage.getItem('smartlearn_ai_model') || 'llama-3.1-8b-instant';
-    const messages = [
-      { role: 'system', content: sysText },
-      ...chatSessionHistory.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
-      { role: 'user', content: prompt }
-    ];
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: activeGroqModel, messages, max_tokens: 2048, temperature: 0.7 })
-    });
-    const data = await response.json();
-    if (response.ok && data.choices?.[0]?.message?.content) return data.choices[0].message.content;
-    const gqErr = data?.error?.message || `Groq error ${response.status}`;
-    throw new Error(`Groq API: ${gqErr}`);
+    throw new Error(`${provider.toUpperCase()} API: ${data?.error?.message || `API error ${response.status}`}`);
   }
 
   // ── Keyless fallback (Pollinations) ─────────────────────────────────────
   try {
     updateApiStatusBadge('keyless');
-    // POST to the correct Pollinations OpenAI-compatible endpoint
     const response = await fetch('https://text.pollinations.ai/openai', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: [{ role: 'system', content: sysText }, { role: 'user', content: prompt }], model: 'openai-large', private: true })
@@ -798,7 +767,6 @@ async function executeClientAiRequest(prompt, systemInstruction, mode = 'study')
       const txt = await response.clone().text().catch(() => '');
       if (txt) return txt;
     }
-    // GET fallback
     const getRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?system=${encodeURIComponent(sysText)}&model=openai-large&private=true`);
     if (getRes.ok) return await getRes.text();
   } catch(err) {}
@@ -870,62 +838,52 @@ function resetCareerQuiz() {
 /* =========================================================
    GPA UNIVERSITY DROPDOWN — data + renderer
    ========================================================= */
+const STANDARD_4_GPA_TIP = 'Standard 4.0 CGPA. Grade points weighted by credit hours. First Class \u2265 3.60.';
 const GPA_UNIVERSITIES = [
   { group: 'Traditional Universities' },
-  { id:'ug',  name:'University of Ghana (UG / Legon)', scale:'4.0 GPA', system:'standard_4',
-    tip:'Grade points 0–4.0. A=4.0, B+=3.5, B=3.0, C+=2.5, C=2.0, D+=1.5, D=1.0, F=0. CGPA = total grade points ÷ total credits. First Class ≥ 3.60.' },
+  { id:'ug',  name:'University of Ghana (UG / Legon)',
+    tip:'Grade points 0–4.0. A=4.0, B+=3.5, B=3.0, C+=2.5, C=2.0, D+=1.5, D=1.0, F=0. CGPA = total grade points ÷ total credits. First Class \u2265 3.60.' },
   { id:'knust', name:'KNUST', scale:'CWA %', system:'knust',
-    tip:'Cumulative Weighted Average (%). CWA = Σ(raw score × credit hrs) ÷ total credit hrs. First Class ≥ 70%.' },
-  { id:'ucc',  name:'UCC — Univ. of Cape Coast', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 scale. A=4.0, B+=3.5, B=3.0, C+=2.5, C=2.0, D+=1.5, D=1.0, E=0. CGPA = grade points ÷ total credits. First Class ≥ 3.60.' },
-  { id:'gimpa', name:'GIMPA', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 scale. A=4.0, A−=3.75, B+=3.5, B=3.0, C=2.0. CGPA = total grade points ÷ credits. First Class ≥ 3.60.' },
-  { id:'uds',  name:'UDS — Univ. for Development Studies', scale:'4.0 GPA', system:'standard_4',
-    tip:'Standard 4.0 CGPA. Grade points weighted by credit hours. First Class ≥ 3.60.' },
-  { id:'uenr', name:'UENR — Univ. of Energy & Natural Resources', scale:'4.0 GPA', system:'standard_4',
-    tip:'Standard 4.0 CGPA. Grade points × credit hrs ÷ total credits. First Class ≥ 3.60.' },
+    tip:'Cumulative Weighted Average (%). CWA = \u03a3(raw score \u00d7 credit hrs) \u00f7 total credit hrs. First Class \u2265 70%.' },
+  { id:'ucc',  name:'UCC \u2014 Univ. of Cape Coast',
+    tip:'4.0 scale. A=4.0, B+=3.5, B=3.0, C+=2.5, C=2.0, D+=1.5, D=1.0, E=0. CGPA = grade points \u00f7 total credits. First Class \u2265 3.60.' },
+  { id:'gimpa', name:'GIMPA',
+    tip:'4.0 scale. A=4.0, A\u2212=3.75, B+=3.5, B=3.0, C=2.0. CGPA = total grade points \u00f7 credits. First Class \u2265 3.60.' },
+  { id:'uds',  name:'UDS \u2014 Univ. for Development Studies' },
+  { id:'uenr', name:'UENR \u2014 Univ. of Energy & Natural Resources' },
   { group: 'Technical Universities' },
-  { id:'atu',  name:'ATU — Accra Technical University', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA system. A=4.0, B+=3.5, B=3.0, C+=2.5, C=2.0, D=1.0, F=0. Grade pts × credits ÷ total credits. First Class ≥ 3.60.' },
-  { id:'kstu', name:'KsTU — Kumasi Technical University', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. Same scale as ATU. Grade points weighted by credit hours. First Class ≥ 3.60.' },
-  { id:'ttu',  name:'TTU — Takoradi Technical University', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. Standard grade point scale. Weighted by credit hours. First Class ≥ 3.60.' },
-  { id:'htu',  name:'HTU — Ho Technical University', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. A=4.0 down to F=0. Grade pts × credit hrs ÷ total credits. First Class ≥ 3.60.' },
-  { id:'ktu',  name:'KTU — Koforidua Technical University', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. Standard scale. Weighted grade point average. First Class ≥ 3.60.' },
-  { id:'cctu', name:'CCTU — Cape Coast Technical University', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. Grade pts weighted by credit hrs. First Class ≥ 3.60.' },
+  { id:'atu',  name:'ATU \u2014 Accra Technical University',
+    tip:'4.0 CGPA system. A=4.0, B+=3.5, B=3.0, C+=2.5, C=2.0, D=1.0, F=0. Grade pts \u00d7 credits \u00f7 total credits. First Class \u2265 3.60.' },
+  { id:'kstu', name:'KsTU \u2014 Kumasi Technical University',
+    tip:'4.0 CGPA. Same scale as ATU. Grade points weighted by credit hours. First Class \u2265 3.60.' },
+  { id:'ttu',  name:'TTU \u2014 Takoradi Technical University' },
+  { id:'htu',  name:'HTU \u2014 Ho Technical University',
+    tip:'4.0 CGPA. A=4.0 down to F=0. Grade pts \u00d7 credit hrs \u00f7 total credits. First Class \u2265 3.60.' },
+  { id:'ktu',  name:'KTU \u2014 Koforidua Technical University' },
+  { id:'cctu', name:'CCTU \u2014 Cape Coast Technical University' },
   { group: 'Private Universities' },
-  { id:'ashesi',    name:'Ashesi University', scale:'4.0 GPA', system:'standard_4',
-    tip:'US-style 4.0 GPA. A=4.0, B=3.0, C=2.0, D=1.0, F=0. Weighted by credit hours. First Class (Distinction) ≥ 3.60.' },
-  { id:'lancaster', name:'Lancaster University Ghana', scale:'4.0 GPA', system:'standard_4',
-    tip:'UK-adapted 4.0 GPA scale. A=4.0, B+=3.5, B=3.0, C=2.0, D=1.0. Weighted by credit hours. First Class ≥ 3.60.' },
-  { id:'vvu',       name:'Valley View University (VVU)', scale:'4.0 GPA', system:'standard_4',
-    tip:'Standard 4.0 CGPA. A=4.0, B+=3.5, B=3.0... Min. graduation CGPA 2.00. First Class ≥ 3.60.' },
-  { id:'pentecost', name:'Pentecost University', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 GPA scale. FGPA = Σ(grade pts × credits) ÷ total credits. First Class ≥ 3.60.' },
-  { id:'mug',       name:'Methodist University Ghana (MUG)', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 FGPA system. Grade pts weighted by credit hours each semester. First Class ≥ 3.60.' },
-  { id:'pug',       name:'Presbyterian University Ghana (PUG)', scale:'4.0 GPA', system:'standard_4',
-    tip:'Standard 4.0 CGPA. Grade points × credit hrs ÷ total credits. First Class ≥ 3.60.' },
-  { id:'cug',       name:'Catholic University of Ghana (CUG)', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. A=4.0 through F=0. Weighted by credit hours. First Class ≥ 3.60.' },
-  { id:'anu',       name:'All Nations University (ANU)', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. Standard Ghanaian scale. Grade pts × credit hrs ÷ total credits. First Class ≥ 3.60.' },
-  { id:'regent',    name:'Regent University College', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. Standard scale. Weighted average of grade points. First Class ≥ 3.60.' },
-  { id:'bluecrest', name:'BlueCrest University College', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. A=4.0, B+=3.5, B=3.0, C+=2.5, C=2.0. Weighted by credit hours. First Class ≥ 3.60.' },
-  { id:'wisconsin', name:"Wisconsin Int'l University College", scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. Standard Ghanaian grade point scale. First Class ≥ 3.60.' },
-  { id:'academiccity', name:'Academic City University College', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. A=4.0 → F=0. Weighted by credit hours per semester. First Class ≥ 3.60.' },
-  { id:'webster',   name:'Webster University Ghana', scale:'4.0 GPA', system:'standard_4',
-    tip:'US-style 4.0 GPA. A=4.0, A−=3.7, B+=3.3, B=3.0, B−=2.7... Weighted by credit hours. First Class ≥ 3.60.' },
-  { id:'central',   name:'Central University', scale:'4.0 GPA', system:'standard_4',
-    tip:'4.0 CGPA. Standard Ghanaian scale. Grade pts weighted by credits. First Class ≥ 3.60.' },
+  { id:'ashesi',    name:'Ashesi University',
+    tip:'US-style 4.0 GPA. A=4.0, B=3.0, C=2.0, D=1.0, F=0. Weighted by credit hours. First Class (Distinction) \u2265 3.60.' },
+  { id:'lancaster', name:'Lancaster University Ghana',
+    tip:'UK-adapted 4.0 GPA scale. A=4.0, B+=3.5, B=3.0, C=2.0, D=1.0. Weighted by credit hours. First Class \u2265 3.60.' },
+  { id:'vvu',       name:'Valley View University (VVU)',
+    tip:'Standard 4.0 CGPA. A=4.0, B+=3.5, B=3.0... Min. graduation CGPA 2.00. First Class \u2265 3.60.' },
+  { id:'pentecost', name:'Pentecost University',
+    tip:'4.0 GPA scale. FGPA = \u03a3(grade pts \u00d7 credits) \u00f7 total credits. First Class \u2265 3.60.' },
+  { id:'mug',       name:'Methodist University Ghana (MUG)',
+    tip:'4.0 FGPA system. Grade pts weighted by credit hours each semester. First Class \u2265 3.60.' },
+  { id:'pug',       name:'Presbyterian University Ghana (PUG)' },
+  { id:'cug',       name:'Catholic University of Ghana (CUG)' },
+  { id:'anu',       name:'All Nations University (ANU)' },
+  { id:'regent',    name:'Regent University College' },
+  { id:'bluecrest', name:'BlueCrest University College',
+    tip:'4.0 CGPA. A=4.0, B+=3.5, B=3.0, C+=2.5, C=2.0. Weighted by credit hours. First Class \u2265 3.60.' },
+  { id:'wisconsin', name:"Wisconsin Int'l University College" },
+  { id:'academiccity', name:'Academic City University College',
+    tip:'4.0 CGPA. A=4.0 \u2192 F=0. Weighted by credit hours per semester. First Class \u2265 3.60.' },
+  { id:'webster',   name:'Webster University Ghana',
+    tip:'US-style 4.0 GPA. A=4.0, A\u2212=3.7, B+=3.3, B=3.0, B\u2212=2.7... Weighted by credit hours. First Class \u2265 3.60.' },
+  { id:'central',   name:'Central University' }
 ];
 let currentGpaUniSystem = 'standard_4', currentGpaUniName = 'University of Ghana (UG / Legon)';
 
@@ -975,19 +933,22 @@ function renderGpaUniDropdown() {
       panel.appendChild(hdr);
       return;
     }
+    const sys = u.system || 'standard_4';
+    const scale = u.scale || '4.0 GPA';
+    const tip = u.tip || STANDARD_4_GPA_TIP;
     const opt = document.createElement('div');
     opt.className = 'gpu-option' + (u.id === (currentGpaUniSystem === 'knust' ? 'knust' : '') ? ' selected' : '');
-    opt.dataset.system = u.system;
+    opt.dataset.system = sys;
     opt.dataset.name   = u.name;
-    opt.dataset.tip    = u.tip;
+    opt.dataset.tip    = tip;
 
     const nameEl = document.createElement('span');
     nameEl.className = 'gpu-option-name';
     nameEl.textContent = u.name;
 
     const badge = document.createElement('span');
-    badge.className = 'gpu-option-badge ' + (u.system === 'knust' ? 'cwa' : 'gpa4');
-    badge.textContent = u.scale;
+    badge.className = 'gpu-option-badge ' + (sys === 'knust' ? 'cwa' : 'gpa4');
+    badge.textContent = scale;
 
     opt.appendChild(nameEl);
     opt.appendChild(badge);
@@ -996,9 +957,8 @@ function renderGpaUniDropdown() {
     opt.addEventListener('mouseenter', function(e) {
       clearTimeout(hoverTimer);
       hoverTimer = setTimeout(() => {
-        tooltip.innerHTML = `<strong>${u.name}</strong>${u.tip}`;
+        tooltip.innerHTML = `<strong>${u.name}</strong>${tip}`;
         tooltip.style.display = 'block';
-        // Position near mouse
         const x = Math.min(e.clientX + 12, window.innerWidth - 250);
         const y = Math.min(e.clientY + 12, window.innerHeight - 120);
         tooltip.style.left = x + 'px';
@@ -1020,10 +980,10 @@ function renderGpaUniDropdown() {
 
     // Selection
     opt.addEventListener('click', function() {
-      currentGpaUniSystem = u.system;
+      currentGpaUniSystem = sys;
       currentGpaUniName   = u.name;
       triggerLeft.textContent = u.name;
-      triggerBadge.textContent = u.scale;
+      triggerBadge.textContent = scale;
       panel.querySelectorAll('.gpu-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       wrap.classList.remove('open');
@@ -2305,8 +2265,7 @@ function submitAdminCreateDept() {
   currentDepartmentsList.push({ name, code, faculty });
   logAdminAuditAction('Department Created', `Added department ${code} under faculty ${faculty}`);
   showToastNotification(`Department ${code} added!`);
-  D.val('admin-dept-name', '');
-  D.val('admin-dept-code', '');
+  ['admin-dept-name', 'admin-dept-code'].forEach(id => D.val(id, ''));
   renderAdminAcademics();
 }
 
@@ -2318,8 +2277,7 @@ function submitAdminCreateFaculty() {
   currentFacultiesList.push({ name, code });
   logAdminAuditAction('Faculty Created', `Added faculty code: ${code}`);
   showToastNotification(`Faculty ${code} added!`);
-  D.val('admin-fac-name', '');
-  D.val('admin-fac-code', '');
+  ['admin-fac-name', 'admin-fac-code'].forEach(id => D.val(id, ''));
   renderAdminAcademics();
 }
 
@@ -2406,8 +2364,7 @@ function submitAdminCreateJob() {
   currentJobListings.unshift({ title, company, type });
   logAdminAuditAction('Job Opportunity Created', `Created career listing: ${title} at ${company}`);
   showToastNotification('Career placement listing published!');
-  D.val('admin-job-title', '');
-  D.val('admin-job-company', '');
+  ['admin-job-title', 'admin-job-company'].forEach(id => D.val(id, ''));
   renderAdminCareers();
 }
 
@@ -2418,8 +2375,7 @@ function submitAdminAnnouncement() {
   
   logAdminAuditAction('Notice Published', `Announced bulletin: "${title}"`);
   showToastNotification('Institutional notice published to all dashboards!');
-  D.val('admin-notice-title', '');
-  D.val('admin-notice-body', '');
+  ['admin-notice-title', 'admin-notice-body'].forEach(id => D.val(id, ''));
 }
 
 function renderAdminCourses() {
@@ -2450,9 +2406,7 @@ function submitAdminCreateCourse() {
   });
   logAdminAuditAction('Course Created', `Published new course code: ${code}`);
   showToastNotification(`Course ${code} successfully published!`);
-  D.val('admin-course-name', '');
-  D.val('admin-course-code', '');
-  D.val('admin-course-lecturer', '');
+  ['admin-course-name', 'admin-course-code', 'admin-course-lecturer'].forEach(id => D.val(id, ''));
   saveOfflineState();
   renderAdminCourses();
 }
