@@ -20,6 +20,8 @@ import chatRoutes from './routes/chatRoutes';
 import consultationRoutes from './routes/consultationRoutes';
 import adminRoutes from './routes/adminRoutes';
 import universityRoutes from './routes/universityRoutes';
+import hierarchyRoutes from './routes/hierarchyRoutes';
+import resourceRoutes from './routes/resourceRoutes';
 
 
 const app = express();
@@ -85,6 +87,8 @@ app.use('/api/chats', apiLimiter, chatRoutes);
 app.use('/api/consultations', apiLimiter, consultationRoutes);
 app.use('/api/admin', apiLimiter, adminRoutes);
 app.use('/api/universities', apiLimiter, universityRoutes);
+app.use('/api/hierarchy', apiLimiter, hierarchyRoutes);
+app.use('/api/resources', apiLimiter, resourceRoutes);
 
 // Base health indicator
 app.get('/health', (req, res) => {

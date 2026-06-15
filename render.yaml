@@ -1,0 +1,38 @@
+services:
+  # Backend API
+  - type: web
+    name: smartlearn-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smartlearn-db
+          property: connectionString
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+
+  # Frontend (Static Site on Render)
+  - type: web
+    name: smartlearn-frontend
+    env: static
+    plan: free
+    buildCommand: "" # No build required for static HTML/JS
+    staticPublishPath: . # Publish the root folder
+    envVars:
+      - key: VITE_API_URL # If applicable to your JS
+        value: https://smartlearn-backend.onrender.com/api
+
+databases:
+  # PostgreSQL Database
+  - name: smartlearn-db
+    plan: free
+    databaseName: smartlearn_prod
+    user: admin

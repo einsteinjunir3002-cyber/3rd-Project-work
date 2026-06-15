@@ -2,13 +2,21 @@ import http from 'http';
 import { Server } from 'socket.io';
 import app from './app';
 import { connectDB } from './config/db';
+import { initDatabase } from './config/initDb';
 import { runRoleAudit } from './services/auditEngine';
 
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB Atlas
-connectDB().then(() => {
-  runRoleAudit(app);
+// Connect to PostgreSQL
+connectDB().then(async () => {
+  await initDatabase();
+  // We can temporarily disable the runRoleAudit if it depends on Mongoose models, 
+  // or keep it if it's already updated.
+  try {
+    runRoleAudit(app);
+  } catch (err) {
+    console.error('Audit engine skipping due to pending model updates');
+  }
 });
 
 

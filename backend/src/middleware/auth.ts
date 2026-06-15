@@ -10,9 +10,7 @@ export interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
-// Authentication check middleware
 export const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  // Grab token from cookie or header authorization
   let token = req.cookies?.token || req.headers['authorization'];
   
   if (token && typeof token === 'string' && token.startsWith('Bearer ')) {
@@ -32,9 +30,6 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
   }
 };
 
-import Role from '../models/Role';
-
-// Role-based access control middleware
 export const requireRole = (allowedRoles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -42,24 +37,11 @@ export const requireRole = (allowedRoles: string[]) => {
     }
 
     const role = req.user.role;
-    if (role === 'superadmin') {
+    if (role === 'super_admin') {
       return next();
     }
 
-    const hasAccess = allowedRoles.some(allowed => {
-      if (allowed === 'student') {
-        return ['student', 'researcher', 'entrepreneur'].includes(role);
-      }
-      if (allowed === 'lecturer') {
-        return ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(role);
-      }
-      if (allowed === 'admin') {
-        return ['admin'].includes(role);
-      }
-      return role === allowed;
-    });
-
-    if (hasAccess) {
+    if (allowedRoles.includes(role)) {
       return next();
     }
 
@@ -67,25 +49,36 @@ export const requireRole = (allowedRoles: string[]) => {
   };
 };
 
-// Permission-based access control middleware (PBAC)
-export const requirePermission = (permission: string) => {
-  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized.' });
-    }
+export const requireSuperAdmin = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user || req.user.role !== 'super_admin') {
+    return res.status(403).json({ message: 'Access Denied: Super Admin Only' });
+  }
+  next();
+};
 
-    if (req.user.role === 'superadmin') {
-      return next();
-    }
+export const requireDepartmentAdmin = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user || !['super_admin', 'department_admin'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Access Denied: Department Admin Only' });
+  }
+  next();
+};
 
-    try {
-      const roleDoc = await Role.findOne({ name: req.user.role });
-      if (roleDoc && roleDoc.permissions.includes(permission)) {
-        return next();
-      }
-      return res.status(403).json({ message: 'Access Denied: Insufficient Permissions' });
-    } catch (err) {
-      return res.status(500).json({ message: 'Internal server authorization error.' });
-    }
-  };
+export const requireDepartment = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized.' });
+  }
+  
+  // Super admins bypass department checks
+  if (req.user.role === 'super_admin') {
+    return next();
+  }
+
+  // The requested department usually comes from body, params, or query
+  const targetDepartmentId = parseInt(req.params.departmentId || req.body.departmentId || req.query.departmentId as string);
+  
+  if (targetDepartmentId && req.user.departmentId !== targetDepartmentId) {
+    return res.status(403).json({ message: 'Access Denied: You cannot access resources outside your assigned department.' });
+  }
+
+  next();
 };

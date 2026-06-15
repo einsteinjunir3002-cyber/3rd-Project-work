@@ -1,0 +1,32 @@
+```mermaid
+graph TD
+    subgraph Client [Client-Side]
+        A[Web Browser / Mobile]
+    end
+
+    subgraph CDN [Frontend Hosting: Vercel / Netlify]
+        B[Static Assets HTML/CSS/JS]
+        C[Public Audit Dashboard]
+    end
+
+    subgraph Backend [Backend Hosting: Render / Railway]
+        D[Node.js Express App]
+        E[Auth Middleware DBAC/RBAC]
+        F[Controllers & Routes]
+    end
+
+    subgraph Persistence [Database & Storage]
+        G[(PostgreSQL DB on Supabase/Render)]
+        H[Cloudinary Media Storage]
+    end
+
+    A -->|HTTPS Requests| B
+    A -->|HTTPS Requests| C
+    B -->|REST API / JSON| D
+    C -->|Unauthenticated REST API| D
+    
+    D --> E
+    E --> F
+    F -->|SQL Queries| G
+    F -->|Uploads| H
+```

@@ -61,4 +61,17 @@ router.get('/settings', authenticateToken, requireRole(['admin', 'superadmin']),
 router.post('/settings', authenticateToken, requireRole(['superadmin']), updateSiteSettings); // Super Admin only can update configuration
 router.post('/ai/test', authenticateToken, requireRole(['admin', 'superadmin']), testAiConnection);
 
+import {
+  getApprovedDomains,
+  addApprovedDomain,
+  fetchExternalResource,
+  getResourceAuditLogs
+} from '../controllers/resourceAdminController';
+
+// Resource Import Manager & Audit Logs
+router.get('/approved-domains', authenticateToken, requireRole(['super_admin', 'department_admin']), getApprovedDomains);
+router.post('/approved-domains', authenticateToken, requireRole(['super_admin', 'department_admin']), addApprovedDomain);
+router.post('/fetch-resource', authenticateToken, requireRole(['super_admin', 'department_admin']), fetchExternalResource);
+router.get('/resource-logs', authenticateToken, requireRole(['super_admin', 'department_admin']), getResourceAuditLogs);
+
 export default router;
