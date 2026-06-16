@@ -57,14 +57,39 @@
     });
   }
 
-  // Extended switchTab that handles alumni/partner/advisor
+  // Extended switchTab that handles alumni/partner/advisor and all hub views including for admin
   window.switchTabExtended = function(role, tabId) {
-    // Show all portal-views via switchTab logic
-    document.querySelectorAll('.portal-view').forEach(el => el.classList.remove('active'));
+    // Hide all portal-views (active class) and also all hub-only sections (with display:none)
+    document.querySelectorAll('.portal-view').forEach(el => {
+      el.classList.remove('active');
+      // Don't forcibly hide display-block sections - just remove active
+    });
+    // Also hide hub sections that use display instead of class
+    ['alumni-console', 'research-hub-expanded', 'partner-hub', 'advisor-dashboard'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.id !== tabId) el.style.display = 'none';
+    });
+
     const target = document.getElementById(tabId);
-    if (target) target.classList.add('active');
+    if (target) {
+      // If the target uses display:none toggling (hub sections)
+      if (['alumni-console', 'research-hub-expanded', 'partner-hub', 'advisor-dashboard'].includes(tabId)) {
+        target.style.display = 'block';
+        target.classList.add('active');
+      } else {
+        target.style.display = '';
+        target.classList.add('active');
+      }
+      // Trigger lazy render if needed
+      setTimeout(() => {
+        if (tabId === 'alumni-console' && typeof renderAlumniConsole === 'function') renderAlumniConsole();
+        if (tabId === 'research-hub-expanded' && typeof renderResearchHubExpanded === 'function') renderResearchHubExpanded();
+        if (tabId === 'partner-hub' && typeof renderPartnerHubTab === 'function') renderPartnerHubTab('profile');
+        if (tabId === 'advisor-dashboard' && typeof renderAdvisorDashboard === 'function') renderAdvisorDashboard();
+      }, 200);
+    }
     document.querySelectorAll('.sidebar-nav-item').forEach(el => el.classList.remove('active'));
-    const btn = document.querySelector(`[data-tab="${tabId}"]`);
+    const btn = document.querySelector(`[data-tab="${tabId}"]`) || document.querySelector(`[onclick*="${tabId}"]`);
     if (btn) btn.classList.add('active');
     // Also close mobile sidebar
     document.querySelector('aside.portal-sidebar')?.classList.remove('open');
