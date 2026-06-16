@@ -361,12 +361,14 @@ function renderCreativityShowcase() {
     { icon: '🌍', title: 'Ghana-First Intelligence', desc: 'Built for Ghanaian tertiary education — local universities, WASSCE admission requirements, GH₵ salary data.', color: '#6366f1' },
   ];
   container.innerHTML = features.map((f,i) => `
-    <div class="glass creativity-showcase-card" style="padding:28px;border-radius:18px;transition:transform 0.3s,box-shadow 0.3s;cursor:default;animation:cardFadeIn 0.5s ease ${i*0.1}s both;border-top:3px solid ${f.color};"
-      onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,0.2)'"
+    <div class="creativity-showcase-card" style="padding:16px 18px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb;border-left:3px solid ${f.color};transition:transform 0.25s,box-shadow 0.25s;cursor:default;animation:cardFadeIn 0.5s ease ${i*0.08}s both;display:flex;align-items:flex-start;gap:12px;"
+      onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.1)'"
       onmouseout="this.style.transform='';this.style.boxShadow=''">
-      <div style="font-size:2.5rem;margin-bottom:14px;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">${f.icon}</div>
-      <h3 style="font-size:1rem;font-weight:800;margin-bottom:8px;color:${f.color};">${f.title}</h3>
-      <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.6;">${f.desc}</p>
+      <div style="font-size:1.6rem;flex-shrink:0;margin-top:2px;">${f.icon}</div>
+      <div>
+        <h3 style="font-size:0.88rem;font-weight:800;margin-bottom:4px;color:${f.color};">${f.title}</h3>
+        <p style="font-size:0.75rem;color:#6b7280;line-height:1.55;margin:0;">${f.desc}</p>
+      </div>
     </div>`).join('');
 }
 
