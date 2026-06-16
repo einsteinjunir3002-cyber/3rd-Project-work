@@ -53,8 +53,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onThemeToggle, isDar
   if (!user) return null;
 
   // Determine active view mode dynamically
-  const isStudent = ['student', 'researcher', 'entrepreneur', 'prospective_student'].includes(user.role) || (user.role === 'admin' && adminView === 'student');
-  const isLecturer = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(user.role) || (user.role === 'admin' && adminView === 'lecturer');
+  const studentRoles = ['student', 'researcher', 'entrepreneur', 'prospective_student'];
+  const lecturerRoles = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'];
+
+  const activeRole = user.role === 'admin' ? adminView : user.role;
+
+  const isStudent = studentRoles.includes(activeRole);
+  const isLecturer = lecturerRoles.includes(activeRole);
 
   const activeTab = isStudent 
     ? currentStudentTab 
@@ -128,21 +133,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onThemeToggle, isDar
 
   // Custom filters for extended professions
   let filteredStudentNav = studentNav;
-  if (user.role === 'researcher') {
+  if (activeRole === 'researcher') {
     filteredStudentNav = studentNav.filter(item => 
       ['student-dashboard', 'student-research', 'student-notes', 'student-forum', 'student-chat', 'student-consultations'].includes(item.id)
     );
     filteredStudentNav = filteredStudentNav.map(item => 
       item.id === 'student-dashboard' ? { ...item, label: 'Research Desk', icon: Search } : item
     );
-  } else if (user.role === 'entrepreneur') {
+  } else if (activeRole === 'entrepreneur') {
     filteredStudentNav = studentNav.filter(item => 
       ['student-dashboard', 'student-innovation', 'student-forum', 'student-chat', 'student-consultations', 'student-career-guidance'].includes(item.id)
     );
     filteredStudentNav = filteredStudentNav.map(item => 
       item.id === 'student-dashboard' ? { ...item, label: 'Founder Dashboard', icon: Lightbulb } : item
     );
-  } else if (user.role === 'prospective_student') {
+  } else if (activeRole === 'prospective_student') {
     filteredStudentNav = studentNav.filter(item => 
       ['student-dashboard', 'student-universities', 'student-forum', 'student-career-guidance'].includes(item.id)
     );
@@ -156,21 +161,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onThemeToggle, isDar
   }
 
   let filteredLecturerNav = lecturerNav;
-  if (user.role === 'alumni') {
+  if (activeRole === 'alumni') {
     filteredLecturerNav = lecturerNav.filter(item => 
       ['lecturer-dashboard', 'lecturer-chat', 'lecturer-consultations'].includes(item.id)
     );
     filteredLecturerNav = filteredLecturerNav.map(item => 
       item.id === 'lecturer-dashboard' ? { ...item, label: 'Alumni Console' } : item
     );
-  } else if (user.role === 'industry_partner') {
+  } else if (activeRole === 'industry_partner') {
     filteredLecturerNav = lecturerNav.filter(item => 
       ['lecturer-dashboard', 'lecturer-chat', 'lecturer-consultations', 'lecturer-analytics'].includes(item.id)
     );
     filteredLecturerNav = filteredLecturerNav.map(item => 
       item.id === 'lecturer-dashboard' ? { ...item, label: 'Partner Hub' } : item
     );
-  } else if (user.role === 'career_advisor') {
+  } else if (activeRole === 'career_advisor') {
     filteredLecturerNav = lecturerNav.filter(item => 
       ['lecturer-dashboard', 'lecturer-chat', 'lecturer-consultations', 'lecturer-analytics'].includes(item.id)
     );
@@ -267,6 +272,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, onThemeToggle, isDar
               <option value="admin">🛠️ Admin Dashboard</option>
               <option value="student">🎓 Student Portal View</option>
               <option value="lecturer">💼 Lecturer Desk View</option>
+              <option value="researcher">🔬 Research Desk View</option>
+              <option value="entrepreneur">💡 Founder Dashboard View</option>
+              <option value="alumni">🏛️ Alumni Console View</option>
+              <option value="industry_partner">🤝 Partner Hub View</option>
+              <option value="career_advisor">🧭 Advisor Dashboard View</option>
+              <option value="prospective_student">🏫 Admissions Desk View</option>
             </select>
           </div>
         )}

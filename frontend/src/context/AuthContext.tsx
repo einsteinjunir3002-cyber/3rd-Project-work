@@ -5,8 +5,8 @@ import { User } from '../types';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  adminView: 'admin' | 'student' | 'lecturer';
-  setAdminView: (view: 'admin' | 'student' | 'lecturer') => void;
+  adminView: User['role'];
+  setAdminView: (view: User['role']) => void;
   signIn: (email: string, password: string, rememberMe: boolean) => Promise<{ success: boolean; message: string }>;
   signUp: (data: any) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
@@ -23,11 +23,11 @@ axios.defaults.withCredentials = true;
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [adminView, setAdminViewInternal] = useState<'admin' | 'student' | 'lecturer'>(() => {
-    return (localStorage.getItem('smartlearn_admin_view') as 'admin' | 'student' | 'lecturer') || 'admin';
+  const [adminView, setAdminViewInternal] = useState<User['role']>(() => {
+    return (localStorage.getItem('smartlearn_admin_view') as User['role']) || 'admin';
   });
 
-  const setAdminView = (view: 'admin' | 'student' | 'lecturer') => {
+  const setAdminView = (view: User['role']) => {
     setAdminViewInternal(view);
     localStorage.setItem('smartlearn_admin_view', view);
   };

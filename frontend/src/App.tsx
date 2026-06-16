@@ -54,12 +54,16 @@ export const App: React.FC = () => {
 
   // Determine active hub component based on role and admin selection
   const renderWorkspace = () => {
+    const studentRoles = ['student', 'researcher', 'entrepreneur', 'prospective_student'];
+    const lecturerRoles = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'];
+
     if (user.role === 'admin') {
-      if (adminView === 'student') return <StudentHub />;
-      if (adminView === 'lecturer') return <LecturerHub />;
+      if (studentRoles.includes(adminView)) return <StudentHub />;
+      if (lecturerRoles.includes(adminView)) return <LecturerHub />;
       return <AdminHub />;
     }
-    return user.role === 'student' ? <StudentHub /> : <LecturerHub />;
+    
+    return studentRoles.includes(user.role) ? <StudentHub /> : <LecturerHub />;
   };
 
   // 2. Authenticated -> show Sidebar + respective Dashboard

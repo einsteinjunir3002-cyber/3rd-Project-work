@@ -905,18 +905,18 @@ function fetchPublicUniversities() {
     grid.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 0;grid-column:1/-1;">No universities found.</div>';
     return;
   }
-  // Show first 6 by default
+  // Show first 8 by default
   landingUnisExpanded = false;
   renderLandingUniversityCards(unis, false);
   // Update toggle button
   const toggleBtn = D.get('toggle-unis-btn');
-  if (toggleBtn) toggleBtn.style.display = unis.length > 6 ? 'inline-flex' : 'none';
+  if (toggleBtn) toggleBtn.style.display = unis.length > 8 ? 'inline-flex' : 'none';
 }
 
 function renderLandingUniversityCards(unis, expanded) {
   const grid = D.get('landing-uni-grid');
   if (!grid) return;
-  const visible = expanded ? unis : unis.slice(0, 6);
+  const visible = expanded ? unis : unis.slice(0, 8);
   grid.innerHTML = visible.map(u => {
     const badge = u.type === 'Private'
       ? 'badge-warning'
@@ -941,6 +941,16 @@ function renderLandingUniversityCards(unis, expanded) {
         </div>
       </div>`;
   }).join('');
+}
+
+function filterLandingUniversities() {
+  const q = (D.val('landing-uni-search') || '').toLowerCase();
+  const filtered = (appState.universities || []).filter(u =>
+    u.name.toLowerCase().includes(q) || u.location.toLowerCase().includes(q)
+  );
+  renderLandingUniversityCards(filtered, true);
+  const btn = D.get('toggle-unis-btn');
+  if (btn) btn.style.display = (q || filtered.length <= 8) ? 'none' : 'inline-flex';
 }
 
 function toggleLandingUniversities() {
