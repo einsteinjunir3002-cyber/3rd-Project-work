@@ -164,42 +164,90 @@
       <div class="container">
         <div class="section-header">
           <h2>Why SmartLearn AI is Unique</h2>
-          <p>Combining learning management with advanced AI intelligence to solve real student challenges across Ghana.</p></div>
+          <p>We combine learning management tools with advanced intelligence to solve everyday student bottlenecks.</p></div>
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon">🤖</div>
             <h3>AI Multi-Mode Tutor</h3>
-            <p>Switch between study assistants, career advisors, assignment checkers, and code debuggers seamlessly.</p></div>
+            <p>Switch between study assistants, career advisors, assignment checkers, and programming code debuggers seamlessly.</p></div>
           <div class="feature-card">
             <div class="feature-icon">📊</div>
             <h3>GPA Predictor &amp; Planner</h3>
-            <p>Slide grade variables and instantly view projected cumulative scores with custom study planners.</p></div>
+            <p>Slide grade variables and instantly view projected cumulative scores along with custom stress management planners.</p></div>
           <div class="feature-card">
             <div class="feature-icon">🎯</div>
             <h3>Career Path Finder</h3>
-            <p>Take an interest quiz to match with jobs and recommended universities across Ghana.</p></div>
+            <p>Take personality interest questions to map matching jobs and recommended universities across Ghana.</p></div>
           <div class="feature-card">
             <div class="feature-icon">📂</div>
             <h3>Past Questions Explainer</h3>
-            <p>Search past exams by course code and get step-by-step AI solutions instantly.</p></div>
+            <p>Search past questions by code, download PDF templates, or let the AI explain solutions step-by-step.</p></div>
           <div class="feature-card">
-            <div class="feature-icon">🛡️</div>
-            <h3>Plagiarism Detection</h3>
-            <p>AI-powered academic integrity checks on assignments, research papers, and thesis submissions.</p></div>
+            <div class="feature-icon">💬</div>
+            <h3>Discussion Forums</h3>
+            <p>Engage in course conversations, upload files, upvote top academic inputs, and chat with teaching assistants.</p></div>
           <div class="feature-card">
-            <div class="feature-icon">👥</div>
-            <h3>Multi-Role Hubs</h3>
-            <p>Dedicated portals for Students, Lecturers, Researchers, Alumni, Industry Partners and more.</p></div></div></div></section>
-  <!-- What Makes SmartLearn AI Unique – compact white section at bottom of landing -->
-  <section id="creativity-showcase-section" style="padding:40px 0 48px; background:#ffffff; border-top:1px solid #e5e7eb;">
+            <div class="feature-icon">🎤</div>
+            <h3>Voice-to-Text Notes</h3>
+            <p>Record lecturers explaining concepts and automatically transcribe them into dynamic study checklists.</p></div></div></div></section>
+    <section id="universities" style="padding: 60px 0; background: var(--bg-surface);">
+      <div class="container">
+        <div class="section-header">
+          <h2>🏛️ Featured Universities Showcase</h2>
+          <p>Select any Ghanaian university card to check programs, fee ranges, and scholarships.</p></div>
+        <div class="uni-preview-grid" id="landing-uni-grid">
+          <div style="text-align: center; color: var(--text-muted); padding: 40px 0; grid-column: 1 / -1;">
+            Loading dynamic university showcase...
+          </div></div>
+        <div style="text-align:center;margin-top:16px;margin-bottom:4px;">
+          <input type="text" id="landing-uni-search" class="form-control" placeholder="🔍 Filter universities by name or location..." oninput="filterLandingUniversities()" style="max-width:380px;border-radius:50px;padding:10px 20px;font-size:0.85rem;">
+        </div>
+        <div style="text-align: center; margin-top: 24px;" id="show-more-unis-container">
+          <button class="btn btn-primary" id="toggle-unis-btn" onclick="toggleLandingUniversities()">Show More Universities ⬇️</button></div></div></section>
+    <section id="testimonials" class="testimonials-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>🚀 SmartLearn AI - Upcoming Launch Roadmap</h2>
+          <p>We are building a premium educational ecosystem for tertiary institutions in Ghana. Explore our release timeline:</p></div>
+        <div class="testimonials-grid">
+          <div class="testimonial-card glass">
+            <div style="font-size: 1.5rem; margin-bottom: 12px;">🛠️ Phase 1</div>
+            <h4 style="font-size: 1.1rem; margin-bottom: 8px; color: var(--primary);">UI Design &amp; Prototypes</h4>
+            <p class="testimonial-text" style="font-size: 0.88rem; font-style: normal; color: var(--text-muted);"> Creating full-fidelity responsive interfaces, setting up glassmorphism themes, planning database structures, and testing offline fallback mechanisms. </p>
+            <div style="margin-top: 16px; font-size: 0.75rem; color: var(--success); font-weight: 700;">✓ Completed &amp; Verified</div></div>
+          <div class="testimonial-card glass">
+            <div style="font-size: 1.5rem; margin-bottom: 12px;">🧪 Phase 2</div>
+            <h4 style="font-size: 1.1rem; margin-bottom: 8px; color: var(--secondary);">Faculty Testing &amp; Integration</h4>
+            <p class="testimonial-text" style="font-size: 0.88rem; font-style: normal; color: var(--text-muted);"> Linking custom Student and Lecturer portals, introducing real-time chat forums, expanding career predictors, and running security/biometric trials. </p>
+            <div style="margin-top: 16px; font-size: 0.75rem; color: var(--warning); font-weight: 700;">⚡ Active Development</div></div>
+          <div class="testimonial-card glass">
+            <div style="font-size: 1.5rem; margin-bottom: 12px;">🌍 Phase 3</div>
+            <h4 style="font-size: 1.1rem; margin-bottom: 8px; color: var(--accent);">National Rollout</h4>
+            <p class="testimonial-text" style="font-size: 0.88rem; font-style: normal; color: var(--text-muted);"> Deploying secure Express database nodes to cloud servers, linking with local academic boards, and registering partner universities across Ghana. </p>
+            <div style="margin-top: 16px; font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">📅 Planned for Q3 2026</div></div></div></div></section>
+    <section id="announcements" class="container" style="padding: 60px 0;">
+      <div class="section-header">
+        <h2>Latest Academic Announcements</h2>
+        <p>Stay up to date with updates from national university boards and advisors.</p></div>
+      <div class="announcement-box glass">
+        <div class="announcement-meta">📢 Posted 3 days ago by Administration Office</div>
+        <h4>National Scholarship Scheme Registrations Open</h4>
+        <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.5;"> All final year tertiary students across Ghana can now submit their applications for study bursaries and tuition aids. Check the Scholarship Board in the student dashboard under opportunities! </p></div>
+      <div class="announcement-box glass">
+        <div class="announcement-meta">📢 Posted 1 week ago by Academic Board</div>
+        <h4>Inter-University AI Hackathon Accra 2026</h4>
+        <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.5;"> SmartLearn AI is proud to sponsor this year's hackathon! Register your team of three in your course discussion board to build local AI solutions for Ghana's primary health services. </p></div></section>
+  <!-- Creativity Showcase (Landing Page) -->
+  <section id="creativity-showcase-section" style="padding:80px 0;">
     <div class="container">
       <div class="section-header">
-        <h2 style="color:#111827;">✨ What Makes SmartLearn AI <span class="gradient-text">Extraordinary</span></h2>
-        <p style="color:#6b7280; font-size:0.92rem;">Beyond typical LMS tools — built to transform how Ghanaian students learn, grow, and find careers.</p>
+        <h2>✨ What Makes SmartLearn AI <span class="gradient-text">Extraordinary</span></h2>
+        <p>Beyond typical LMS tools — we built something that actually transforms how Ghanaian students learn, grow, and find careers.</p>
       </div>
-      <div id="creativity-showcase-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;"></div>
+      <div class="features-grid" id="creativity-showcase-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;"></div>
     </div>
   </section>
+
 
     <footer class="landing-footer">
       <div class="container footer-grid">
