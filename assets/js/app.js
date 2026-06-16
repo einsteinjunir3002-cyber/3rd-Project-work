@@ -13,8 +13,7 @@ function switchTab(role, tabId) {
   if (role === 'lecturer' && !isLecturerRole) return showToastNotification('Access Denied: Lecturer role required.');
   if (role === 'student' && !isStudentRole) return showToastNotification('Access Denied: Student role required.');
   if (role === 'admin' && appState.role !== 'admin') return showToastNotification('Access Denied: Admin role required.');
-  const cls = role === 'student' ? 'student-view' : (role === 'lecturer' ? 'lecturer-view' : 'admin-view');
-  document.querySelectorAll('.student-view, .lecturer-view, .admin-view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.portal-view').forEach(el => el.classList.remove('active'));
   const target = D.get(tabId); if (target) target.classList.add('active');
   document.querySelectorAll('.sidebar-nav-item').forEach(el => el.classList.remove('active'));
   const btn = document.querySelector(`[data-tab="${tabId}"]`); if (btn) btn.classList.add('active');

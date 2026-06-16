@@ -243,10 +243,16 @@ function toggleQuickActions() {
 
 function openQuickPlagiarism() {
   const modal = D.get('plagiarism-report-modal');
-  if (!modal) { showToastNotification('Navigate to Assignment Submission to run a plagiarism check.'); return; }
-  const demoText = "Object-oriented programming is a programming paradigm based on the concept of objects, which can contain data in the form of fields and code in the form of procedures. Software engineering applies engineering principles to development.";
+  if (!modal) { showToastNotification('Required modal elements are missing.'); return; }
+  const text = prompt("📋 Paste the text you want to scan for plagiarism (minimum 50 characters):");
+  if (!text) return;
+  if (text.trim().length < 50) {
+    showToastNotification("⚠️ Text too short. Please provide at least 50 characters.");
+    return;
+  }
+  const docName = prompt("📄 Enter a name for this document (e.g. My_Research_Draft.docx):") || "Manual Scan";
   if (typeof quickScanSubmission === 'function') {
-    quickScanSubmission(demoText, 'Quick Demo Scan');
+    quickScanSubmission(text, docName);
     earnBadge('plagiarism');
   }
 }

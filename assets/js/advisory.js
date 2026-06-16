@@ -298,9 +298,31 @@ function generateCalendarGrid() {
 // activeSubmittingAsgId is declared in data.js
 const openSubmitAssignmentModal = (id, title) => { activeSubmittingAsgId = id; D.html('modal-asg-title', title); D.show('assignment-submit-modal', true); }, closeSubmitAssignmentModal = () => D.show('assignment-submit-modal', false);
 async function simulateSubmitFile() {
-  const input = D.get('asg-file-upload'); if (!input || !input.files.length) return showToastNotification('Select a file.'); const file = input.files[0]; if (!/\.(pdf|docx|ppt|zip)$/i.test(file.name)) return showToastNotification('Allowed formats: PDF, DOCX, PPT, ZIP.'); const token = localStorage.getItem('proto_token');
+  const input = D.get('asg-file-upload'); if (!input || !input.files.length) return showToastNotification('Select a file.'); const file = input.files[0]; if (!/\.(pdf|docx|ppt|zip|txt)$/i.test(file.name)) return showToastNotification('Allowed formats: PDF, DOCX, PPT, ZIP, TXT.'); const token = localStorage.getItem('proto_token');
   if (token && token.startsWith('simulated_token_')) {
     const asg = appState.assignments.find(a => a.id == activeSubmittingAsgId); if (asg) asg.status = 'Submitted';
+    
+    // Auto-trigger plagiarism check
+    let textToScan = "A control flow in programming is the order in which the computer executes statements in a script. Loops repeat a block of code while a condition is true.";
+    if (file.name.toLowerCase().endsWith('.txt')) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        if (typeof quickScanSubmission === 'function') {
+          quickScanSubmission(e.target.result, file.name);
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      if (typeof quickScanSubmission === 'function') {
+        if (file.name.toLowerCase().includes('report') || file.name.toLowerCase().includes('design')) {
+          textToScan = "Software engineering is a systematic approach to the development, operation, and maintenance of software. The Agile methodology is a popular approach that promotes iterative development.";
+        } else if (file.name.toLowerCase().includes('essay') || file.name.toLowerCase().includes('business')) {
+          textToScan = "Business administration involves the management and organization of business operations. Effective managers must possess strong leadership skills.";
+        }
+        quickScanSubmission(textToScan, file.name);
+      }
+    }
+    
     appState.submissions.push({ id: Date.now(), assignmentId: parseInt(activeSubmittingAsgId), studentName: appState.user?.name || 'Kofi Mensah', fileName: file.name, date: new Date().toISOString().split('T')[0], grade: null, feedback: null }); saveOfflineState(); closeSubmitAssignmentModal(); showToastNotification('Submitted successfully (Offline)!'); renderStateData(); return; }
   const formData = new FormData(); formData.append('assignmentId', activeSubmittingAsgId); formData.append('homework', file);
   try {

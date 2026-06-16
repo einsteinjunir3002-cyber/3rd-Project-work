@@ -60,7 +60,7 @@
   // Extended switchTab that handles alumni/partner/advisor
   window.switchTabExtended = function(role, tabId) {
     // Show all portal-views via switchTab logic
-    document.querySelectorAll('.student-view, .lecturer-view, .admin-view').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.portal-view').forEach(el => el.classList.remove('active'));
     const target = document.getElementById(tabId);
     if (target) target.classList.add('active');
     document.querySelectorAll('.sidebar-nav-item').forEach(el => el.classList.remove('active'));
