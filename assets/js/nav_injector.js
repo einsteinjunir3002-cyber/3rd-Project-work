@@ -108,6 +108,7 @@
       }
     });
   }
+  window.updateNavVisibility = updateNavVisibility;
 
   // Patch the original setUserRole function to also trigger nav visibility update
   const originalSetUserRole = window.setUserRole;

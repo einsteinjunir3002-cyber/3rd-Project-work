@@ -156,6 +156,12 @@ function setUserRole(role) {
         <option value="admin">🛠️ View: Admin Hub</option>
         <option value="student">🎓 View: Student Portal</option>
         <option value="lecturer">💼 View: Lecturer Desk</option>
+        <option value="researcher">🔬 View: Research Desk</option>
+        <option value="entrepreneur">💡 View: Founder Dashboard</option>
+        <option value="alumni">🎓 View: Alumni Console</option>
+        <option value="industry_partner">🤝 View: Partner Hub</option>
+        <option value="career_advisor">🧭 View: Advisor Dashboard</option>
+        <option value="prospective_student">🏫 View: Admissions Desk</option>
       </select>` : ''; }
   if (role === 'admin') setAdminPrototypeView('admin');
   else {
@@ -172,14 +178,40 @@ function setUserRole(role) {
   updateAiSettingsVisibility();
 }
 const setAdminPrototypeView = view => {
-  const isStd = view === 'student';
-  const isLec = view === 'lecturer';
+  const studentRoles = ['student', 'researcher', 'entrepreneur', 'prospective_student'];
+  const lecturerRoles = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'];
   const isAdmin = view === 'admin';
-  document.querySelectorAll('.student-only').forEach(el => el.style.display = isStd ? 'flex' : 'none');
-  document.querySelectorAll('.lecturer-only').forEach(el => el.style.display = isLec ? 'flex' : 'none');
-  document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? 'flex' : 'none');
-  const targetTab = isStd ? 'student-dashboard' : (isLec ? 'lecturer-dashboard' : 'admin-dashboard');
-  switchTab(view, targetTab);
+  const isStd = studentRoles.includes(view);
+  const isLec = lecturerRoles.includes(view);
+
+  // Clear active portal views
+  document.querySelectorAll('.portal-view').forEach(el => el.classList.remove('active'));
+
+  // Update appState role temporarily so sidebar/custom layouts render correctly
+  appState.role = view;
+
+  // Custom sidebar items switching
+  customizeSidebarMenuItems(view);
+
+  // Trigger nav visibility update
+  if (typeof updateNavVisibility === 'function') {
+    updateNavVisibility();
+  }
+
+  // Determine the target tab to switch to
+  let targetTab = 'admin-dashboard';
+  if (view === 'admin') targetTab = 'admin-dashboard';
+  else if (view === 'student') targetTab = 'student-dashboard';
+  else if (view === 'lecturer') targetTab = 'lecturer-dashboard';
+  else if (view === 'researcher') targetTab = 'research-hub-expanded';
+  else if (view === 'alumni') targetTab = 'alumni-console';
+  else if (view === 'industry_partner') targetTab = 'partner-hub';
+  else if (view === 'career_advisor') targetTab = 'advisor-dashboard';
+  else if (view === 'entrepreneur') targetTab = 'student-dashboard';
+  else if (view === 'prospective_student') targetTab = 'student-dashboard';
+
+  const roleGroup = studentRoles.includes(view) ? 'student' : (lecturerRoles.includes(view) ? 'lecturer' : 'admin');
+  switchTab(roleGroup, targetTab);
 },
 handlePrototypeLogout = () => { localStorage.removeItem('proto_token'); appState.user = null; enableOfflineDemoIndicator(false); navigateTo('landing-shell'); };
 async function validatePrototypeSession() {
