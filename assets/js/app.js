@@ -41,9 +41,9 @@ if (window.supabase) {
 const API_BASE = 'http://localhost:5000';
 // Hardcoded demo accounts — always available regardless of localStorage state
 const DEMO_ACCOUNTS = [
-  { id: 'user_std_1', name: 'Kofi Mensah', email: 'stu@smartlearn.com', password: 'password', role: 'student', department: 'Computer Science', studentIdNumber: 'SL-20984' },
-  { id: 'user_lec_1', name: 'Dr. Kwame Mensah', email: 'lec@smartlearn.com', password: 'password', role: 'lecturer', office: 'Block C, Rm 4' },
-  { id: 'user_universal', name: 'Universal User', email: 'everybody@smartlearn.com', password: 'password', role: 'admin' }
+  { id: 'user_std_1', name: 'Kofi Mensah', email: 'stu@smartlearn.com', password: 'password', role: 'student', department: 'Computing & Information Technology', program: 'BSc Computer Science', studentIdNumber: 'stu/csc/0001', phone: '+233 24 111 2222', gender: 'Male', level: '300', securityQuestion: 'What was the name of your first pet?', securityAnswer: 'Rex' },
+  { id: 'user_lec_1', name: 'Dr. Kwame Mensah', email: 'lec@smartlearn.com', password: 'password', role: 'lecturer', office: 'Block C, Rm 4', securityQuestion: "What is your mother's maiden name?", securityAnswer: 'Serwaa' },
+  { id: 'user_universal', name: 'Universal User', email: 'everybody@smartlearn.com', password: 'password', role: 'admin', securityQuestion: 'In what city or town were you born?', securityAnswer: 'Accra' }
 ];
 const getSimulatedUsers = () => {
   try {
@@ -64,6 +64,42 @@ loadOfflineState = () => {
     facultyContacts: appState.facultyContacts, facultyChats: appState.facultyChats, activeFacultyEmail: appState.activeFacultyEmail, studentStartups: appState.studentStartups
   }));
 }, enableOfflineDemoIndicator = enable => { isOfflineDemoMode = enable; D.show('offline-demo-indicator', enable); }; if (!localStorage.getItem('smartlearn_offline_appstate')) saveOfflineState(); else loadOfflineState();
+
+function toggleStudentFieldsRequired(isRequired) {
+  const fields = [
+    'signup-phone', 'signup-username', 'signup-institution', 'signup-gender',
+    'signup-dept', 'signup-program', 'signup-level', 'signup-confirm-password',
+    'signup-security-question', 'signup-security-answer'
+  ];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (isRequired) {
+        el.setAttribute('required', 'required');
+      } else {
+        el.removeAttribute('required');
+      }
+    }
+  });
+}
+
+function checkPasswordStrength(pwd) {
+  if (pwd.length < 6) {
+    return { label: 'Weak (Must be >= 6 chars) ❌', color: '#ef4444' };
+  }
+  const hasLetters = /[a-zA-Z]/.test(pwd);
+  const hasNumbers = /[0-9]/.test(pwd);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(pwd);
+  
+  if (pwd.length >= 8 && hasLetters && hasNumbers && hasSpecial) {
+    return { label: 'Strong 💪', color: '#10b981' };
+  } else if (hasLetters && hasNumbers) {
+    return { label: 'Medium ⚠️', color: '#f59e0b' };
+  } else {
+    return { label: 'Weak (Mix letters & numbers) ❌', color: '#ef4444' };
+  }
+}
+
 const openAuthModal = () => { D.show('auth-modal', true); D.show('auth-alert', false); switchAuthTab('signin'); }, closeAuthModal = () => D.show('auth-modal', false),
 switchAuthTab = tab => {
   activeAuthTab = tab; D.show('auth-alert', false); const isSignIn = tab === 'signin'; D.get('auth-modal-title').textContent = isSignIn ? 'Sign In to SmartLearn' : 'Create Academic Account'; D.get('tab-signin-btn').style.background = isSignIn ? 'var(--primary)' : 'transparent'; D.get('tab-signin-btn').style.color = isSignIn ? 'white' : 'var(--text-muted)'; D.get('tab-signup-btn').style.background = isSignIn ? 'transparent' : 'var(--primary)'; D.get('tab-signup-btn').style.color = isSignIn ? 'var(--text-muted)' : 'white'; D.show('auth-signin-form', isSignIn); D.show('auth-signup-form', !isSignIn);
@@ -78,57 +114,103 @@ setSignupRole = role => {
   D.show('signup-alumni-fields', role === 'alumni');
   D.show('signup-industry-partner-fields', role === 'industry_partner');
   D.show('signup-career-advisor-fields', role === 'career_advisor');
+  toggleStudentFieldsRequired(role === 'student');
 }, showAuthAlert = (msg, isSuccess = false) => {
-  const el = D.get('auth-alert'); if (!el) return; el.style.display = 'block'; el.style.background = isSuccess ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'; el.style.border = isSuccess ? '1px solid rgba(16,185,129,0.2)' : '1px solid rgba(239,68,68,0.2)'; el.style.color = isSuccess ? '#10b981' : '#ef4444'; el.textContent = msg;
+  const el = D.get('auth-alert'); if (!el) return; el.style.display = 'block'; el.style.background = isSuccess ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'; el.style.border = isSuccess ? '1px solid rgba(16,185,129,0.2)' : '1px solid rgba(239,68,68,0.2)'; el.style.color = isSuccess ? '#10b981' : '#ef4444'; el.innerHTML = msg;
 }; // activeAuthTab and activeSignupRole are declared in data.js
 async function handlePrototypeSignIn() {
   const email = D.val('signin-email'), password = D.val('signin-password');
   if (!email || !password) return showAuthAlert('Please fill in credentials.');
+  
+  // Lockout check
+  const isLocked = localStorage.getItem(`smartlearn_locked_${email}`) === 'true';
+  if (isLocked) {
+    showAuthAlert('Account is locked due to 3 failed attempts.<br><button type="button" class="btn btn-secondary btn-sm" style="margin-top: 8px; font-size: 0.75rem; padding: 4px 8px;" onclick="openRecoveryModal()">Recover Account 🔑</button>');
+    return;
+  }
+
   try {
     const res = await fetch(`${API_BASE}/api/auth/signin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
     const data = await res.json();
     if (res.ok && data.token) {
-      // Real server responded successfully
+      localStorage.removeItem(`smartlearn_failed_attempts_${email}`);
       localStorage.setItem('proto_token', data.token); appState.user = data.user;
       enableOfflineDemoIndicator(false); showAuthAlert('Redirecting...', true);
       setTimeout(() => { closeAuthModal(); setUserRole(data.user.role); }, 1000);
       return;
     }
-    // Server responded but rejected credentials — still try offline fallback below
-  } catch (err) {
-    // Network error (server offline) — try offline fallback below
-  }
+  } catch (err) {}
+
   const user = getSimulatedUsers().find(u => u.email === email && u.password === password);
   if (user) {
+    localStorage.removeItem(`smartlearn_failed_attempts_${email}`);
     localStorage.setItem('proto_token', `simulated_token_${user.role}_${user.email}`);
     appState.user = user; enableOfflineDemoIndicator(true); showAuthAlert('Success (Offline Demo)!', true);
     setTimeout(() => { closeAuthModal(); setUserRole(user.role); }, 1000);
   } else {
-    showAuthAlert('Invalid credentials.');
+    let attempts = parseInt(localStorage.getItem(`smartlearn_failed_attempts_${email}`) || '0');
+    attempts++;
+    localStorage.setItem(`smartlearn_failed_attempts_${email}`, attempts);
+    
+    if (attempts >= 3) {
+      localStorage.setItem(`smartlearn_locked_${email}`, 'true');
+      showAuthAlert('Account locked due to 3 failed attempts.<br><button type="button" class="btn btn-secondary btn-sm" style="margin-top: 8px; font-size: 0.75rem; padding: 4px 8px;" onclick="openRecoveryModal()">Recover Account 🔑</button>');
+    } else {
+      showAuthAlert(`Invalid credentials. Attempt ${attempts} of 3.`);
+    }
   }
 }
 async function handlePrototypeSignUp() {
   const name = D.val('signup-name'), email = D.val('signup-email'), password = D.val('signup-password'); if (!name || !email || !password) return showAuthAlert('Fill all general fields.');
+  
+  const strength = checkPasswordStrength(password);
+  if (strength.label.includes('Weak')) {
+    return showAuthAlert('Please choose a stronger password (at least 6 characters, mixed letters and numbers).');
+  }
+
   const payload = { name, email, password, role: activeSignupRole };
   if (activeSignupRole === 'student') {
-    const facSel = document.getElementById('signup-faculty');
-    const deptSel = document.getElementById('signup-dept');
-    const progSel = document.getElementById('signup-program');
-    const courseSel = document.getElementById('signup-course');
+    const confirmPassword = D.val('signup-confirm-password');
+    if (password !== confirmPassword) {
+      return showAuthAlert('Passwords do not match.');
+    }
 
-    payload.facultyId = facSel.value ? parseInt(facSel.value) : null;
-    payload.faculty = facSel.options[facSel.selectedIndex]?.text.replace(' (Demo)', '') || 'Unknown Faculty';
+    const phone = D.val('signup-phone');
+    const username = D.val('signup-username');
+    const institution = D.val('signup-institution');
+    const gender = D.val('signup-gender');
+    const department = D.val('signup-dept');
+    const program = D.val('signup-program');
+    const level = D.val('signup-level');
+    const securityQuestion = D.val('signup-security-question');
+    const securityAnswer = D.val('signup-security-answer');
 
-    payload.departmentId = deptSel.value ? parseInt(deptSel.value) : null;
-    payload.department = deptSel.options[deptSel.selectedIndex]?.text.replace(' (Demo)', '') || 'Computer Science';
+    if (!phone || !username || !institution || !gender || !department || !program || !level || !securityQuestion || !securityAnswer) {
+      return showAuthAlert('Please fill in all student account fields.');
+    }
 
-    payload.programId = progSel.value ? parseInt(progSel.value) : null;
-    payload.program = progSel.options[progSel.selectedIndex]?.text.replace(' (Demo)', '') || 'General Program';
+    payload.phone = phone;
+    payload.username = username;
+    payload.institution = institution;
+    payload.gender = gender;
+    payload.department = department;
+    payload.program = program;
+    payload.level = level;
+    payload.securityQuestion = securityQuestion;
+    payload.securityAnswer = securityAnswer;
 
-    payload.courseId = courseSel.value ? parseInt(courseSel.value) : null;
-    payload.course = courseSel.options[courseSel.selectedIndex]?.text.replace(' (Demo)', '') || 'General Course';
+    // Automatic ID Generation: stu/[prog]/[seqNum]
+    const progAbbrev = PROGRAM_ABBREVIATIONS[program] || 'gen';
+    const users = getSimulatedUsers();
+    const sameProgramCount = users.filter(u => u.role === 'student' && u.program === program).length;
+    const seqNum = String(sameProgramCount + 1).padStart(4, '0');
+    payload.studentIdNumber = `stu/${progAbbrev}/${seqNum}`;
 
-    payload.studentIdNumber = D.val('signup-stdid') || `SL-${Math.floor(100000 + Math.random() * 900000)}`;
+    // Optional profile picture
+    const fileInput = document.getElementById('signup-profile-pic');
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      payload.avatar = 'picture/avatar_student.jpg';
+    }
   } else if (activeSignupRole === 'prospective_student') {
     payload.intendedMajor = D.val('signup-intended-major') || 'Computer Science';
     payload.highSchool = D.val('signup-highschool') || 'Achimota School';
@@ -423,7 +505,12 @@ function getSimulatedFacultyResponse(name, msg) {
   return `Thanks for the details, ${firstName}. I will look into it and get back to you during office hours.`; }
 async function renderStateData() { renderAllComponents(); try { await fetchStateData(); renderAllComponents(); } catch(e){} }
 const renderStudentCourses = () => {
-  const el = D.get('student-courses-grid'); if (el) el.innerHTML = appState.courses.map(c => `
+  const el = D.get('student-courses-grid'); if (!el) return;
+  let filteredCourses = appState.courses;
+  if (appState.role === 'student' && appState.user && appState.user.program) {
+    filteredCourses = appState.courses.filter(c => c.program === appState.user.program);
+  }
+  el.innerHTML = filteredCourses.map(c => `
     <div class="course-card">
       <div class="course-banner"><span class="course-code">${c.code}</span><h3 style="font-size:1.05rem; margin-top:10px;">${c.title}</h3></div>
       <div class="course-body">
@@ -439,7 +526,13 @@ const renderStudentCourses = () => {
     </div>`).join('');
 },
 renderStudentNotes = () => {
-  const el = D.get('student-notes-list'); if (el) el.innerHTML = appState.notes.map(note => {
+  const el = D.get('student-notes-list'); if (!el) return;
+  let filteredNotes = appState.notes;
+  if (appState.role === 'student' && appState.user && appState.user.program) {
+    const programCourses = appState.courses.filter(c => c.program === appState.user.program).map(c => c.id);
+    filteredNotes = appState.notes.filter(n => programCourses.includes(n.courseId));
+  }
+  el.innerHTML = filteredNotes.map(note => {
     const code = appState.courses.find(c => c.id === note.courseId)?.code || 'GEN';
     const pdfMap = {
       'Lec 1: Fundamentals of Python & Control Structures.pdf': 'assets/pdfs/CS101_Fundamentals.pdf',
@@ -450,7 +543,22 @@ renderStudentNotes = () => {
       'Lec 2: Functions, Limits, & Continuity.pdf': 'assets/pdfs/MATH102_Calculus.pdf',
       'Cheat Sheet: Key Calculus Limits & Formulas.pdf': 'assets/pdfs/MATH102_Calculus_Cheat_Sheet.pdf',
       'Lec 1: Intro to Agile Methodologies & Scrum.pdf': 'assets/pdfs/ENG201_Agile.pdf',
-      'Lec 1: Fundamentals of Management & Business Operations.pdf': 'assets/pdfs/BUA202_Business.pdf'
+      'Lec 1: Fundamentals of Management & Business Operations.pdf': 'assets/pdfs/BUA202_Business.pdf',
+      
+      // Program textbooks mapping
+      'Computer Science Course Book.pdf': 'PDF/Computer and Information Technology/ComputerScienceOne.pdf',
+      'Software Engineering Course Book.pdf': 'PDF/Computer and Information Technology/Software Engineering - Ian Sommerville.pdf',
+      'Cybersecurity Course Book.pdf': 'PDF/Computer and Information Technology/FUNDAMENTALS OF CYBER SECURITY.pdf',
+      'Data Science Course Book.pdf': 'PDF/Computer and Information Technology/book.pdf',
+      'Business Administration Course Book.pdf': 'PDF/Business and Economics/Business admin.pdf',
+      'BA Economics & Public Policy Course Book.pdf': 'PDF/Business and Economics/BA Economics & Public Policy.pdf',
+      'Electrical Engineering Course Book.pdf': 'PDF/Engineering & Architecture/BSc Electrical Engineering.pdf',
+      'Mechanical Engineering Course Book.pdf': 'PDF/Engineering & Architecture/BSc_Mechanical_Engineering.pdf',
+      'Architecture and Design Course Book.pdf': 'PDF/Engineering & Architecture/BSc_Architecture_and_Design.pdf',
+      'Nursing and Allied Health Course Book.pdf': 'PDF/Healthcare & Medical Sciences/BSc_Nursing_and_Allied_Health.pdf',
+      'Pharmacy Course Book.pdf': 'PDF/Healthcare & Medical Sciences/Doctor_of_Pharmacy_PharmD.pdf',
+      'Medicine and Surgery Course Book.pdf': 'PDF/Healthcare & Medical Sciences/Medicine_and_Surgery_MBChB.pdf',
+      'Bachelor of Laws Course Book.pdf': 'PDF/Legal & Social Sciences/Bachelor_of_Laws_LLB.pdf'
     };
     const pdfUrl = pdfMap[note.title] || '#';
     return `
@@ -462,7 +570,7 @@ renderStudentNotes = () => {
         </div>
         <div style="display:flex; gap:8px;">
           <button class="btn btn-secondary btn-sm" onclick="simulateSummarizeNote('${note.title}')">AI Summarize</button>
-          <a class="btn btn-primary btn-sm" href="${pdfUrl}" download="${code}_Notes.pdf" target="_blank">Download</a>
+          <a class="btn btn-primary btn-sm" href="${pdfUrl}" download="${note.title}" target="_blank">Download</a>
         </div>
       </div>`;
   }).join('');
@@ -1044,9 +1152,128 @@ function toggleLandingUniversities() {
 }
 
 function initApplication() {
-  const theme = localStorage.getItem('smartlearn_theme') || 'light'; document.body.setAttribute('data-theme', theme); appState.theme = theme; document.querySelectorAll('.theme-toggle').forEach(btn => btn.innerHTML = theme === 'dark' ? '☀️' : '🌙'); fetchPublicUniversities(); loadAiProvider(); setAiMode('study'); renderGpaUniDropdown(); updateGpaPredictor(); renderStateData(); resetCareerQuiz(); resetInactivityTimer(); setSpaCitationFormat('APA'); }
+  const theme = localStorage.getItem('smartlearn_theme') || 'light'; document.body.setAttribute('data-theme', theme); appState.theme = theme; document.querySelectorAll('.theme-toggle').forEach(btn => btn.innerHTML = theme === 'dark' ? '☀️' : '🌙'); fetchPublicUniversities(); loadAiProvider(); setAiMode('study'); renderGpaUniDropdown(); updateGpaPredictor(); renderStateData(); resetCareerQuiz(); resetInactivityTimer(); setSpaCitationFormat('APA'); 
+  
+  // Register password strength checking listener
+  document.getElementById('signup-password')?.addEventListener('input', (e) => {
+    const pwd = e.target.value;
+    const textEl = document.getElementById('pwd-strength-text');
+    if (!textEl) return;
+    if (!pwd) {
+      textEl.textContent = 'Empty';
+      textEl.style.color = 'var(--text-muted)';
+      return;
+    }
+    const strength = checkPasswordStrength(pwd);
+    textEl.textContent = strength.label;
+    textEl.style.color = strength.color;
+  });
+}
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initApplication); else initApplication();
 function togglePasswordVisibility(inputId, btnEl) {
   const input = D.get(inputId); if (!input) return; const show = input.type === 'password'; input.type = show ? 'text' : 'password';
   btnEl.innerHTML = show ? `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`; }
+
+/* ==========================================================================
+   ACCOUNT RECOVERY SYSTEM
+   ========================================================================== */
+function openRecoveryModal() {
+  closeAuthModal();
+  D.show('recovery-modal', true);
+  D.html('recovery-alert', '');
+  D.show('recovery-alert', false);
+  D.val('recovery-email', '');
+  D.val('recovery-answer', '');
+  D.val('recovery-new-password', '');
+  D.get('recovery-question-group').style.display = 'none';
+  D.get('recovery-new-password-group').style.display = 'none';
+}
+
+function closeRecoveryModal() {
+  D.show('recovery-modal', false);
+  openAuthModal();
+}
+
+function fetchSecurityQuestion(email) {
+  const alertEl = D.get('recovery-alert');
+  const qGroup = D.get('recovery-question-group');
+  const pGroup = D.get('recovery-new-password-group');
+  const qText = D.get('recovery-question-text');
+  
+  if (!email) return;
+  
+  const user = getSimulatedUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (user) {
+    if (user.securityQuestion) {
+      qText.textContent = user.securityQuestion;
+      qGroup.style.display = 'block';
+      pGroup.style.display = 'block';
+      D.show('recovery-alert', false);
+    } else {
+      qGroup.style.display = 'none';
+      pGroup.style.display = 'none';
+      alertEl.style.display = 'block';
+      alertEl.style.background = 'rgba(239,68,68,0.1)';
+      alertEl.style.color = '#ef4444';
+      alertEl.textContent = 'User has not set a security question. Please contact admin.';
+    }
+  } else {
+    qGroup.style.display = 'none';
+    pGroup.style.display = 'none';
+    alertEl.style.display = 'block';
+    alertEl.style.background = 'rgba(239,68,68,0.1)';
+    alertEl.style.color = '#ef4444';
+    alertEl.textContent = 'Account not found with this email.';
+  }
+}
+
+function handleAccountRecovery() {
+  const email = D.val('recovery-email');
+  const answer = D.val('recovery-answer');
+  const newPassword = D.val('recovery-new-password');
+  const alertEl = D.get('recovery-alert');
+  
+  if (!email || !answer || !newPassword) {
+    alertEl.style.display = 'block';
+    alertEl.style.background = 'rgba(239,68,68,0.1)';
+    alertEl.style.color = '#ef4444';
+    alertEl.textContent = 'Please fill in all fields.';
+    return;
+  }
+  
+  const users = getSimulatedUsers();
+  const userIndex = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+  if (userIndex !== -1) {
+    const user = users[userIndex];
+    if (user.securityAnswer && user.securityAnswer.toLowerCase().trim() === answer.toLowerCase().trim()) {
+      user.password = newPassword;
+      users[userIndex] = user;
+      saveSimulatedUsers(users);
+      
+      localStorage.removeItem(`smartlearn_failed_attempts_${user.email}`);
+      localStorage.removeItem(`smartlearn_locked_${user.email}`);
+      
+      alertEl.style.display = 'block';
+      alertEl.style.background = 'rgba(16,185,129,0.1)';
+      alertEl.style.color = '#10b981';
+      alertEl.textContent = 'Success! Password reset and account unlocked. Redirecting to sign in...';
+      
+      setTimeout(() => {
+        closeRecoveryModal();
+        D.val('signin-email', user.email);
+        D.val('signin-password', newPassword);
+      }, 2000);
+    } else {
+      alertEl.style.display = 'block';
+      alertEl.style.background = 'rgba(239,68,68,0.1)';
+      alertEl.style.color = '#ef4444';
+      alertEl.textContent = 'Incorrect answer to security question.';
+    }
+  } else {
+    alertEl.style.display = 'block';
+    alertEl.style.background = 'rgba(239,68,68,0.1)';
+    alertEl.style.color = '#ef4444';
+    alertEl.textContent = 'Account not found.';
+  }
+}
 
