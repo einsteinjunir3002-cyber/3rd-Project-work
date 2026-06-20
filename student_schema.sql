@@ -10,15 +10,26 @@ CREATE TABLE IF NOT EXISTS student_courses (
   instructor VARCHAR(255) NOT NULL,
   avatar VARCHAR(255),
   notes_count INTEGER DEFAULT 0,
-  assignments_count INTEGER DEFAULT 0
+  assignments_count INTEGER DEFAULT 0,
+  program VARCHAR(255)
 );
 
 -- Insert dummy data so it works immediately
-INSERT INTO student_courses (id, title, code, instructor, avatar, notes_count, assignments_count) VALUES
-('CS101', 'Introduction to Computer Science & Coding', 'CS101', 'Dr. Kwame Mensah', 'avatar_lecturer.jpg', 4, 2),
-('MATH102', 'Calculus & Applied Mathematics', 'MATH102', 'Prof. Ama Serwaa', 'avatar_lecturer.jpg', 3, 1),
-('ENG201', 'Software Engineering & Architectures', 'ENG201', 'Mr. Emmanuel Osei', 'avatar_lecturer.jpg', 5, 3),
-('BUA202', 'Business Administration & Management', 'BUA202', 'Dr. Sophia Tetteh', 'avatar_lecturer.jpg', 2, 1)
+INSERT INTO student_courses (id, title, code, instructor, avatar, notes_count, assignments_count, program) VALUES
+('CS101', 'Introduction to Computer Science & Coding', 'CS101', 'Dr. Kwame Mensah', 'avatar_lecturer.jpg', 4, 2, 'BSc Computer Science'),
+('MATH102', 'Calculus & Applied Mathematics', 'MATH102', 'Prof. Ama Serwaa', 'avatar_lecturer.jpg', 3, 1, 'BSc Computer Science'),
+('ENG201', 'Software Engineering & Architectures', 'ENG201', 'Mr. Emmanuel Osei', 'avatar_lecturer.jpg', 5, 3, 'BSc Software Engineering'),
+('BUA202', 'Business Administration & Management', 'BUA202', 'Dr. Sophia Tetteh', 'avatar_lecturer.jpg', 2, 1, 'BSc Business Administration'),
+('CYS101', 'Information Security & Cryptography', 'CYS101', 'Dr. Kwame Mensah', 'avatar_lecturer.jpg', 1, 0, 'BSc Cybersecurity'),
+('DSC101', 'Introduction to Data Science & Analytics', 'DSC101', 'Prof. Ama Serwaa', 'avatar_lecturer.jpg', 1, 0, 'BSc Data Science'),
+('ELE101', 'Circuit Analysis & Semiconductor Electronics', 'ELE101', 'Mr. Emmanuel Osei', 'avatar_lecturer.jpg', 1, 0, 'BSc Electrical Engineering'),
+('MEC101', 'Introduction to Thermodynamics & Fluids', 'MEC101', 'Dr. Sophia Tetteh', 'avatar_lecturer.jpg', 1, 0, 'BSc Mechanical Engineering'),
+('ARC101', 'Structural Design & Architectural CAD Modeling', 'ARC101', 'Mr. Emmanuel Osei', 'avatar_lecturer.jpg', 1, 0, 'BSc Architecture & Design'),
+('NUR101', 'General Nursing & Patient Care Ethics', 'NUR101', 'Dr. Sophia Tetteh', 'avatar_lecturer.jpg', 1, 0, 'BSc Nursing & Allied Health'),
+('MED101', 'Clinical Diagnostics & General Pathology', 'MED101', 'Dr. Sophia Tetteh', 'avatar_lecturer.jpg', 1, 0, 'Medicine & Surgery (MBChB)'),
+('PHA101', 'Pharmaceutical Chemistry & Clinical Pharmacology', 'PHA101', 'Prof. Ama Serwaa', 'avatar_lecturer.jpg', 1, 0, 'Doctor of Pharmacy (PharmD)'),
+('LAW101', 'Constitutional Law & Jurisprudence in Ghana', 'LAW101', 'Dr. Sophia Tetteh', 'avatar_lecturer.jpg', 1, 0, 'Bachelor of Laws (LLB)'),
+('ECO101', 'Macroeconomic Principles & Public Policy', 'ECO101', 'Prof. Ama Serwaa', 'avatar_lecturer.jpg', 1, 0, 'BA Economics & Public Policy')
 ON CONFLICT (id) DO NOTHING;
 
 
@@ -35,7 +46,20 @@ INSERT INTO student_notes (course_id, title, date, size) VALUES
 ('CS101', 'Lec 1: Fundamentals of Python & Control Structures.pdf', '2026-05-15', '2.4 MB'),
 ('CS101', 'Lec 2: Object Oriented Programming in Python.pdf', '2026-05-20', '3.1 MB'),
 ('MATH102', 'Lec 1: Derivatives and Rate of Changes.pdf', '2026-05-12', '1.8 MB'),
-('ENG201', 'Lec 1: Intro to Agile Methodologies & Scrum.pdf', '2026-05-18', '4.2 MB')
+('ENG201', 'Lec 1: Intro to Agile Methodologies & Scrum.pdf', '2026-05-18', '4.2 MB'),
+('CS101', 'Computer Science Course Book.pdf', '2026-06-01', '2.2 MB'),
+('ENG201', 'Software Engineering Course Book.pdf', '2026-06-01', '3.9 MB'),
+('CYS101', 'Cybersecurity Course Book.pdf', '2026-06-01', '6.6 MB'),
+('DSC101', 'Data Science Course Book.pdf', '2026-06-01', '2.4 MB'),
+('BUA202', 'Business Administration Course Book.pdf', '2026-06-01', '4.8 MB'),
+('ECO101', 'BA Economics & Public Policy Course Book.pdf', '2026-06-01', '3.2 MB'),
+('ELE101', 'Electrical Engineering Course Book.pdf', '2026-06-01', '5.1 MB'),
+('MEC101', 'Mechanical Engineering Course Book.pdf', '2026-06-01', '4.4 MB'),
+('ARC101', 'Architecture and Design Course Book.pdf', '2026-06-01', '7.8 MB'),
+('NUR101', 'Nursing and Allied Health Course Book.pdf', '2026-06-01', '3.5 MB'),
+('PHA101', 'Pharmacy Course Book.pdf', '2026-06-01', '5.8 MB'),
+('MED101', 'Medicine and Surgery Course Book.pdf', '2026-06-01', '10.2 MB'),
+('LAW101', 'Bachelor of Laws Course Book.pdf', '2026-06-01', '8.4 MB' )
 ON CONFLICT DO NOTHING;
 
 

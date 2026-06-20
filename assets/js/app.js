@@ -56,21 +56,32 @@ const getSimulatedUsers = () => {
   } catch(e) { return [...DEMO_ACCOUNTS]; }
 }, saveSimulatedUsers = users => localStorage.setItem('smartlearn_simulated_users', JSON.stringify(users)),
 loadOfflineState = () => {
-  const s = localStorage.getItem('smartlearn_offline_appstate');
+  const s = localStorage.getItem('smartlearn_offline_appstate_v3');
   if (s) {
     try {
       const parsed = JSON.parse(s);
       if (parsed.courses) {
         SMARTLEARN_STATIC_DATA.courses.forEach(c => {
-          if (!parsed.courses.some(pc => pc.id === c.id)) {
+          const existing = parsed.courses.find(pc => pc.id === c.id);
+          if (!existing) {
             parsed.courses.push(c);
+          } else {
+            existing.program = c.program;
+            if (c.notesCount !== undefined) existing.notesCount = c.notesCount;
+            if (c.assignmentsCount !== undefined) existing.assignmentsCount = c.assignmentsCount;
           }
         });
       }
       if (parsed.notes) {
         SMARTLEARN_STATIC_DATA.notes.forEach(n => {
-          if (!parsed.notes.some(pn => pn.id === n.id)) {
+          const existing = parsed.notes.find(pn => pn.id === n.id || pn.title === n.title);
+          if (!existing) {
             parsed.notes.push(n);
+          } else {
+            existing.courseId = n.courseId;
+            existing.title = n.title;
+            existing.size = n.size;
+            existing.date = n.date;
           }
         });
       }
@@ -85,11 +96,11 @@ loadOfflineState = () => {
     } catch(e) {}
   }
 }, saveOfflineState = () => {
-  localStorage.setItem('smartlearn_offline_appstate', JSON.stringify({
+  localStorage.setItem('smartlearn_offline_appstate_v3', JSON.stringify({
     courses: appState.courses, notes: appState.notes, assignments: appState.assignments, submissions: appState.submissions, forumThreads: appState.forumThreads, universities: appState.universities, students: appState.students,
     facultyContacts: appState.facultyContacts, facultyChats: appState.facultyChats, activeFacultyEmail: appState.activeFacultyEmail, studentStartups: appState.studentStartups
   }));
-}, enableOfflineDemoIndicator = enable => { isOfflineDemoMode = enable; D.show('offline-demo-indicator', enable); }; if (!localStorage.getItem('smartlearn_offline_appstate')) saveOfflineState(); else loadOfflineState();
+}, enableOfflineDemoIndicator = enable => { isOfflineDemoMode = enable; D.show('offline-demo-indicator', enable); }; if (!localStorage.getItem('smartlearn_offline_appstate_v3')) saveOfflineState(); else loadOfflineState();
 
 function toggleStudentFieldsRequired(isRequired) {
   const fields = [
@@ -492,8 +503,13 @@ async function fetchStateData() {
     const apiCourses = await getJSON(`${API_BASE}/api/courses`);
     if (apiCourses) {
       SMARTLEARN_STATIC_DATA.courses.forEach(c => {
-        if (!apiCourses.some(pc => pc.id === c.id)) {
+        const existing = apiCourses.find(pc => pc.id === c.id);
+        if (!existing) {
           apiCourses.push(c);
+        } else {
+          existing.program = c.program;
+          if (c.notesCount !== undefined) existing.notesCount = c.notesCount;
+          if (c.assignmentsCount !== undefined) existing.assignmentsCount = c.assignmentsCount;
         }
       });
       appState.courses = apiCourses;
@@ -502,8 +518,14 @@ async function fetchStateData() {
     const apiNotes = await getJSON(`${API_BASE}/api/courses/notes`);
     if (apiNotes) {
       SMARTLEARN_STATIC_DATA.notes.forEach(n => {
-        if (!apiNotes.some(pn => pn.id === n.id)) {
+        const existing = apiNotes.find(pn => pn.id === n.id || pn.title === n.title);
+        if (!existing) {
           apiNotes.push(n);
+        } else {
+          existing.courseId = n.courseId;
+          existing.title = n.title;
+          existing.size = n.size;
+          existing.date = n.date;
         }
       });
       appState.notes = apiNotes;
