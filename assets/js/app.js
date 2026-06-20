@@ -488,9 +488,37 @@ async function fetchStateData() {
   if (token.startsWith('simulated_token_')) { loadOfflineState(); enableOfflineDemoIndicator(true); return; }
   try {
     const headers = { 'Authorization': `Bearer ${token}` }, getJSON = async url => { const r = await fetch(url, { headers }); return r.ok ? r.json() : null; };
-    appState.courses = await getJSON(`${API_BASE}/api/courses`) || appState.courses;
-    appState.notes = await getJSON(`${API_BASE}/api/courses/notes`) || appState.notes;
-    appState.assignments = await getJSON(`${API_BASE}/api/assignments`) || appState.assignments;
+    
+    const apiCourses = await getJSON(`${API_BASE}/api/courses`);
+    if (apiCourses) {
+      SMARTLEARN_STATIC_DATA.courses.forEach(c => {
+        if (!apiCourses.some(pc => pc.id === c.id)) {
+          apiCourses.push(c);
+        }
+      });
+      appState.courses = apiCourses;
+    }
+    
+    const apiNotes = await getJSON(`${API_BASE}/api/courses/notes`);
+    if (apiNotes) {
+      SMARTLEARN_STATIC_DATA.notes.forEach(n => {
+        if (!apiNotes.some(pn => pn.id === n.id)) {
+          apiNotes.push(n);
+        }
+      });
+      appState.notes = apiNotes;
+    }
+    
+    const apiAssignments = await getJSON(`${API_BASE}/api/assignments`);
+    if (apiAssignments) {
+      SMARTLEARN_STATIC_DATA.assignments.forEach(a => {
+        if (!apiAssignments.some(pa => pa.id === a.id)) {
+          apiAssignments.push(a);
+        }
+      });
+      appState.assignments = apiAssignments;
+    }
+    
     appState.forumThreads = await getJSON(`${API_BASE}/api/forums`) || appState.forumThreads;
     if (appState.role === 'lecturer' || appState.role === 'admin') appState.submissions = await getJSON(`${API_BASE}/api/assignments/submissions`) || appState.submissions;
     appState.universities = await getJSON(`${API_BASE}/api/universities`) || appState.universities; enableOfflineDemoIndicator(false);
