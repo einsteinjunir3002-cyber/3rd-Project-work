@@ -8,19 +8,32 @@ function navigateTo(shellId) {
   if (shellId === 'portal-shell') { document.body.setAttribute('data-theme', appState.theme); updateSidebarDetails(); renderStateData(); }
   window.scrollTo(0,0); }
 function switchTab(role, tabId) {
-  const isStudentRole = ['student', 'researcher', 'entrepreneur', 'prospective_student'].includes(appState.role) || appState.role === 'admin';
+  const isStudentRole = ['student', 'entrepreneur', 'prospective_student'].includes(appState.role) || appState.role === 'admin';
+  const isResearcherRole = appState.role === 'researcher' || appState.role === 'admin';
   const isLecturerRole = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(appState.role) || appState.role === 'admin';
   if (role === 'lecturer' && !isLecturerRole) return showToastNotification('Access Denied: Lecturer role required.');
   if (role === 'student' && !isStudentRole) return showToastNotification('Access Denied: Student role required.');
+  if (role === 'researcher' && !isResearcherRole) return showToastNotification('Access Denied: Researcher role required.');
   if (role === 'admin' && appState.role !== 'admin') return showToastNotification('Access Denied: Admin role required.');
   document.querySelectorAll('.portal-view').forEach(el => el.classList.remove('active'));
   const target = D.get(tabId); if (target) target.classList.add('active');
   document.querySelectorAll('.sidebar-nav-item').forEach(el => el.classList.remove('active'));
   const btn = document.querySelector(`[data-tab="${tabId}"]`); if (btn) btn.classList.add('active');
   if (role === 'student') { appState.activeStudentTab = tabId; if (tabId === 'student-settings') prepopulateUserSettings('student'); }
+  else if (role === 'researcher') { appState.activeResearcherTab = tabId; if (tabId === 'researcher-settings') prepopulateUserSettings('researcher'); }
   else if (role === 'lecturer') { appState.activeLecturerTab = tabId; if (tabId === 'lecturer-settings') prepopulateUserSettings('lecturer'); }
   else if (role === 'admin') { appState.activeAdminTab = tabId; if (typeof renderAdminViews === 'function') renderAdminViews(); }
   document.querySelector('aside.portal-sidebar')?.classList.remove('open'); }
+/* ==========================================================================
+   SUPABASE INTEGRATION (SERVERLESS BACKEND)
+   ========================================================================== */
+const SUPABASE_URL = 'https://nysyxythdiufhutmpgwx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55c3l4eXRoZGl1Zmh1dG1wZ3d4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTg1Njc2NDksImV4cCI6MjAzNDE0MzY0OX0.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; // Placeholder, actual key managed via Supabase settings
+let supabaseClient = null;
+if (window.supabase) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
 /* ==========================================================================
    OFFLINE ENGINE
    ========================================================================== */
@@ -165,23 +178,27 @@ function setUserRole(role) {
       </select>` : ''; }
   if (role === 'admin') setAdminPrototypeView('admin');
   else {
-    const isStudentWorkspace = ['student', 'researcher', 'entrepreneur', 'prospective_student'].includes(role);
+    const isStudentWorkspace = ['student', 'entrepreneur', 'prospective_student'].includes(role);
+    const isResearcherWorkspace = role === 'researcher';
     const isLecturerWorkspace = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(role);
     document.querySelectorAll('.student-only').forEach(el => el.style.display = (isStudentWorkspace ? 'flex' : 'none')); 
+    document.querySelectorAll('.researcher-only').forEach(el => el.style.display = (isResearcherWorkspace ? 'flex' : 'none'));
     document.querySelectorAll('.lecturer-only').forEach(el => el.style.display = (isLecturerWorkspace ? 'flex' : 'none')); 
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none'); 
     
     customizeSidebarMenuItems(role);
     
-    switchTab(isStudentWorkspace ? 'student' : 'lecturer', isStudentWorkspace ? 'student-dashboard' : 'lecturer-dashboard'); 
+    switchTab(isStudentWorkspace ? 'student' : (isResearcherWorkspace ? 'researcher' : 'lecturer'), isStudentWorkspace ? 'student-dashboard' : (isResearcherWorkspace ? 'researcher-dashboard' : 'lecturer-dashboard')); 
   }
   updateAiSettingsVisibility();
 }
 const setAdminPrototypeView = view => {
-  const studentRoles = ['student', 'researcher', 'entrepreneur', 'prospective_student'];
+  const studentRoles = ['student', 'entrepreneur', 'prospective_student'];
+  const researcherRoles = ['researcher'];
   const lecturerRoles = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'];
   const isAdmin = view === 'admin';
   const isStd = studentRoles.includes(view);
+  const isRes = researcherRoles.includes(view);
   const isLec = lecturerRoles.includes(view);
 
   // Clear active portal views
@@ -210,8 +227,12 @@ const setAdminPrototypeView = view => {
   else if (view === 'entrepreneur') targetTab = 'student-dashboard';
   else if (view === 'prospective_student') targetTab = 'student-dashboard';
 
-  const roleGroup = studentRoles.includes(view) ? 'student' : (lecturerRoles.includes(view) ? 'lecturer' : 'admin');
-  switchTab(roleGroup, targetTab);
+  const roleGroup = studentRoles.includes(view) ? 'student' : (researcherRoles.includes(view) ? 'researcher' : (lecturerRoles.includes(view) ? 'lecturer' : 'admin'));
+  if (typeof switchTabExtended === 'function') {
+    switchTabExtended(roleGroup, targetTab);
+  } else {
+    switchTab(roleGroup, targetTab);
+  }
 },
 handlePrototypeLogout = () => { localStorage.removeItem('proto_token'); appState.user = null; enableOfflineDemoIndicator(false); navigateTo('landing-shell'); };
 async function validatePrototypeSession() {
@@ -290,11 +311,13 @@ function updateSidebarDetails() {
 }
 
 function customizeSidebarMenuItems(role) {
-  const isStudentWorkspace = ['student', 'researcher', 'entrepreneur', 'prospective_student'].includes(role);
+  const isStudentWorkspace = ['student', 'entrepreneur', 'prospective_student'].includes(role);
+  const isResearcherWorkspace = role === 'researcher';
   const isLecturerWorkspace = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(role);
   const isAdminWorkspace = role === 'admin';
 
   document.querySelectorAll('.student-only').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.researcher-only').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.lecturer-only').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
 
@@ -302,10 +325,7 @@ function customizeSidebarMenuItems(role) {
     document.querySelectorAll('.student-only').forEach(el => {
       const tab = el.getAttribute('data-tab');
       let visible = true;
-      if (role === 'researcher') {
-        visible = ['student-dashboard', 'student-research', 'student-courses', 'student-forum', 'student-ai-assistant', 'student-contacts', 'student-settings'].includes(tab);
-        if (tab === 'student-dashboard') el.textContent = '🔬 Research Desk';
-      } else if (role === 'entrepreneur') {
+      if (role === 'entrepreneur') {
         visible = ['student-dashboard', 'student-innovation', 'student-forum', 'student-ai-assistant', 'student-contacts', 'student-settings'].includes(tab);
         if (tab === 'student-dashboard') el.textContent = '💡 Founder Dashboard';
       } else if (role === 'prospective_student') {
@@ -318,7 +338,10 @@ function customizeSidebarMenuItems(role) {
         if (tab === 'student-dashboard') el.textContent = '📊 Dashboard Overview';
       }
       el.style.display = visible ? 'block' : 'none';
+      el.style.display = visible ? 'block' : 'none';
     });
+  } else if (isResearcherWorkspace) {
+    document.querySelectorAll('.researcher-only').forEach(el => el.style.display = 'block');
   } else if (isLecturerWorkspace) {
     document.querySelectorAll('.lecturer-only').forEach(el => {
       const tab = el.getAttribute('data-tab');
@@ -418,6 +441,13 @@ const renderStudentCourses = () => {
 renderStudentNotes = () => {
   const el = D.get('student-notes-list'); if (el) el.innerHTML = appState.notes.map(note => {
     const code = appState.courses.find(c => c.id === note.courseId)?.code || 'GEN';
+    const pdfMap = {
+      'Lec 1: Fundamentals of Python & Control Structures.pdf': 'assets/pdfs/CS101_Fundamentals.pdf',
+      'Lec 2: Object Oriented Programming in Python.pdf': 'assets/pdfs/CS101_OOP.pdf',
+      'Lec 1: Derivatives and Rate of Changes.pdf': 'assets/pdfs/MATH102_Derivatives.pdf',
+      'Lec 1: Intro to Agile Methodologies & Scrum.pdf': 'assets/pdfs/ENG201_Agile.pdf'
+    };
+    const pdfUrl = pdfMap[note.title] || '#';
     return `
       <div class="glass" style="padding:16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
         <div>
@@ -427,13 +457,17 @@ renderStudentNotes = () => {
         </div>
         <div style="display:flex; gap:8px;">
           <button class="btn btn-secondary btn-sm" onclick="simulateSummarizeNote('${note.title}')">AI Summarize</button>
-          <a class="btn btn-primary btn-sm" href="#" download>Download</a>
+          <a class="btn btn-primary btn-sm" href="${pdfUrl}" download="${code}_Notes.pdf" target="_blank">Download</a>
         </div>
       </div>`;
   }).join('');
 },
 renderStudentAssignments = () => {
-  const el = D.get('student-assignments-list'); if (el) el.innerHTML = appState.assignments.map(asg => {
+  const el = D.get('student-assignments-list'); if (!el) return;
+  const pending = appState.assignments.filter(a => a.status === 'Pending');
+  const submitted = appState.assignments.filter(a => a.status !== 'Pending');
+
+  const renderItem = asg => {
     const code = appState.courses.find(c => c.id === asg.courseId)?.code || 'GEN';
     let act = asg.status === 'Pending' ? `<button class="btn btn-primary btn-sm" onclick="openSubmitAssignmentModal(${asg.id}, '${asg.title}')">Submit File</button>`
       : `<div style="text-align:right;"><span style="font-weight:700; color:var(--success)">Grade: ${asg.grade || 'Awaiting'}</span></div>`;
@@ -446,7 +480,15 @@ renderStudentAssignments = () => {
         </div>
         <div>${act}</div>
       </div>`;
-  }).join(''); };
+  };
+
+  el.innerHTML = `
+    <h3 style="margin-bottom:12px;">Pending Assignments</h3>
+    ${pending.length ? pending.map(renderItem).join('') : '<p style="color:var(--text-muted);">No pending assignments.</p>'}
+    <h3 style="margin-top:24px; margin-bottom:12px;">Submitted Assignments</h3>
+    ${submitted.length ? submitted.map(renderItem).join('') : '<p style="color:var(--text-muted);">No submitted assignments yet.</p>'}
+  `;
+};
 function renderLecturerAnalytics() {
   const el = D.get('lecturer-students-table-body'); if (!el) return; let total = 0;
   el.innerHTML = appState.students.map(s => {
@@ -557,7 +599,8 @@ const getSystemPrompt = mode => ({
   study: 'You are an intelligent, empathetic Academic Study Assistant at a Ghanaian university. Explain concepts clearly, suggest study strategies, and reference local Ghanaian context.', career: 'You are an expert Career and Academic Advisor for tertiary students in Ghana. Guide on matching majors, job opportunities in Accra/Kumasi, salaries, and skills.', helper: 'You are an academic writing counselor. Assist students with structuring essays and checking logic. Remind them to avoid plagiarism.',
   tutor: 'You are a Programming Tutor. Explain code, debug, and provide brief examples in Python, JS, SQL.',
   research: 'You are an expert AI Research Assistant helping Ghanaian university students. Critically evaluate methodology, search and critique literature, extract findings from abstracts, suggest regional West African/Ghanaian context, and format citations (APA, Harvard, IEEE, MLA).',
-  innovation: 'You are a Startup Advisor and Business Plan Optimizer helping students commercialize their research in Ghana. Validate product-market fit, analyze risk, suggest funding, highlight local regulatory compliance (e.g. Ghana FDA, GSA, registrar general), and structure pitches.'
+  innovation: 'You are a Startup Advisor and Business Plan Optimizer helping students commercialize their research in Ghana. Validate product-market fit, analyze risk, suggest funding, highlight local regulatory compliance (e.g. Ghana FDA, GSA, registrar general), and structure pitches.',
+  admission: 'You are a University Admission Advisor for Ghanaian universities (e.g., KNUST, UG). Answer questions based on admission enquiries, WASSCE cut-offs, entry requirements, and provide helpful admission advice.'
 }[mode] || 'Assistant');
 function setAiMode(mode) {
   currentAiMode = mode; document.querySelectorAll('.ai-mode-btn').forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-mode') === mode)); chatSessionHistory = [];
@@ -566,7 +609,8 @@ function setAiMode(mode) {
     helper: 'I am your Assignment Helper. Paste guidelines to get structural feedback.',
     tutor: 'Hey! I am your AI Programming Tutor. Paste your code and let\'s debug!',
     research: 'Welcome to your AI Research Assistant! Ask me to evaluate your methodology, format academic citations, or paste an abstract for critical summary.',
-    innovation: 'Welcome to the Innovation & Startup Advisor! Paste your business pitch or startup ideas. I will analyze their viability, risks, and local Ghanaian regulatory steps (FDA, GSA, registrar general).'
+    innovation: 'Welcome to the Innovation & Startup Advisor! Paste your business pitch or startup ideas. I will analyze their viability, risks, and local Ghanaian regulatory steps (FDA, GSA, registrar general).',
+    admission: 'Welcome! I am your Admissions Advisor. Ask me any questions about WASSCE cut-offs, program requirements, and general admission advice for universities in Ghana.'
   }[mode] || 'Hello!';
   chatSessionHistory.push({ role: 'assistant', content: greet }); D.html('ai-chat-messages', ''); appendChatMessage('ai', greet); }
 function appendChatMessage(sender, text) {

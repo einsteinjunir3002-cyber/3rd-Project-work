@@ -1,16 +1,32 @@
 {
-  "name": "smartlearn-ai-workspace",
+  "name": "project-work-3rd-phase",
   "version": "1.0.0",
-  "private": true,
-  "description": "SmartLearn AI LMS Full-Stack Workspace",
-  "scripts": {
-    "postinstall": "npx pnpm install --dir backend && npx pnpm install --dir frontend",
-    "dev": "concurrently \"npx pnpm --dir backend run dev\" \"npx pnpm --dir frontend run dev\"",
-    "build": "npx pnpm --dir backend run build && npx pnpm --dir frontend run build",
-    "test": "npx pnpm --dir backend run test",
-    "download-pics": "node \"C:\\Users\\einst\\.gemini\\antigravity-ide\\brain\\8a051545-17c4-42de-86f5-6fa581909c73\\scratch\\download_pics.js\""
+  "description": "SmartLearn AI is a next-generation, AI-integrated Learning Management System (LMS) prototype built as a final year college project architecture plan. It features highly responsive student and lecturer dashboards, simulated AI academic advisors, career guidance testers, GPA calculators, past question explainers, and interactive forum discussion boards.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
   },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/einsteinjunir3002-cyber/3rd-Project-work.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/einsteinjunir3002-cyber/3rd-Project-work/issues"
+  },
+  "homepage": "https://github.com/einsteinjunir3002-cyber/3rd-Project-work#readme",
   "dependencies": {
-    "concurrently": "^8.2.2"
+    "@supabase/supabase-js": "^2.108.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.2.0"
   }
 }

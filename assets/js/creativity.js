@@ -209,7 +209,7 @@ function renderQuickActionsBtn() {
        onmouseout="this.style.transform='';this.style.boxShadow='0 8px 24px rgba(124,58,237,0.45)'">⚡</button>
     <div id="quick-actions-panel" style="
       display:none;position:fixed;bottom:92px;right:28px;z-index:9997;
-      background:var(--surface);border:1px solid var(--border);border-radius:16px;
+      background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;
       padding:12px;min-width:220px;box-shadow:0 16px 40px rgba(0,0,0,0.25);
       animation:tooltipFadeIn 0.2s ease;
     ">

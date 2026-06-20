@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: smartlearn-db
+    environment:
+      POSTGRES_USER: smartlearn_user
+      POSTGRES_PASSWORD: smartlearn_password
+      POSTGRES_DB: smartlearn_ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: smartlearn-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    container_name: smartlearn-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: supersecretpassword
+    volumes:
+      - miniodata:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:

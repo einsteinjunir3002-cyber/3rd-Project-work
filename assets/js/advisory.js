@@ -1,23 +1,86 @@
 /* SMARTLEARN AI - ADVISORY, GPA & QUIZ SERVICES */
 
-function renderCareerQuizQuestion() {
-  const container = D.get('career-quiz-slide-container'); if (!container) return; const q = careerQuizQuestions[currentQuestionIndex];
-  const optionsHtml = q.options.map(opt => `<div class="option-card" onclick="selectCareerOption(this, '${opt.category}')"><div class="option-check"></div> ${opt.text}</div>`).join('');
-  container.innerHTML = `<div class="question-slide active"><h3 class="question-title">${q.title}</h3><div class="options-list">${optionsHtml}</div></div>`; D.get('career-next-btn').disabled = true; }
-function selectCareerOption(element, category) {
-  element.parentElement.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected')); element.classList.add('selected'); element.setAttribute('data-choice', category); D.get('career-next-btn').disabled = false; }
-function nextCareerQuestion() {
-  const activeSlide = document.querySelector('.question-slide.active'), selected = activeSlide.querySelector('.option-card.selected'); if (!selected) return; const choice = selected.getAttribute('data-choice'); careerScores[choice] = (careerScores[choice] || 0) + 1; currentQuestionIndex++; const progressPercent = ((currentQuestionIndex) / careerQuizQuestions.length) * 100;
-  D.get('career-progress-bar').style.width = `${progressPercent}%`; if (currentQuestionIndex < careerQuizQuestions.length) renderCareerQuizQuestion(); else showCareerResults(); }
-function showCareerResults() {
-  D.show('career-quiz-box', false); D.show('career-result-box', true); let topCategory = 'programming', maxScore = -1;
-  for (let key in careerScores) { if (careerScores[key] > maxScore) { maxScore = careerScores[key]; topCategory = key; } }
-  const data = appState.careersDb[topCategory];
-  D.html('career-result-title', `Recommended Track: ${data.programs[0]}`); D.html('career-result-desc', data.description); D.html('career-result-salary', data.salary); D.html('career-result-demand', data.demand);
-  D.html('career-result-skills', data.skills.map(s => `<span class="badge badge-primary">${s}</span>`).join(' '));
-  D.html('career-result-unis', data.universities.map(u => `<li>📍 <strong>${u}</strong> - High placement rates</li>`).join('')); const visualNode = D.get('visual-node-end'); if (visualNode) visualNode.textContent = data.programs[0]; }
+let careerChatHistory = [];
+
+async function sendCareerChatMessage() {
+  const input = D.get('career-chat-input');
+  if (!input || !input.value.trim()) return;
+  const text = input.value.trim();
+  appendCareerChatMessage('user', text);
+  careerChatHistory.push({ role: 'user', content: text });
+  input.value = '';
+  
+  const box = D.get('career-chat-log');
+  const typing = document.createElement('div');
+  typing.className = 'message-bubble message-ai typing-indicator';
+  typing.innerHTML = 'Assessing...';
+  box.appendChild(typing);
+  box.scrollTop = box.scrollHeight;
+  
+  try {
+    const prompt = `User's response: "${text}". If they have stated any specific interest, hobby, or subject, output exactly: "RECOMMENDATION_READY" and do not output any other text. Only ask 1 follow up question if their answer was extremely vague. Do not drag out the conversation.`;
+    const res = await executeClientAiRequest(prompt, "You are an expert career advisor assessing a student via chat. Keep your replies very short (1-2 sentences).", 'career');
+    typing.remove();
+    
+    if (res.includes('RECOMMENDATION_READY')) {
+       showCareerResults();
+    } else {
+       appendCareerChatMessage('ai', res);
+       careerChatHistory.push({ role: 'assistant', content: res });
+    }
+  } catch (err) {
+    typing.remove();
+    const errBubble = document.createElement('div'); errBubble.className = 'message-bubble message-ai'; errBubble.style.color = 'var(--danger)'; errBubble.textContent = `Error: ${err.message}`; box.appendChild(errBubble);
+  }
+}
+
+function appendCareerChatMessage(sender, text) {
+  const box = D.get('career-chat-log'); if (!box) return;
+  const bubble = document.createElement('div');
+  bubble.className = `message-bubble ${sender === 'user' ? 'message-user' : 'message-ai'}`;
+  bubble.innerHTML = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  box.appendChild(bubble); box.scrollTop = box.scrollHeight;
+}
+
+async function showCareerResults() {
+  D.show('career-quiz-box', false); D.show('career-result-box', true);
+  D.html('career-result-title', `Analyzing Your Profile...`);
+  D.html('career-result-desc', 'Please wait while AI constructs your personalized recommendation...');
+  D.html('career-result-skills', ''); D.html('career-result-unis', '');
+  
+  const summaryPrompt = "Based on the conversation history, recommend 1 specific career track, salary range in GH₵, demand level, top 4 skills to build, 2 top Ghanaian universities to attend for this, the specific program/degree to offer, and 3-4 electives or courses to take. Output JSON: { \"track\": \"string\", \"desc\": \"string\", \"salary\": \"string\", \"demand\": \"string\", \"skills\": [\"string\"], \"unis\": [\"string\"], \"program\": \"string\", \"courses\": [\"string\"] }";
+  
+  try {
+    const res = await executeClientAiRequest(summaryPrompt, "You are a JSON-only career generator. Do not include markdown blocks.", 'career');
+    let clean = res.trim(); if (clean.includes('{')) clean = clean.substring(clean.indexOf('{'), clean.lastIndexOf('}') + 1);
+    const data = JSON.parse(clean);
+    
+    D.html('career-result-title', `Recommended Track: ${data.track}`);
+    D.html('career-result-desc', data.desc);
+    D.html('career-result-salary', data.salary);
+    D.html('career-result-demand', data.demand);
+    D.html('career-result-skills', (data.skills || []).map(s => `<span class="badge badge-primary">${s}</span>`).join(' '));
+    D.html('career-result-unis', (data.unis || []).map(u => `<li>📍 <strong>${u}</strong> - Highly recommended</li>`).join(''));
+    
+    const programStr = data.program || 'General Studies';
+    D.html('career-result-program', `🎓 ${programStr}`);
+    D.html('career-result-courses', (data.courses || []).map(c => `<span class="badge" style="background:rgba(255,255,255,0.05); border:1px solid var(--border);">${c}</span>`).join(' '));
+  } catch (e) {
+    D.html('career-result-title', `Recommended Track: Business Administration`);
+    D.html('career-result-desc', "A broad field suitable for your diverse interests.");
+  }
+}
+
 function resetCareerQuiz() {
-  careerScores = { programming: 0, business: 0, datascience: 0, engineering: 0, healthcare: 0, law: 0 }; currentQuestionIndex = 0; D.show('career-quiz-box', true); D.show('career-result-box', false); D.get('career-progress-bar').style.width = '20%'; renderCareerQuizQuestion(); }
+  careerChatHistory = [];
+  D.show('career-quiz-box', true); D.show('career-result-box', false);
+  const log = D.get('career-chat-log');
+  if (log) log.innerHTML = '';
+  
+  const initMsg = "Hello! I am your AI Career Advisor. Briefly tell me your main interests, hobbies, or favorite subjects, and I will instantly match you with a career, university, and program in Ghana!";
+  appendCareerChatMessage('ai', initMsg);
+  careerChatHistory.push({ role: 'assistant', content: initMsg });
+}
 /* =========================================================
    GPA UNIVERSITY DROPDOWN — data + renderer
    ========================================================= */
@@ -288,13 +351,39 @@ async function generateDailyStudyPlan() {
   try {
     const res = await executeClientAiRequest(`Generate a customized study timetable for a ${hours}-hour study session covering CS101 and MATH102. Output only clean HTML list elements.`, 'Return HTML timetable lists.', 'study'); box.innerHTML = `<div class="glass" style="padding:20px; border-left:4px solid var(--secondary);"><h4>Custom study schedule (${hours}h)</h4>${res}</div>`;
   } catch (err) { box.innerHTML = `<div class="glass" style="color:var(--danger)">Failed to generate plan.</div>`; } }
+let customCalendarEvents = [
+  { day: 28, title: 'CS101 Deadline', type: 'danger' },
+  { day: 30, title: 'MATH102 Exam', type: 'warning' }
+];
+
+window.addCustomCalendarEvent = function() {
+  const day = parseInt(D.val('custom-event-day'));
+  const title = D.val('custom-event-title');
+  const type = D.val('custom-event-type') || 'primary';
+  if (!day || day < 1 || day > 31 || !title) {
+    showToastNotification('Enter a valid day and title.');
+    return;
+  }
+  customCalendarEvents.push({ day, title, type });
+  D.val('custom-event-day', '');
+  D.val('custom-event-title', '');
+  generateCalendarGrid();
+  showToastNotification('Event added!');
+};
+
 function generateCalendarGrid() {
   const container = D.get('portal-calendar-grid'); if (!container) return;
-  let html = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => `<div class="calendar-header-day">${d}</div>`).join(''); for (let i = 0; i < 5; i++) html += '<div class="calendar-day-cell inactive"></div>'; for (let day = 1; day <= 30; day++) {
-    const act = day === 24 ? 'today' : '',
-          event = day === 28 ? '<div class="calendar-event-dot danger">CS101 Deadline</div>' : day === 30 ? '<div class="calendar-event-dot warning">MATH102 Exam</div>' : '';
-    html += `<div class="calendar-day-cell ${act}"><span>${day}</span>${event}</div>`; }
-  container.innerHTML = html; }
+  let html = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => `<div class="calendar-header-day">${d}</div>`).join(''); 
+  for (let i = 0; i < 5; i++) html += '<div class="calendar-day-cell inactive"></div>'; 
+  
+  for (let day = 1; day <= 30; day++) {
+    const act = day === 24 ? 'today' : '';
+    const dayEvents = customCalendarEvents.filter(e => e.day === day);
+    const eventHtml = dayEvents.map(e => `<div class="calendar-event-dot ${e.type}">${e.title}</div>`).join('');
+    html += `<div class="calendar-day-cell ${act}"><span>${day}</span>${eventHtml}</div>`; 
+  }
+  container.innerHTML = html; 
+}
 // activeSubmittingAsgId is declared in data.js
 const openSubmitAssignmentModal = (id, title) => { activeSubmittingAsgId = id; D.html('modal-asg-title', title); D.show('assignment-submit-modal', true); }, closeSubmitAssignmentModal = () => D.show('assignment-submit-modal', false);
 async function simulateSubmitFile() {

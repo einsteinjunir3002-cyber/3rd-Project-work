@@ -1,0 +1,524 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String              @id @default(uuid())
+  email            String              @unique
+  passwordHash     String
+  firstName        String
+  lastName         String
+  isActive         Boolean             @default(true)
+  mfaEnabled       Boolean             @default(false)
+  emailVerified    Boolean             @default(false)
+  roles            Role[]
+  departmentId     String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  lastLoginAt      DateTime?
+  teachingCourses  Course[]            @relation("CourseInstructor")
+  enrollments      Enrollment[]
+  ethicsReviews    EthicsApplication[] @relation("EthicsReviewer")
+  forumReplies     ForumReply[]
+  forumPosts       ForumThread[]
+  researchProjects ResearchProject[]   @relation("PrincipalInvestigator")
+  submissions      Submission[]
+  assignedTasks    Task[]
+  department       Department?         @relation(fields: [departmentId], references: [id])
+  graduationYear   Int?
+  company          String?
+  jobTitle         String?
+  bio              String?
+  skills           String[]
+  advisorExpertise String?
+  mentorshipsRequested MentorshipRequest[] @relation("StudentMentorship")
+  mentorshipsReceived  MentorshipRequest[] @relation("MentorMentorship")
+}
+
+model Faculty {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  code        String       @unique
+  departments Department[]
+}
+
+model Department {
+  id        String    @id @default(uuid())
+  name      String
+  code      String    @unique
+  facultyId String
+  faculty   Faculty   @relation(fields: [facultyId], references: [id])
+  programs  Program[]
+  users     User[]
+}
+
+model Program {
+  id           String     @id @default(uuid())
+  name         String
+  code         String     @unique
+  departmentId String
+  courses      Course[]
+  department   Department @relation(fields: [departmentId], references: [id])
+}
+
+model Course {
+  id           String           @id @default(uuid())
+  code         String           @unique
+  title        String
+  description  String?
+  credits      Int
+  programId    String
+  instructorId String
+  assignments  Assignment[]
+  instructor   User             @relation("CourseInstructor", fields: [instructorId], references: [id])
+  program      Program          @relation(fields: [programId], references: [id])
+  materials    CourseMaterial[]
+  enrollments  Enrollment[]
+}
+
+model Enrollment {
+  id         String   @id @default(uuid())
+  userId     String
+  courseId   String
+  finalGrade Float?
+  status     String   @default("ACTIVE")
+  createdAt  DateTime @default(now())
+  course     Course   @relation(fields: [courseId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model CourseMaterial {
+  id         String   @id @default(uuid())
+  courseId   String
+  title      String
+  fileUrl    String
+  uploadDate DateTime @default(now())
+  course     Course   @relation(fields: [courseId], references: [id])
+}
+
+model Assignment {
+  id          String       @id @default(uuid())
+  courseId    String
+  title       String
+  description String?
+  dueDate     DateTime
+  totalPoints Int
+  course      Course       @relation(fields: [courseId], references: [id])
+  submissions Submission[]
+}
+
+model Submission {
+  id           String     @id @default(uuid())
+  assignmentId String
+  studentId    String
+  fileUrl      String
+  submittedAt  DateTime   @default(now())
+  grade        Float?
+  feedback     String?
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  student      User       @relation(fields: [studentId], references: [id])
+}
+
+model ResearchProject {
+  id                    String              @id @default(uuid())
+  title                 String
+  description           String
+  piId                  String
+  status                String              @default("ACTIVE")
+  totalBudget           Float               @default(0.0)
+  createdAt             DateTime            @default(now())
+  ethicsApps            EthicsApplication[]
+  milestones            Milestone[]
+  publications          Publication[]
+  principalInvestigator User                @relation("PrincipalInvestigator", fields: [piId], references: [id])
+  tasks                 Task[]
+}
+
+model Task {
+  id         String          @id @default(uuid())
+  projectId  String
+  title      String
+  status     String          @default("TODO")
+  assigneeId String?
+  assignee   User?           @relation(fields: [assigneeId], references: [id])
+  project    ResearchProject @relation(fields: [projectId], references: [id])
+}
+
+model Milestone {
+  id          String          @id @default(uuid())
+  projectId   String
+  title       String
+  dueDate     DateTime
+  isCompleted Boolean         @default(false)
+  project     ResearchProject @relation(fields: [projectId], references: [id])
+}
+
+model EthicsApplication {
+  id          String            @id @default(uuid())
+  projectId   String
+  status      ApplicationStatus @default(PENDING)
+  reviewerId  String?
+  comments    String?
+  submittedAt DateTime          @default(now())
+  project     ResearchProject   @relation(fields: [projectId], references: [id])
+  reviewer    User?             @relation("EthicsReviewer", fields: [reviewerId], references: [id])
+}
+
+model Publication {
+  id          String          @id @default(uuid())
+  projectId   String
+  title       String
+  doi         String?         @unique
+  journal     String
+  status      String          @default("DRAFT")
+  publishedAt DateTime?
+  project     ResearchProject @relation(fields: [projectId], references: [id])
+}
+
+model ForumThread {
+  id        String       @id @default(uuid())
+  title     String
+  body      String
+  authorId  String
+  createdAt DateTime     @default(now())
+  replies   ForumReply[]
+  author    User         @relation(fields: [authorId], references: [id])
+}
+
+model ForumReply {
+  id        String      @id @default(uuid())
+  threadId  String
+  body      String
+  authorId  String
+  createdAt DateTime    @default(now())
+  author    User        @relation(fields: [authorId], references: [id])
+  thread    ForumThread @relation(fields: [threadId], references: [id])
+}
+
+model JobPosting {
+  id          String   @id @default(uuid())
+  title       String
+  company     String
+  jobType     JobType
+  description String
+  createdAt   DateTime @default(now())
+}
+
+model Startup {
+  id          String   @id @default(uuid())
+  name        String
+  industry    String
+  description String
+  authorName  String
+  upvotes     Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Document {
+  id           String   @id
+  title        String
+  filename     String
+  fileUrl      String
+  sizeBytes    Int
+  mimeType     String
+  projectId    String
+  uploadedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  Project      Project  @relation(fields: [projectId], references: [id])
+}
+
+model Project {
+  id               String          @id
+  title            String
+  abstract         String?
+  category         String?
+  keywords         String[]
+  startDate        DateTime?
+  endDate          DateTime?
+  fundingSource    String?
+  budgetAllocation Float?          @default(0)
+  status           String          @default("DRAFT")
+  ownerId          String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime
+  Document         Document[]
+  ProjectMember    ProjectMember[]
+}
+
+model ProjectMember {
+  id        String   @id
+  projectId String
+  userId    String
+  role      String
+  createdAt DateTime @default(now())
+  Project   Project  @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, userId])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model departments {
+  id         Int        @id @default(autoincrement())
+  faculty_id Int?
+  name       String     @db.VarChar(255)
+  code       String     @db.VarChar(50)
+  faculties  faculties? @relation(fields: [faculty_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ethics_applications {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String?            @db.Uuid
+  title             String             @db.VarChar(255)
+  risk_level        String             @db.VarChar(50)
+  status            String?            @default("Under Review") @db.VarChar(50)
+  submitted_date    DateTime?          @default(dbgenerated("CURRENT_DATE")) @db.Date
+  approval_date     DateTime?          @db.Date
+  research_projects research_projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model faculties {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(255)
+  code        String        @db.VarChar(50)
+  dean        String?       @db.VarChar(255)
+  departments departments[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model jobs {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  company     String    @db.VarChar(255)
+  job_type    String    @db.VarChar(50)
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model research_funding {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String?            @db.Uuid
+  total_budget      Decimal            @db.Decimal(12, 2)
+  equipment_spent   Decimal?           @default(0) @db.Decimal(12, 2)
+  travel_spent      Decimal?           @default(0) @db.Decimal(12, 2)
+  software_spent    Decimal?           @default(0) @db.Decimal(12, 2)
+  updated_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  research_projects research_projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model research_milestones {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String?            @db.Uuid
+  title             String             @db.VarChar(255)
+  due_date          DateTime?          @db.Date
+  status            String?            @default("Pending") @db.VarChar(50)
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  research_projects research_projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model research_projects {
+  id                     String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                  String                  @db.VarChar(255)
+  description            String?
+  principal_investigator String?                 @db.VarChar(255)
+  status                 String?                 @default("Active") @db.VarChar(50)
+  health_score           Int?                    @default(100)
+  created_at             DateTime?               @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?               @default(now()) @db.Timestamptz(6)
+  ethics_applications    ethics_applications[]
+  research_funding       research_funding[]
+  research_milestones    research_milestones[]
+  research_publications  research_publications[]
+  research_surveys       research_surveys[]
+  research_tasks         research_tasks[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model research_publications {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String?            @db.Uuid
+  title             String             @db.VarChar(255)
+  journal           String?            @db.VarChar(255)
+  status            String?            @default("Draft") @db.VarChar(50)
+  doi               String?            @db.VarChar(100)
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  research_projects research_projects? @relation(fields: [project_id], references: [id], onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model research_surveys {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String?            @db.Uuid
+  title             String             @db.VarChar(255)
+  status            String?            @default("Draft") @db.VarChar(50)
+  responses_count   Int?               @default(0)
+  target_quota      Int?               @default(100)
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  research_projects research_projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model research_tasks {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String?            @db.Uuid
+  title             String             @db.VarChar(255)
+  assignee          String?            @db.VarChar(255)
+  status            String?            @default("To Do") @db.VarChar(50)
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  research_projects research_projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model startups {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(255)
+  industry    String    @db.VarChar(100)
+  description String?
+  author      String    @db.VarChar(255)
+  upvotes     Int?      @default(0)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model student_assignments {
+  id                  Int                   @id @default(autoincrement())
+  course_id           String?               @db.VarChar(50)
+  title               String                @db.VarChar(255)
+  deadline            DateTime?             @db.Date
+  total_points        Int?
+  status              String?               @default("Pending") @db.VarChar(50)
+  grade               String?               @db.VarChar(50)
+  feedback            String?
+  student_courses     student_courses?      @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  student_submissions student_submissions[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model student_courses {
+  id                  String                @id @db.VarChar(50)
+  title               String                @db.VarChar(255)
+  code                String                @db.VarChar(50)
+  instructor          String                @db.VarChar(255)
+  avatar              String?               @db.VarChar(255)
+  notes_count         Int?                  @default(0)
+  assignments_count   Int?                  @default(0)
+  student_assignments student_assignments[]
+  student_notes       student_notes[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model student_forum_replies {
+  id             Int             @id @default(autoincrement())
+  thread_id      Int?
+  author         String?         @db.VarChar(255)
+  avatar         String?         @db.VarChar(255)
+  role           String?         @db.VarChar(50)
+  body           String
+  student_forums student_forums? @relation(fields: [thread_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model student_forums {
+  id                    Int                     @id @default(autoincrement())
+  category              String?                 @db.VarChar(100)
+  author                String?                 @db.VarChar(255)
+  avatar                String?                 @db.VarChar(255)
+  title                 String                  @db.VarChar(255)
+  body                  String
+  upvotes               Int?                    @default(0)
+  student_forum_replies student_forum_replies[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model student_notes {
+  id              Int              @id @default(autoincrement())
+  course_id       String?          @db.VarChar(50)
+  title           String           @db.VarChar(255)
+  date            DateTime?        @default(dbgenerated("CURRENT_DATE")) @db.Date
+  size            String?          @db.VarChar(50)
+  student_courses student_courses? @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model student_submissions {
+  id                  Int                  @id @default(autoincrement())
+  assignment_id       Int?
+  student_name        String               @db.VarChar(255)
+  file_name           String               @db.VarChar(255)
+  date                DateTime?            @default(dbgenerated("CURRENT_DATE")) @db.Date
+  grade               String?              @db.VarChar(50)
+  feedback            String?
+  student_assignments student_assignments? @relation(fields: [assignment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id                String    @id @db.VarChar(50)
+  name              String    @db.VarChar(255)
+  email             String    @unique @db.VarChar(255)
+  password          String    @db.VarChar(255)
+  role              String    @db.VarChar(50)
+  department        String?   @db.VarChar(255)
+  office            String?   @db.VarChar(255)
+  student_id_number String?   @db.VarChar(100)
+  cgpa              Decimal?  @default(0.00) @db.Decimal(3, 2)
+  attendance        Int?      @default(100)
+  status            String?   @default("Good Stand") @db.VarChar(50)
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+enum Role {
+  STUDENT
+  LECTURER
+  RESEARCHER
+  SUPERVISOR
+  ETHICS_COMMITTEE_MEMBER
+  RESEARCH_ASSISTANT
+  EXTERNAL_COLLABORATOR
+  DEPARTMENT_HEAD
+  FACULTY_ADMINISTRATOR
+  SYSTEM_ADMINISTRATOR
+  INDUSTRY_PARTNER
+  ALUMNI
+  CAREER_ADVISOR
+}
+
+enum ApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  REVISIONS_REQUIRED
+}
+
+enum JobType {
+  FULL_TIME
+  INTERNSHIP
+  PART_TIME
+  CONTRACT
+}
+
+model MentorshipRequest {
+  id        String   @id @default(uuid())
+  studentId String
+  mentorId  String
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
+  message   String?
+  createdAt DateTime @default(now())
+  student   User     @relation("StudentMentorship", fields: [studentId], references: [id])
+  mentor    User     @relation("MentorMentorship", fields: [mentorId], references: [id])
+}
