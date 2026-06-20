@@ -46,9 +46,9 @@ const SMARTLEARN_STATIC_DATA = {
     'j.addo@smartlearn.edu': [{ sender: 'faculty', text: 'Hey Kofi, I graded the latest UML assignment. Good job on classes! Let me know if you need help with sequences.', timestamp: '3 hours ago' }]
   }, activeFacultyEmail: 'k.mensah@smartlearn.edu',
   courses: [
-    { id: 'CS101', title: 'Introduction to Computer Science & Coding', code: 'CS101', instructor: 'Dr. Kwame Mensah', avatar: 'avatar_lecturer.jpg', notesCount: 5, assignmentsCount: 2, program: 'BSc Computer Science' },
-    { id: 'MATH102', title: 'Calculus & Applied Mathematics', code: 'MATH102', instructor: 'Prof. Ama Serwaa', avatar: 'avatar_lecturer.jpg', notesCount: 3, assignmentsCount: 1, program: 'BSc Computer Science' },
-    { id: 'ENG201', title: 'Software Engineering & Architectures', code: 'ENG201', instructor: 'Mr. Emmanuel Osei', avatar: 'avatar_lecturer.jpg', notesCount: 6, assignmentsCount: 3, program: 'BSc Software Engineering' },
+    { id: 'CS101', title: 'Introduction to Computer Science & Coding', code: 'CS101', instructor: 'Dr. Kwame Mensah', avatar: 'avatar_lecturer.jpg', notesCount: 5, assignmentsCount: 3, program: 'BSc Computer Science' },
+    { id: 'MATH102', title: 'Calculus & Applied Mathematics', code: 'MATH102', instructor: 'Prof. Ama Serwaa', avatar: 'avatar_lecturer.jpg', notesCount: 3, assignmentsCount: 2, program: 'BSc Computer Science' },
+    { id: 'ENG201', title: 'Software Engineering & Architectures', code: 'ENG201', instructor: 'Mr. Emmanuel Osei', avatar: 'avatar_lecturer.jpg', notesCount: 6, assignmentsCount: 2, program: 'BSc Software Engineering' },
     { id: 'BUA202', title: 'Business Administration & Management', code: 'BUA202', instructor: 'Dr. Sophia Tetteh', avatar: 'avatar_lecturer.jpg', notesCount: 3, assignmentsCount: 1, program: 'BSc Business Administration' },
     
     // Program Courses mappings
@@ -92,10 +92,16 @@ const SMARTLEARN_STATIC_DATA = {
   assignments: [
     { id: 1, courseId: 'CS101', title: 'Assignment 1: Logic Gates & Basic Control Flows', deadline: '2026-05-28', totalPoints: 100, status: 'Pending' },
     { id: 2, courseId: 'ENG201', title: 'Assignment 2: Drawing UML Diagrams', deadline: '2026-06-02', totalPoints: 100, status: 'Submitted', grade: '95', feedback: 'Excellent layout of class diagrams!' },
-    { id: 3, courseId: 'MATH102', title: 'Problem Set 1: Matrix Inversion & Linear Systems', deadline: '2026-05-30', totalPoints: 50, status: 'Pending' }
+    { id: 3, courseId: 'MATH102', title: 'Problem Set 1: Matrix Inversion & Linear Systems', deadline: '2026-05-30', totalPoints: 50, status: 'Pending' },
+    { id: 4, courseId: 'CS101', title: 'Assignment 4: Control Flows & Functions', deadline: '2026-05-25', totalPoints: 100, status: 'Submitted', grade: '88', feedback: 'Great work on functions!' },
+    { id: 5, courseId: 'MATH102', title: 'Assignment 5: Advanced Integration Techniques', deadline: '2026-05-31', totalPoints: 100, status: 'Pending' },
+    { id: 6, courseId: 'ENG201', title: 'Assignment 6: Architectural Patterns', deadline: '2026-05-15', totalPoints: 100, status: 'Pending' },
+    { id: 7, courseId: 'CS101', title: 'Assignment 7: Data Structures & Algorithms', deadline: '2026-05-10', totalPoints: 100, status: 'Submitted', grade: '90', feedback: 'Good implementation of binary search tree.' }
   ],
   submissions: [
-    { id: 1, assignmentId: 2, studentName: 'Kofi Mensah', fileName: 'uml_diagrams_kofi.pdf', date: '2026-05-22', grade: '95', feedback: 'Excellent layout of class diagrams!' }
+    { id: 1, assignmentId: 2, studentName: 'Kofi Mensah', fileName: 'uml_diagrams_kofi.pdf', date: '2026-05-22', grade: '95', feedback: 'Excellent layout of class diagrams!' },
+    { id: 2, assignmentId: 4, studentName: 'Kofi Mensah', fileName: 'control_flows_kofi.pdf', date: '2026-05-25 11:15 AM', grade: '88', feedback: 'Great work on functions!' },
+    { id: 3, assignmentId: 7, studentName: 'Kofi Mensah', fileName: 'data_structures_kofi.pdf', date: '2026-05-12 02:30 PM', grade: '90', feedback: 'Good implementation of binary search tree.' }
   ],
   forumThreads: [
     { id: 1, category: 'Computer Science', author: 'Kofi Mensah', avatar: 'avatar_student.jpg', title: 'Struggling with Recursion in Python - Need help!', body: 'Hi everyone, I am trying to understand the base case in recursive functions. My function keeps hitting infinite loops. Can anyone explain how to prevent stack overflow?', upvotes: 14, replies: [{ author: 'Mr. Emmanuel Osei', avatar: 'avatar_lecturer.jpg', role: 'Lecturer', body: 'Think of the base case as the exit door. You must structure your arguments so they get closer to that door on each step. Try writing down the inputs step-by-step.' }] },

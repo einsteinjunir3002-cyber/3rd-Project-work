@@ -56,7 +56,7 @@ const getSimulatedUsers = () => {
   } catch(e) { return [...DEMO_ACCOUNTS]; }
 }, saveSimulatedUsers = users => localStorage.setItem('smartlearn_simulated_users', JSON.stringify(users)),
 loadOfflineState = () => {
-  const s = localStorage.getItem('smartlearn_offline_appstate_v3');
+  const s = localStorage.getItem('smartlearn_offline_appstate_v4');
   if (s) {
     try {
       const parsed = JSON.parse(s);
@@ -92,15 +92,22 @@ loadOfflineState = () => {
           }
         });
       }
+      if (parsed.submissions) {
+        SMARTLEARN_STATIC_DATA.submissions.forEach(sub => {
+          if (!parsed.submissions.some(ps => ps.id === sub.id)) {
+            parsed.submissions.push(sub);
+          }
+        });
+      }
       Object.assign(appState, parsed);
     } catch(e) {}
   }
 }, saveOfflineState = () => {
-  localStorage.setItem('smartlearn_offline_appstate_v3', JSON.stringify({
+  localStorage.setItem('smartlearn_offline_appstate_v4', JSON.stringify({
     courses: appState.courses, notes: appState.notes, assignments: appState.assignments, submissions: appState.submissions, forumThreads: appState.forumThreads, universities: appState.universities, students: appState.students,
     facultyContacts: appState.facultyContacts, facultyChats: appState.facultyChats, activeFacultyEmail: appState.activeFacultyEmail, studentStartups: appState.studentStartups
   }));
-}, enableOfflineDemoIndicator = enable => { isOfflineDemoMode = enable; D.show('offline-demo-indicator', enable); }; if (!localStorage.getItem('smartlearn_offline_appstate_v3')) saveOfflineState(); else loadOfflineState();
+}, enableOfflineDemoIndicator = enable => { isOfflineDemoMode = enable; D.show('offline-demo-indicator', enable); }; if (!localStorage.getItem('smartlearn_offline_appstate_v4')) saveOfflineState(); else loadOfflineState();
 
 function toggleStudentFieldsRequired(isRequired) {
   const fields = [
@@ -664,19 +671,87 @@ renderStudentNotes = () => {
 },
 renderStudentAssignments = () => {
   const el = D.get('student-assignments-list'); if (!el) return;
-  const pending = appState.assignments.filter(a => a.status === 'Pending');
-  const submitted = appState.assignments.filter(a => a.status !== 'Pending');
+  
+  const pending = [];
+  const submitted = [];
+  
+  appState.assignments.forEach(asg => {
+    const submission = appState.submissions ? appState.submissions.find(s => s.assignmentId === asg.id) : null;
+    if (submission) {
+      submitted.push({ asg, submission });
+    } else {
+      pending.push({ asg });
+    }
+  });
 
-  const renderItem = asg => {
+  const getCountdownLabel = (deadlineStr) => {
+    const diff = Math.ceil((new Date(deadlineStr) - new Date('2026-05-24')) / 86400000);
+    if (diff > 0) return { text: `Due in ${diff} Days`, isPast: false };
+    if (diff === 0) return { text: 'Due Today', isPast: false };
+    return { text: 'Past Due', isPast: true };
+  };
+
+  const renderPendingItem = ({ asg }) => {
     const code = appState.courses.find(c => c.id === asg.courseId)?.code || 'GEN';
-    let act = asg.status === 'Pending' ? `<button class="btn btn-primary btn-sm" onclick="openSubmitAssignmentModal(${asg.id}, '${asg.title}')">Submit File</button>`
-      : `<div style="text-align:right;"><span style="font-weight:700; color:var(--success)">Grade: ${asg.grade || 'Awaiting'}</span></div>`;
+    const countdown = getCountdownLabel(asg.deadline);
+    
+    let statusLabel = '';
+    let actionHTML = '';
+    
+    if (countdown.isPast) {
+      statusLabel = `<span class="badge badge-danger" style="margin-left: 6px;">Overdue - Late for Submission</span>`;
+      actionHTML = `<span style="font-size:0.8rem; color:var(--danger); font-weight:700;">Closed</span>`;
+    } else {
+      statusLabel = `<span class="badge badge-warning" style="margin-left: 6px;">Pending</span>`;
+      actionHTML = `<button class="btn btn-primary btn-sm" onclick="openSubmitAssignmentModal(${asg.id}, '${asg.title}')">Submit File</button>`;
+    }
+    
     return `
       <div class="glass" style="padding:20px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <span class="badge badge-info" style="font-size:0.65rem; margin-bottom:6px;">${code}</span>
-          <h4 style="font-size:1.05rem; margin-bottom:4px;">${asg.title}</h4>
-          <span style="font-size:0.8rem; color:var(--danger)">Deadline: ${asg.deadline}</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="badge badge-info" style="font-size:0.65rem;">${code}</span>
+            ${statusLabel}
+          </div>
+          <h4 style="font-size:1.05rem; margin-top:6px; margin-bottom:4px;">${asg.title}</h4>
+          <span style="font-size:0.8rem; color:var(--danger)">Deadline: ${asg.deadline} (${countdown.text})</span>
+        </div>
+        <div>${actionHTML}</div>
+      </div>`;
+  };
+
+  const renderSubmittedItem = ({ asg, submission }) => {
+    const code = appState.courses.find(c => c.id === asg.courseId)?.code || 'GEN';
+    
+    const subDateOnly = submission.date.split(' ')[0];
+    const deadlineDateOnly = asg.deadline.split(' ')[0];
+    
+    let relativeStatusLabel = '';
+    let badgeClass = '';
+    
+    if (subDateOnly < deadlineDateOnly) {
+      relativeStatusLabel = 'In Time';
+      badgeClass = 'badge-success';
+    } else if (subDateOnly === deadlineDateOnly) {
+      relativeStatusLabel = 'On Time';
+      badgeClass = 'badge-success';
+    } else {
+      relativeStatusLabel = 'Due Date Was Up';
+      badgeClass = 'badge-danger';
+    }
+    
+    const gradeVal = submission.grade || asg.grade;
+    const act = `<div style="text-align:right;"><span style="font-weight:700; color:var(--success)">${gradeVal ? `Grade: ${gradeVal}/100` : 'Awaiting Grading'}</span></div>`;
+    
+    return `
+      <div class="glass" style="padding:20px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="badge badge-info" style="font-size:0.65rem;">${code}</span>
+            <span class="badge ${badgeClass}" style="font-size:0.65rem;">Submitted: ${relativeStatusLabel}</span>
+          </div>
+          <h4 style="font-size:1.05rem; margin-top:6px; margin-bottom:4px;">${asg.title}</h4>
+          <span style="font-size:0.8rem; color:var(--text-light)">Submitted on ${submission.date} (${submission.fileName})</span>
         </div>
         <div>${act}</div>
       </div>`;
@@ -684,9 +759,9 @@ renderStudentAssignments = () => {
 
   el.innerHTML = `
     <h3 style="margin-bottom:12px;">Pending Assignments</h3>
-    ${pending.length ? pending.map(renderItem).join('') : '<p style="color:var(--text-muted);">No pending assignments.</p>'}
+    ${pending.length ? pending.map(renderPendingItem).join('') : '<p style="color:var(--text-muted);">No pending assignments.</p>'}
     <h3 style="margin-top:24px; margin-bottom:12px;">Submitted Assignments</h3>
-    ${submitted.length ? submitted.map(renderItem).join('') : '<p style="color:var(--text-muted);">No submitted assignments yet.</p>'}
+    ${submitted.length ? submitted.map(renderSubmittedItem).join('') : '<p style="color:var(--text-muted);">No submitted assignments yet.</p>'}
   `;
 };
 function renderLecturerAnalytics() {

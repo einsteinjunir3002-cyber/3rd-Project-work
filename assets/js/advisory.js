@@ -461,15 +461,76 @@ async function scheduleFacultyCall() {
   } catch (e) {} }
 function renderDedicatedAssignmentsDeck() {
   const container = D.get('dedicated-assignments-deck'); if (!container) return;
+  
+  const getCountdownLabel = (deadlineStr) => {
+    const diff = Math.ceil((new Date(deadlineStr) - new Date('2026-05-24')) / 86400000);
+    if (diff > 0) return { text: `Due in ${diff} Days`, isPast: false, diff };
+    if (diff === 0) return { text: 'Due Today', isPast: false, diff };
+    return { text: 'Past Due', isPast: true, diff };
+  };
+
   container.innerHTML = appState.assignments.map(asg => {
-    const course = appState.courses.find(c => c.id === asg.courseId), diff = Math.ceil((new Date(asg.deadline) - new Date('2026-05-24')) / 86400000),
-          countdown = diff > 0 ? `Due in ${diff} Days` : 'Past Due',
-          status = asg.status === 'Pending' ? `<button class="btn btn-primary btn-sm" onclick="openSubmitAssignmentModal(${asg.id}, '${asg.title}')">Submit File 🚀</button>` : '', gradeDetails = asg.grade ? `<div style="background: rgba(16,185,129, 0.03); border:1px solid var(--success); padding:12px; border-radius:6px; margin-top:10px; font-size:0.85rem;"><strong>Grade: ${asg.grade}/100</strong> - Feedback: "${asg.feedback}"</div>` : (asg.status === 'Submitted' ? '<div style="color:var(--warning); font-size:0.85rem; margin-top:8px;">Awaiting Grading</div>' : '');
+    const course = appState.courses.find(c => c.id === asg.courseId);
+    const countdown = getCountdownLabel(asg.deadline);
+    
+    // Find if the student submitted this assignment
+    const submission = appState.submissions ? appState.submissions.find(s => s.assignmentId === asg.id) : null;
+    
+    let statusBadgeHTML = '';
+    let actionHTML = '';
+    let submissionInfoHTML = '';
+    
+    if (submission) {
+      const subDateOnly = submission.date.split(' ')[0];
+      const deadlineDateOnly = asg.deadline.split(' ')[0];
+      
+      let relativeStatusLabel = '';
+      let badgeClass = '';
+      
+      if (subDateOnly < deadlineDateOnly) {
+        relativeStatusLabel = 'In Time';
+        badgeClass = 'badge-success';
+      } else if (subDateOnly === deadlineDateOnly) {
+        relativeStatusLabel = 'On Time';
+        badgeClass = 'badge-success';
+      } else {
+        relativeStatusLabel = 'Due Date Was Up';
+        badgeClass = 'badge-danger';
+      }
+      
+      statusBadgeHTML = `<span class="badge ${badgeClass}" style="margin-left: 6px;">Submitted: ${relativeStatusLabel}</span>`;
+      submissionInfoHTML = `<div style="font-size:0.8rem; color:var(--text-light); margin-top:4px;">Submitted: ${submission.date} (${submission.fileName})</div>`;
+    } else {
+      if (countdown.isPast) {
+        statusBadgeHTML = `<span class="badge badge-danger" style="margin-left: 6px;">Overdue - Late for Submission</span>`;
+        actionHTML = `<span style="font-size:0.8rem; color:var(--danger); font-weight:700;">Submission Closed</span>`;
+      } else {
+        statusBadgeHTML = `<span class="badge badge-warning" style="margin-left: 6px;">Not Submitted (Pending)</span>`;
+        actionHTML = `<button class="btn btn-primary btn-sm" onclick="openSubmitAssignmentModal(${asg.id}, '${asg.title}')">Submit File 🚀</button>`;
+      }
+    }
+
+    const gradeVal = submission?.grade || asg.grade;
+    const feedbackVal = submission?.feedback || asg.feedback;
+
+    const gradeDetails = gradeVal ? 
+      `<div style="background: rgba(16,185,129, 0.03); border:1px solid var(--success); padding:12px; border-radius:6px; margin-top:10px; font-size:0.85rem;"><strong>Grade: ${gradeVal}/100</strong> - Feedback: "${feedbackVal}"</div>` : 
+      (submission ? '<div style="color:var(--warning); font-size:0.85rem; margin-top:8px;">Awaiting Grading</div>' : '');
+
     return `
       <div class="widget glass" style="margin-bottom:16px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div><span class="badge badge-primary">${course ? course.code : 'GEN'}</span> <span class="badge badge-warning">${countdown}</span> <h4 style="margin-top:6px;">${asg.title}</h4></div>
-          ${status}
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span class="badge badge-primary">${course ? course.code : 'GEN'}</span> 
+              <span class="badge badge-secondary">${countdown.text}</span>
+              ${statusBadgeHTML}
+            </div>
+            <h4 style="margin-top:8px; margin-bottom:4px;">${asg.title}</h4>
+            <span style="font-size:0.8rem; color:var(--text-light)">Deadline: ${asg.deadline}</span>
+            ${submissionInfoHTML}
+          </div>
+          ${actionHTML}
         </div>
         ${gradeDetails}
       </div>`;

@@ -78,7 +78,11 @@ CREATE TABLE IF NOT EXISTS student_assignments (
 INSERT INTO student_assignments (course_id, title, deadline, total_points, status, grade, feedback) VALUES
 ('CS101', 'Assignment 1: Logic Gates & Basic Control Flows', '2026-05-28', 100, 'Pending', NULL, NULL),
 ('ENG201', 'Assignment 2: Drawing UML Diagrams', '2026-06-02', 100, 'Submitted', '95', 'Excellent layout of class diagrams!'),
-('MATH102', 'Problem Set 1: Matrix Inversion & Linear Systems', '2026-05-30', 50, 'Pending', NULL, NULL)
+('MATH102', 'Problem Set 1: Matrix Inversion & Linear Systems', '2026-05-30', 50, 'Pending', NULL, NULL),
+('CS101', 'Assignment 4: Control Flows & Functions', '2026-05-25', 100, 'Submitted', '88', 'Great work on functions!'),
+('MATH102', 'Assignment 5: Advanced Integration Techniques', '2026-05-31', 100, 'Pending', NULL, NULL),
+('ENG201', 'Assignment 6: Architectural Patterns', '2026-05-15', 100, 'Pending', NULL, NULL),
+('CS101', 'Assignment 7: Data Structures & Algorithms', '2026-05-10', 100, 'Submitted', '90', 'Good implementation of binary search tree.')
 ON CONFLICT DO NOTHING;
 
 
@@ -88,13 +92,15 @@ CREATE TABLE IF NOT EXISTS student_submissions (
   assignment_id INTEGER REFERENCES student_assignments(id),
   student_name VARCHAR(255) NOT NULL,
   file_name VARCHAR(255) NOT NULL,
-  date DATE DEFAULT CURRENT_DATE,
+  date VARCHAR(100) DEFAULT CURRENT_DATE::text,
   grade VARCHAR(50),
   feedback TEXT
 );
 
 INSERT INTO student_submissions (assignment_id, student_name, file_name, date, grade, feedback) VALUES
-(2, 'Kofi Mensah', 'uml_diagrams_kofi.pdf', '2026-05-22', '95', 'Excellent layout of class diagrams!')
+(2, 'Kofi Mensah', 'uml_diagrams_kofi.pdf', '2026-05-22', '95', 'Excellent layout of class diagrams!'),
+(4, 'Kofi Mensah', 'control_flows_kofi.pdf', '2026-05-25 11:15 AM', '88', 'Great work on functions!'),
+(7, 'Kofi Mensah', 'data_structures_kofi.pdf', '2026-05-12 02:30 PM', '90', 'Good implementation of binary search tree.')
 ON CONFLICT DO NOTHING;
 
 
