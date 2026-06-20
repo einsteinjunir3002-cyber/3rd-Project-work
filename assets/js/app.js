@@ -444,8 +444,13 @@ renderStudentNotes = () => {
     const pdfMap = {
       'Lec 1: Fundamentals of Python & Control Structures.pdf': 'assets/pdfs/CS101_Fundamentals.pdf',
       'Lec 2: Object Oriented Programming in Python.pdf': 'assets/pdfs/CS101_OOP.pdf',
+      'Lec 3: Python Programming Basics.pdf': 'assets/pdfs/CS101_Python.pdf',
+      'Cheat Sheet: Python Syntax & Operations.pdf': 'assets/pdfs/CS101_Python_Cheat_Sheet.pdf',
       'Lec 1: Derivatives and Rate of Changes.pdf': 'assets/pdfs/MATH102_Derivatives.pdf',
-      'Lec 1: Intro to Agile Methodologies & Scrum.pdf': 'assets/pdfs/ENG201_Agile.pdf'
+      'Lec 2: Functions, Limits, & Continuity.pdf': 'assets/pdfs/MATH102_Calculus.pdf',
+      'Cheat Sheet: Key Calculus Limits & Formulas.pdf': 'assets/pdfs/MATH102_Calculus_Cheat_Sheet.pdf',
+      'Lec 1: Intro to Agile Methodologies & Scrum.pdf': 'assets/pdfs/ENG201_Agile.pdf',
+      'Lec 1: Fundamentals of Management & Business Operations.pdf': 'assets/pdfs/BUA202_Business.pdf'
     };
     const pdfUrl = pdfMap[note.title] || '#';
     return `

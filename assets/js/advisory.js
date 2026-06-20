@@ -513,6 +513,9 @@ function renderProgramSelectionCards() {
         <ul style="list-style:none; display:flex; flex-direction:column; gap:6px; font-size:0.8rem; color:var(--text-muted); margin-bottom:16px;">
           <li>💼 <strong>Top Careers:</strong> ${p.careers}</li> <li>📈 <strong>Ghana Job Demand:</strong> ${p.demand}</li> <li>💰 <strong>Avg Salary Range:</strong> ${p.salary}</li>
         </ul>
-        <button class="btn btn-accent btn-sm" style="width:100%;" onclick="calculateProgramSuitability('${p.title}', ${p.suitability})">Check AI Suitability Score</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-accent btn-sm" style="flex:1;" onclick="calculateProgramSuitability('${p.title}', ${p.suitability})">Check AI Suitability</button>
+          <a class="btn btn-primary btn-sm" style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:4px; font-size:0.75rem;" href="${p.pdfPath || '#'}" target="_blank">📘 Syllabus PDF</a>
+        </div>
       </div>
     </div>`).join(''); }
