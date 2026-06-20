@@ -1010,10 +1010,20 @@ async function simulateSummarizeNote(title) {
 function searchPastQuestions() {
   const query = D.val('pq-search-input').toUpperCase(), list = D.get('pq-results-list'); if (!list) return; list.innerHTML = '';
   const mockPqs = [
-    { code: 'CS101', title: 'CS101 Intro to Coding Exam (2024)', year: '2024', semester: 'Sem 1' },
-    { code: 'CS101', title: 'CS101 Mid-Sem Test Questions (2023)', year: '2023', semester: 'Sem 2' },
-    { code: 'MATH102', title: 'MATH102 Calculus II Final Exam (2024)', year: '2024', semester: 'Sem 1' },
-    { code: 'ENG201', title: 'ENG201 Software Architectures Final (2024)', year: '2024', semester: 'Sem 1' }
+    { code: 'CS101', title: 'CS101 Introduction to Computer Science & Coding Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'MATH102', title: 'MATH102 Calculus & Applied Mathematics Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'ENG201', title: 'ENG201 Software Engineering & Architectures Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'BUA202', title: 'BUA202 Business Administration & Management Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'CYS101', title: 'CYS101 Information Security & Cryptography Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'DSC101', title: 'DSC101 Introduction to Data Science & Analytics Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'ELE101', title: 'ELE101 Circuit Analysis & Semiconductor Electronics Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'MEC101', title: 'MEC101 Introduction to Thermodynamics & Fluids Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'ARC101', title: 'ARC101 Structural Design & Architectural CAD Modeling Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'NUR101', title: 'NUR101 General Nursing & Patient Care Ethics Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'MED101', title: 'MED101 Clinical Diagnostics & General Pathology Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'PHA101', title: 'PHA101 Pharmaceutical Chemistry & Clinical Pharmacology Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'LAW101', title: 'LAW101 Constitutional Law & Jurisprudence in Ghana Final Exam', year: '2024', semester: 'Sem 1' },
+    { code: 'ECO101', title: 'ECO101 Macroeconomic Principles & Public Policy Final Exam', year: '2024', semester: 'Sem 1' }
   ]; const filtered = mockPqs.filter(pq => pq.code.includes(query) || pq.title.toUpperCase().includes(query));
   if (!filtered.length) { list.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:20px;">No results found.</p>'; return; }
   filtered.forEach(pq => {
@@ -1023,7 +1033,10 @@ function searchPastQuestions() {
           <span class="badge badge-primary">${pq.code}</span> <h4 style="font-size:0.95rem; margin-top:4px;">${pq.title}</h4>
           <span style="font-size:0.75rem; color:var(--text-light)">Year ${pq.year} • Semester: ${pq.semester}</span>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="simulatePqExplain('${pq.title}')">AI Explain</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="simulatePqExplain('${pq.title}')">AI Explain</button>
+          <button class="btn btn-accent btn-sm" onclick="startPastQuestionPractice('${pq.code}', '${pq.title}')">Practice Quiz 📝</button>
+        </div>
       </div>`; }); }
 async function simulatePqExplain(title) {
   switchTab('student', 'student-ai-assistant'); setAiMode('study');
@@ -1437,5 +1450,421 @@ function handleAccountRecovery() {
     alertEl.style.color = '#ef4444';
     alertEl.textContent = 'Account not found.';
   }
+}
+
+/* ==========================================================================
+   INTERACTIVE PAST QUESTION PRACTICE ENGINE
+   ========================================================================== */
+let pqState = {
+  active: false,
+  course: '',
+  title: '',
+  questions: [],
+  answers: {},
+  currentIndex: 0,
+  timeElapsed: 0,
+  timerInterval: null
+};
+
+function startPastQuestionPractice(courseCode, title) {
+  const quizData = PAST_QUESTIONS_QUIZZES[courseCode];
+  if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+    showToastNotification(`No practice questions found for ${courseCode}.`);
+    return;
+  }
+
+  if (pqState.timerInterval) {
+    clearInterval(pqState.timerInterval);
+  }
+
+  pqState = {
+    active: true,
+    course: courseCode,
+    title: title || quizData.title || `${courseCode} Practice Exam`,
+    questions: quizData.questions,
+    answers: {},
+    currentIndex: 0,
+    timeElapsed: 0,
+    timerInterval: null
+  };
+
+  D.html('pq-practice-course', courseCode);
+  D.html('pq-practice-title', pqState.title);
+  D.html('pq-practice-timer', '00:00');
+  
+  D.get('pq-progress-section').style.display = 'block';
+  D.get('pq-question-body').style.display = 'flex';
+  D.get('pq-grading-loader').style.display = 'none';
+  D.get('pq-result-body').style.display = 'none';
+  D.get('pq-practice-footer').style.display = 'flex';
+
+  D.get('pq-prev-btn').style.display = 'block';
+  D.get('pq-next-btn').style.display = 'block';
+  D.get('pq-next-btn').textContent = 'Next ➡️';
+  D.get('pq-close-btn').style.display = 'none';
+
+  D.get('pq-practice-modal').style.display = 'flex';
+
+  pqState.timerInterval = setInterval(() => {
+    pqState.timeElapsed++;
+    const mins = Math.floor(pqState.timeElapsed / 60).toString().padStart(2, '0');
+    const secs = (pqState.timeElapsed % 60).toString().padStart(2, '0');
+    D.html('pq-practice-timer', `${mins}:${secs}`);
+  }, 1000);
+
+  renderPracticeQuestion();
+}
+
+function renderPracticeQuestion() {
+  const qIndex = pqState.currentIndex;
+  const q = pqState.questions[qIndex];
+  const body = D.get('pq-question-body');
+  if (!body || !q) return;
+
+  const total = pqState.questions.length;
+  const progressText = `Question ${qIndex + 1} of ${total}`;
+  const percent = Math.round(((qIndex + 1) / total) * 100);
+  D.html('pq-progress-text', progressText);
+  D.html('pq-progress-percent', `${percent}%`);
+  D.get('pq-progress-bar').style.width = `${percent}%`;
+
+  const prevBtn = D.get('pq-prev-btn');
+  const nextBtn = D.get('pq-next-btn');
+  if (prevBtn) prevBtn.disabled = (qIndex === 0);
+  if (nextBtn) {
+    if (qIndex === total - 1) {
+      nextBtn.textContent = 'Submit Paper 📥';
+      nextBtn.className = 'btn btn-success btn-sm';
+    } else {
+      nextBtn.textContent = 'Next ➡️';
+      nextBtn.className = 'btn btn-primary btn-sm';
+    }
+  }
+
+  const savedAns = pqState.answers[qIndex] || '';
+
+  let html = `
+    <div style="margin-bottom:16px;">
+      <span class="badge badge-secondary" style="margin-bottom:8px; text-transform:capitalize; font-size:0.7rem;">${q.type} Question</span>
+      <h4 style="font-size:1.1rem; line-height:1.4; color:var(--text-color); font-weight:700;">${q.question}</h4>
+    </div>
+  `;
+
+  if (q.type === 'objective') {
+    html += `<div style="margin-top:16px;">`;
+    q.options.forEach(opt => {
+      const match = opt.match(/^([A-D])\)/i);
+      const optKey = match ? match[1].toUpperCase() : opt.charAt(0).toUpperCase();
+      const isSelected = (savedAns === optKey);
+      html += `
+        <div class="pq-option-card ${isSelected ? 'selected' : ''}" data-key="${optKey}" onclick="selectObjectiveOption('${optKey}')">
+          <span style="font-weight:700; color:var(--secondary); background:rgba(255,255,255,0.05); width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; margin-right:8px;">${optKey}</span>
+          <span>${opt.replace(/^([A-D]\)\s*)/i, '')}</span>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  } else {
+    html += `
+      <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+        <label style="font-size:0.8rem; color:var(--text-light); font-weight:600;">Type your answer below:</label>
+        <textarea id="pq-subjective-input" class="form-control" placeholder="Write a detailed answer to explain the concept..." style="width:100%; min-height:120px; padding:12px; border-radius:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border); color:var(--text-color); font-size:0.9rem; resize:vertical; line-height:1.5;" oninput="updateCharCount()">${savedAns}</textarea>
+        <div style="display:flex; justify-content:flex-end; font-size:0.75rem; color:var(--text-light);">
+          <span id="pq-char-count">0 characters</span>
+        </div>
+      </div>
+    `;
+  }
+
+  body.innerHTML = html;
+
+  if (q.type === 'subjective') {
+    updateCharCount();
+  }
+}
+
+function selectObjectiveOption(key) {
+  pqState.answers[pqState.currentIndex] = key;
+  document.querySelectorAll('.pq-option-card').forEach(card => {
+    if (card.getAttribute('data-key') === key) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
+}
+
+function updateCharCount() {
+  const ta = D.get('pq-subjective-input');
+  const cc = D.get('pq-char-count');
+  if (ta && cc) {
+    const len = ta.value.length;
+    cc.textContent = `${len} characters`;
+    pqState.answers[pqState.currentIndex] = ta.value;
+  }
+}
+
+function saveAnswer() {
+  const qIndex = pqState.currentIndex;
+  const q = pqState.questions[qIndex];
+  if (!q) return;
+
+  if (q.type === 'subjective') {
+    const ta = D.get('pq-subjective-input');
+    if (ta) {
+      pqState.answers[qIndex] = ta.value;
+    }
+  }
+}
+
+function navigatePracticeQuestion(dir) {
+  saveAnswer();
+
+  const nextIndex = pqState.currentIndex + dir;
+  if (nextIndex < 0) return;
+
+  if (nextIndex >= pqState.questions.length) {
+    submitPracticeQuiz();
+  } else {
+    pqState.currentIndex = nextIndex;
+    renderPracticeQuestion();
+  }
+}
+
+async function submitPracticeQuiz() {
+  saveAnswer();
+  
+  if (pqState.timerInterval) {
+    clearInterval(pqState.timerInterval);
+  }
+
+  D.get('pq-progress-section').style.display = 'none';
+  D.get('pq-question-body').style.display = 'none';
+  D.get('pq-practice-footer').style.display = 'none';
+  
+  D.get('pq-grading-loader').style.display = 'block';
+
+  const questions = pqState.questions;
+  const answers = pqState.answers;
+  
+  let reportHtml = '';
+
+  try {
+    reportHtml = await gradeQuizWithAI(questions, answers);
+  } catch (err) {
+    console.warn('AI Grading failed, falling back to local grading:', err);
+    reportHtml = gradeQuizLocally(questions, answers);
+  }
+
+  D.get('pq-grading-loader').style.display = 'none';
+  const resultBody = D.get('pq-result-body');
+  resultBody.innerHTML = reportHtml;
+  resultBody.style.display = 'flex';
+  
+  D.get('pq-practice-footer').style.display = 'flex';
+  D.get('pq-prev-btn').style.display = 'none';
+  D.get('pq-next-btn').style.display = 'none';
+  D.get('pq-close-btn').style.display = 'block';
+}
+
+async function gradeQuizWithAI(questions, answers) {
+  const gradingData = questions.map((q, idx) => {
+    return {
+      index: idx + 1,
+      type: q.type,
+      question: q.question,
+      options: q.options || null,
+      correctAnswer: q.answer || null,
+      answerKeywords: q.answerKeywords || null,
+      explanation: q.explanation || null,
+      studentAnswer: answers[idx] || '[No Answer Provided]'
+    };
+  });
+
+  const prompt = `
+    You are an expert academic evaluator. Grade the following student answers for the past question quiz: "${pqState.title}".
+    
+    Format your response EXACTLY as a semantic HTML snippet that fits cleanly into our dashboard.
+    Do NOT include code block backticks like \`\`\`html or \`\`\`. Just return raw HTML.
+    
+    Here is the quiz data in JSON format:
+    ${JSON.stringify(gradingData, null, 2)}
+    
+    Rules for grading:
+    1. For 'objective' questions: Compare the student's selected letter (A, B, C, D) with the correct answer letter. Award 10 points if correct, 0 if incorrect.
+    2. For 'subjective' questions: Semantically analyze the student's response. Check if they hit key concepts and demonstrate understanding. Award a score between 0 and 10 points. If they missed core keywords/concepts, explain what they missed.
+    3. The total maximum points is ${questions.length * 10} points.
+    4. Provide the output in this specific HTML layout:
+       - An upper Summary Section with:
+         - A big dashboard circular dial or large text displaying the total score (e.g. "45 / 60" or "75%").
+         - A subtext showing: "Time Spent: ${Math.floor(pqState.timeElapsed / 60)}m ${pqState.timeElapsed % 60}s".
+         - A high-level tutor feedback paragraph praising strengths or detailing weaknesses.
+       - A Breakdown Section consisting of styled cards for each question (class="pq-review-card"):
+         - Title: "Question X (Type: Objective/Subjective)" with a status badge (e.g. "Correct [10/10]", "Partially Correct [5/10]", or "Incorrect [0/10]"). Use green backgrounds/borders for correct, orange for partial, red for incorrect.
+         - Question Text.
+         - Student's Answer.
+         - Correct Answer.
+         - Tutor Explanation: A friendly, conversational explanation of the correct solution and why the student's answer was marked as such.
+         
+    Keep the CSS styling inline or use the classes (.pq-review-card, .badge, etc) that fit the portal. Use color palettes that match our dark theme (primary/purple, secondary/lavender, success/emerald, danger/rose, warning/amber).
+  `;
+
+  const sysInstruction = `You are a helpful and detailed academic grading assistant. Return only raw, valid HTML without markdown formatting wrappers.`;
+
+  const responseHtml = await executeClientAiRequest(prompt, sysInstruction, 'study');
+  
+  let cleanHtml = responseHtml.trim();
+  if (cleanHtml.startsWith('```html')) {
+    cleanHtml = cleanHtml.slice(7);
+  } else if (cleanHtml.startsWith('```')) {
+    cleanHtml = cleanHtml.slice(3);
+  }
+  if (cleanHtml.endsWith('```')) {
+    cleanHtml = cleanHtml.slice(0, -3);
+  }
+  return cleanHtml.trim();
+}
+
+function gradeQuizLocally(questions, answers) {
+  let totalScore = 0;
+  const maxScore = questions.length * 10;
+  let breakdownHtml = '';
+
+  questions.forEach((q, idx) => {
+    const studentAns = (answers[idx] || '').trim();
+    let score = 0;
+    let statusLabel = '';
+    let statusStyle = '';
+    let explanationText = q.explanation || '';
+
+    if (q.type === 'objective') {
+      const isCorrect = (studentAns.toUpperCase() === q.answer.toUpperCase());
+      if (isCorrect) {
+        score = 10;
+        statusLabel = 'Correct [10/10]';
+        statusStyle = 'background:rgba(16,185,129,0.1); border-color:#10b981; color:#10b981;';
+      } else {
+        score = 0;
+        statusLabel = 'Incorrect [0/10]';
+        statusStyle = 'background:rgba(239,68,68,0.1); border-color:#ef4444; color:#ef4444;';
+      }
+    } else {
+      if (!studentAns) {
+        score = 0;
+        statusLabel = 'Unanswered [0/10]';
+        statusStyle = 'background:rgba(239,68,68,0.1); border-color:#ef4444; color:#ef4444;';
+      } else {
+        const keywords = q.answerKeywords || [];
+        let matchedCount = 0;
+        const missed = [];
+        
+        keywords.forEach(kw => {
+          const reg = new RegExp('\\b' + kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\b', 'i');
+          if (reg.test(studentAns) || studentAns.toLowerCase().includes(kw.toLowerCase())) {
+            matchedCount++;
+          } else {
+            missed.push(kw);
+          }
+        });
+
+        const totalKw = keywords.length || 1;
+        const ratio = matchedCount / totalKw;
+        score = Math.round(ratio * 10 * 10) / 10;
+
+        if (score >= 8) {
+          statusLabel = `Correct [${score}/10]`;
+          statusStyle = 'background:rgba(16,185,129,0.1); border-color:#10b981; color:#10b981;';
+        } else if (score >= 4) {
+          statusLabel = `Partially Correct [${score}/10]`;
+          statusStyle = 'background:rgba(245,158,11,0.1); border-color:#f59e0b; color:#f59e0b;';
+        } else {
+          statusLabel = `Incorrect [${score}/10]`;
+          statusStyle = 'background:rgba(239,68,68,0.1); border-color:#ef4444; color:#ef4444;';
+        }
+
+        if (missed.length > 0) {
+          explanationText += `<br><strong style="color:var(--warning);">Tutor Tip:</strong> To improve your answer, consider including details about: <em>${missed.join(', ')}</em>.`;
+        }
+      }
+    }
+
+    totalScore += score;
+
+    breakdownHtml += `
+      <div class="pq-review-card" style="border-left: 4px solid; ${statusStyle} margin-bottom:16px; padding:16px; border-radius:12px; background:rgba(255,255,255,0.01); width:100%; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong style="color:var(--text-color);">Question ${idx + 1} (${q.type === 'objective' ? 'Objective' : 'Subjective'})</strong>
+          <span class="badge" style="${statusStyle} padding:4px 8px; border-radius:6px; font-size:0.75rem; border:1px solid;">${statusLabel}</span>
+        </div>
+        <p style="margin: 8px 0; color:var(--text-color); font-weight:600;">${q.question}</p>
+        <div style="font-size:0.85rem; color:var(--text-light); margin:6px 0;">
+          <strong>Your Answer:</strong> ${studentAns ? escapeHtml(studentAns) : '<span style="color:#ef4444; font-style:italic;">No answer submitted</span>'}
+        </div>
+        ${q.type === 'objective' ? `
+          <div style="font-size:0.85rem; color:var(--success); margin:6px 0;">
+            <strong>Correct Option:</strong> ${q.answer}
+          </div>
+        ` : ''}
+        <div style="font-size:0.85rem; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px; margin-top:8px;">
+          <strong>Explanation & Solved Logic:</strong><br>
+          <span style="color:var(--text-light); line-height:1.4;">${explanationText}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  const percent = Math.round((totalScore / maxScore) * 100);
+  const mins = Math.floor(pqState.timeElapsed / 60);
+  const secs = pqState.timeElapsed % 60;
+  
+  let overallBadge = '';
+  if (percent >= 80) overallBadge = 'badge-success';
+  else if (percent >= 50) overallBadge = 'badge-warning';
+  else overallBadge = 'badge-danger';
+
+  const summaryHtml = `
+    <div class="glass" style="padding:24px; border-radius:16px; text-align:center; background:rgba(255,255,255,0.02); display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; box-sizing:border-box;">
+      <h3 style="margin:0; font-size:1.1rem; text-transform:uppercase; color:var(--text-light);">Quiz Performance Report</h3>
+      <div style="width:100px; height:100px; border-radius:50%; background:rgba(124,58,237,0.1); border:4px solid var(--secondary); display:flex; flex-direction:column; align-items:center; justify-content:center; margin:10px 0;">
+        <span style="font-size:1.5rem; font-weight:800; color:var(--text-color);">${totalScore}</span>
+        <span style="font-size:0.75rem; color:var(--text-light);">/ ${maxScore} pts</span>
+      </div>
+      <div>
+        <span class="badge ${overallBadge}" style="font-size:0.85rem; padding:6px 12px; border-radius:8px;">${percent}% Score Rate</span>
+      </div>
+      <p style="font-size:0.85rem; color:var(--text-light); margin:4px 0;">
+        ⏱️ <strong>Time Elapsed:</strong> ${mins}m ${secs}s | 📚 <strong>Course:</strong> ${pqState.course}
+      </p>
+      <p style="font-size:0.85rem; line-height:1.4; color:var(--text-muted); max-width:480px; margin-top:8px;">
+        ${percent >= 80 ? 'Fantastic work! You have shown a deep conceptual grasp of this course. Review any feedback below to secure a perfect score.' : 
+          percent >= 50 ? 'Good effort! You understand the foundational elements of this course but have some conceptual gaps. Read the tutor explanations to solidify your understanding.' : 
+          'You need to review this module further. Go through the lecture slides in the Courses tab and use the AI Academic Chat to ask specific questions about the concepts below.'}
+      </p>
+    </div>
+    <div style="margin-top:20px; width:100%; box-sizing:border-box;">
+      <h3 style="font-size:1rem; margin-bottom:12px; color:var(--text-color);">Question Breakdown & Review</h3>
+      ${breakdownHtml}
+    </div>
+  `;
+
+  return summaryHtml;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function closePracticeModal() {
+  if (pqState.timerInterval) {
+    clearInterval(pqState.timerInterval);
+  }
+  pqState.active = false;
+  D.get('pq-practice-modal').style.display = 'none';
 }
 

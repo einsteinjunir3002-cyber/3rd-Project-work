@@ -338,3 +338,160 @@ let currentCitationFormat = 'APA';
 let isOfflineDemoMode = false;
 let activeAuthTab = 'signin';
 let activeSignupRole = 'student';
+
+const PAST_QUESTIONS_QUIZZES = {
+  'CS101': {
+    title: 'CS101 Intro to Coding Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'Which of the following is a mutable data type in Python?', options: ['A) Tuple', 'B) List', 'C) String', 'D) Integer'], answer: 'B', explanation: 'Lists are mutable in Python, meaning you can modify their contents. Tuples, strings, and integers are immutable.' },
+      { id: 2, type: 'objective', question: 'What is the binary representation of the decimal number 13?', options: ['A) 1100', 'B) 1101', 'C) 1011', 'D) 1110'], answer: 'B', explanation: '13 in decimal is 8 + 4 + 1, which corresponds to 1101 in binary.' },
+      { id: 3, type: 'objective', question: 'Which logic gate output is 1 only when both inputs are different?', options: ['A) AND', 'B) OR', 'C) XOR', 'D) NAND'], answer: 'C', explanation: 'An XOR (Exclusive OR) gate outputs 1 (True) only when the inputs are different.' },
+      { id: 4, type: 'subjective', question: 'Explain the difference between a stack and a queue data structure.', answerKeywords: ['lifo', 'fifo', 'last in', 'first in', 'push', 'pop', 'enqueue', 'dequeue'], explanation: 'A stack is a Last-In-First-Out (LIFO) structure where elements are inserted and removed from the same end (top). A queue is a First-In-First-Out (FIFO) structure where elements are inserted at the back and removed from the front.' },
+      { id: 5, type: 'subjective', question: 'Explain the concept of recursion in computer science.', answerKeywords: ['base case', 'recursive call', 'itself', 'function calls itself', 'stack overflow'], explanation: 'Recursion is a programming technique where a function calls itself directly or indirectly to solve a problem. It requires a base case to terminate execution and prevent stack overflow.' },
+      { id: 6, type: 'subjective', question: 'What is the purpose of a base case in a recursive function?', answerKeywords: ['stop', 'terminate', 'end recursion', 'infinite loop', 'base condition'], explanation: 'The base case provides a termination condition that stops the recursion. Without it, the function would call itself infinitely, leading to a stack overflow error.' }
+    ]
+  },
+  'MATH102': {
+    title: 'MATH102 Calculus & Applied Mathematics Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'What is the derivative of sin(x) with respect to x?', options: ['A) -sin(x)', 'B) cos(x)', 'C) -cos(x)', 'D) tan(x)'], answer: 'B', explanation: 'The derivative of sin(x) is cos(x).' },
+      { id: 2, type: 'objective', question: 'Evaluate the limit: lim (x -> 0) of sin(x)/x.', options: ['A) 0', 'B) 1', 'C) Undefined', 'D) Infinity'], answer: 'B', explanation: 'Using L\'Hopital\'s rule or standard trigonometric limits, lim (x -> 0) sin(x)/x = 1.' },
+      { id: 3, type: 'objective', question: 'What is the determinant of a 2x2 identity matrix?', options: ['A) 0', 'B) 1', 'C) -1', 'D) 2'], answer: 'B', explanation: 'The identity matrix has diagonal elements 1,1. Ad - bc = 1*1 - 0*0 = 1.' },
+      { id: 4, type: 'subjective', question: 'State the Fundamental Theorem of Calculus.', answerKeywords: ['derivative', 'integral', 'differentiation', 'integration', 'anti-derivative'], explanation: 'The Fundamental Theorem of Calculus establishes a connection between differentiation and integration, stating that integration and differentiation are inverse operations.' },
+      { id: 5, type: 'subjective', question: 'Explain the conditions required for a matrix to be invertible.', answerKeywords: ['determinant', 'non-zero', 'square', 'linearly independent'], explanation: 'A matrix must be a square matrix (same number of rows and columns) and its determinant must be non-zero (non-singular).' },
+      { id: 6, type: 'subjective', question: 'Explain what the limit of a function represents.', answerKeywords: ['approaches', 'value', 'input approaches', 'near'], explanation: 'The limit of a function is the value that the function approaches as the input variable approaches a specific point.' }
+    ]
+  },
+  'ENG201': {
+    title: 'ENG201 Software Engineering & Architectures Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'Which UML diagram represents the static structure of a system?', options: ['A) Sequence Diagram', 'B) Use Case Diagram', 'C) Class Diagram', 'D) Activity Diagram'], answer: 'C', explanation: 'A Class Diagram displays the classes, attributes, operations, and relationships to model static structure.' },
+      { id: 2, type: 'objective', question: 'Which SDLC model is strictly sequential without overlapping phases?', options: ['A) Agile', 'B) Spiral', 'C) Waterfall', 'D) V-Model'], answer: 'C', explanation: 'The Waterfall model is a linear, non-overlapping sequential SDLC phase progression.' },
+      { id: 3, type: 'objective', question: 'What is the primary role of Git in software engineering?', options: ['A) Project Management', 'B) Database Storage', 'C) Version Control', 'D) Code Compilation'], answer: 'C', explanation: 'Git is a distributed version control system designed to track file changes and coordinate work.' },
+      { id: 4, type: 'subjective', question: 'Explain the Model-View-Controller (MVC) architectural pattern.', answerKeywords: ['model', 'view', 'controller', 'separation', 'presentation', 'business logic'], explanation: 'MVC separates an application into three main components: Model (data/business logic), View (UI display), and Controller (handles inputs and updates model/view).' },
+      { id: 5, type: 'subjective', question: 'What are the main principles of Agile development?', answerKeywords: ['iterative', 'customer feedback', 'incremental', 'sprint', 'flexibility'], explanation: 'Agile focuses on iterative development, close collaboration, adaptability to changes, and delivering working software incrementally.' },
+      { id: 6, type: 'subjective', question: 'Explain the difference between white-box and black-box testing.', answerKeywords: ['internal structure', 'source code', 'functional', 'inputs', 'outputs', 'implementation details'], explanation: 'White-box testing examines the internal code structure and paths. Black-box testing examines software functionality from external specifications without internal code visibility.' }
+    ]
+  },
+  'BUA202': {
+    title: 'BUA202 Business Administration & Management Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'What does the abbreviation SWOT analysis stand for?', options: ['A) Strengths, Weaknesses, Operations, Time', 'B) Strengths, Weaknesses, Opportunities, Threats', 'C) Systems, Workforce, Organization, Technology', 'D) Sales, Website, Outcomes, Trends'], answer: 'B', explanation: 'SWOT stands for Strengths, Weaknesses, Opportunities, and Threats.' },
+      { id: 2, type: 'objective', question: 'What document outlines a company\'s goals, strategies, and operational plans?', options: ['A) Financial Statement', 'B) Marketing Mix', 'C) Business Plan', 'D) Tax Return'], answer: 'C', explanation: 'A Business Plan is a comprehensive document describing operational, marketing, and financial goals.' },
+      { id: 3, type: 'objective', question: 'Which executive role typically occupies the highest position in corporate management?', options: ['A) CFO', 'B) COO', 'C) CEO', 'D) CTO'], answer: 'C', explanation: 'The Chief Executive Officer (CEO) is the highest-ranking corporate administrator.' },
+      { id: 4, type: 'subjective', question: 'Explain the 4 Ps of the marketing mix.', answerKeywords: ['product', 'price', 'place', 'promotion', 'strategy'], explanation: 'The 4 Ps represent Product (offering), Price (cost to buyer), Place (distribution channel), and Promotion (advertising/public relations).' },
+      { id: 5, type: 'subjective', question: 'Define organizational culture and state why it is important.', answerKeywords: ['shared values', 'beliefs', 'behaviors', 'norms', 'employees', 'motivation'], explanation: 'Organizational culture consists of the shared values, beliefs, and behaviors within an organization that dictate how employees interact and work.' },
+      { id: 6, type: 'subjective', question: 'What is Corporate Social Responsibility (CSR)?', answerKeywords: ['society', 'environment', 'social responsibility', 'community', 'ethics'], explanation: 'CSR refers to business self-regulation policies where a company operates ethically and contributes positively to social, environmental, and community welfare.' }
+    ]
+  },
+  'CYS101': {
+    title: 'CYS101 Information Security & Cryptography Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'What are the three pillars of the CIA triad in security?', options: ['A) Computer, Internet, Access', 'B) Confidentiality, Integrity, Availability', 'C) Cryptography, Identification, Authorization', 'D) Cyber, Intranets, Attacks'], answer: 'B', explanation: 'The CIA triad stands for Confidentiality, Integrity, and Availability.' },
+      { id: 2, type: 'objective', question: 'Which encryption method uses a public and private key pair?', options: ['A) Symmetric', 'B) Hashing', 'C) Asymmetric', 'D) Steganography'], answer: 'C', explanation: 'Asymmetric (public-key) cryptography uses a public key for encryption and a private key for decryption.' },
+      { id: 3, type: 'objective', question: 'Which malicious software hides on a system and records user activities?', options: ['A) Ransomware', 'B) Adware', 'C) Spyware', 'D) Rootkit'], answer: 'C', explanation: 'Spyware secretly gathers information about user activity and transmits it to third parties.' },
+      { id: 4, type: 'subjective', question: 'Explain the difference between symmetric and asymmetric encryption.', answerKeywords: ['single key', 'same key', 'public key', 'private key', 'pair', 'slower', 'faster'], explanation: 'Symmetric encryption uses the same single key for both encryption and decryption. Asymmetric encryption uses a public key to encrypt and a separate private key to decrypt.' },
+      { id: 5, type: 'subjective', question: 'Describe a phishing attack and how it operates.', answerKeywords: ['email', 'fraudulent', 'mimics', 'credentials', 'password', 'link', 'social engineering'], explanation: 'Phishing is a social engineering attack where malicious actors send fake emails or links mimicking legitimate entities to trick users into revealing sensitive data.' },
+      { id: 6, type: 'subjective', question: 'What is the purpose of a firewall in network security?', answerKeywords: ['filter', 'traffic', 'rules', 'block', 'incoming', 'outgoing', 'barrier'], explanation: 'A firewall acts as a protective barrier that monitors and filters incoming and outgoing network traffic based on predefined security rules.' }
+    ]
+  },
+  'DSC101': {
+    title: 'DSC101 Introduction to Data Science Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'Which Python library is fundamental for array and numerical math operations?', options: ['A) Pandas', 'B) NumPy', 'C) Matplotlib', 'D) BeautifulSoup'], answer: 'B', explanation: 'NumPy supports large multi-dimensional arrays and high-level mathematical functions.' },
+      { id: 2, type: 'objective', question: 'What type of machine learning uses labeled datasets to train predictions?', options: ['A) Unsupervised', 'B) Reinforcement', 'C) Supervised', 'D) Clustering'], answer: 'C', explanation: 'Supervised learning uses labeled inputs and targets to train mapping functions.' },
+      { id: 3, type: 'objective', question: 'Which statistical metric measures the strength of linear correlation?', options: ['A) Mean', 'B) Standard Deviation', 'C) Correlation Coefficient', 'D) Variance'], answer: 'C', explanation: 'The Pearson correlation coefficient measures linear relationship strength ranging between -1 and +1.' },
+      { id: 4, type: 'subjective', question: 'Explain the difference between supervised and unsupervised learning.', answerKeywords: ['labeled', 'unlabeled', 'target', 'clustering', 'regression', 'classification'], explanation: 'Supervised learning trains on labeled datasets to predict targets (e.g. classification). Unsupervised learning works with unlabeled datasets to find hidden patterns (e.g. clustering).' },
+      { id: 5, type: 'subjective', question: 'Explain data cleaning and its importance.', answerKeywords: ['missing values', 'outliers', 'duplicates', 'accuracy', 'preprocessing', 'noise'], explanation: 'Data cleaning is the preprocessing step of removing or correcting errors, missing values, duplicates, and noise to ensure high model training accuracy.' },
+      { id: 6, type: 'subjective', question: 'Define overfitting in machine learning models.', answerKeywords: ['noise', 'train set', 'test set', 'generalize', 'complexity', 'high variance'], explanation: 'Overfitting occurs when a model learns the training data\'s noise and details too well, failing to generalize to new, unseen testing datasets.' }
+    ]
+  },
+  'ELE101': {
+    title: 'ELE101 Circuit Analysis Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'What is Ohm\'s Law formula?', options: ['A) P = V * I', 'B) V = I * R', 'C) R = V * I', 'D) I = V * R'], answer: 'B', explanation: 'Ohm\'s Law states that Voltage (V) = Current (I) * Resistance (R).' },
+      { id: 2, type: 'objective', question: 'Which electrical component stores energy in an electric field?', options: ['A) Resistor', 'B) Inductor', 'C) Capacitor', 'D) Transistor'], answer: 'C', explanation: 'Capacitors store electrical energy in an electrostatic field between plates.' },
+      { id: 3, type: 'objective', question: 'Which semiconductor device restricts current to one direction?', options: ['A) Capacitor', 'B) Resistor', 'C) Diode', 'D) Transformer'], answer: 'C', explanation: 'A diode acts as a one-way valve for current flow.' },
+      { id: 4, type: 'subjective', question: 'State Kirchhoff\'s Current Law (KCL).', answerKeywords: ['node', 'entering', 'leaving', 'current sum', 'conservation of charge'], explanation: 'KCL states that the total current entering any node in an electrical circuit is equal to the total current leaving that same node.' },
+      { id: 5, type: 'subjective', question: 'Explain the function of a transistor in a circuit.', answerKeywords: ['switch', 'amplifier', 'gate', 'base', 'collector', 'emitter', 'control current'], explanation: 'A transistor can act as an electronic switch (turning current on/off) or as an amplifier (modulating output current based on smaller inputs).' },
+      { id: 6, type: 'subjective', question: 'Explain the difference between AC and DC.', answerKeywords: ['alternating', 'direct', 'direction', 'sinusoidal', 'battery', 'grid'], explanation: 'AC (Alternating Current) periodically changes direction and magnitude sinusoidally. DC (Direct Current) flows in a single constant direction.' }
+    ]
+  },
+  'MEC101': {
+    title: 'MEC101 Thermodynamics & Fluids Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'Which law of thermodynamics states that energy cannot be created or destroyed?', options: ['A) Zeroth Law', 'B) First Law', 'C) Second Law', 'D) Third Law'], answer: 'B', explanation: 'The First Law of Thermodynamics is the law of conservation of energy.' },
+      { id: 2, type: 'objective', question: 'What fluid property represents its internal resistance to flow?', options: ['A) Density', 'B) Viscosity', 'C) Surface Tension', 'D) Buoyancy'], answer: 'B', explanation: 'Viscosity measures a fluid\'s resistance to gradual deformation or flow.' },
+      { id: 3, type: 'objective', question: 'What is the SI unit of pressure?', options: ['A) Joule', 'B) Watt', 'C) Pascal', 'D) Newton'], answer: 'C', explanation: 'The Pascal (Pa) is the SI unit of pressure (1 Newton per square meter).' },
+      { id: 4, type: 'subjective', question: 'State the Second Law of Thermodynamics.', answerKeywords: ['entropy', 'isolated', 'efficiency', 'heat transfer', 'direction'], explanation: 'The Second Law states that the total entropy of an isolated system always increases over time, and heat cannot flow spontaneously from colder to hotter bodies.' },
+      { id: 5, type: 'subjective', question: 'State Archimedes\' Principle of buoyancy.', answerKeywords: ['displaced', 'buoyant force', 'weight', 'fluid', 'volume'], explanation: 'Archimedes\' Principle states that a body immersed in a fluid experiences an upward buoyant force equal to the weight of the fluid it displaces.' },
+      { id: 6, type: 'subjective', question: 'Explain Bernoulli\'s Principle.', answerKeywords: ['velocity', 'speed', 'pressure', 'kinetic energy', 'conservation'], explanation: 'Bernoulli\'s Principle states that an increase in fluid speed occurs simultaneously with a decrease in static pressure or fluid potential energy.' }
+    ]
+  },
+  'ARC101': {
+    title: 'ARC101 Structural Design & CAD Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'What type of drawing shows a building view from the side or front exterior?', options: ['A) Floor Plan', 'B) Section Drawing', 'C) Elevation Drawing', 'D) Perspective Drawing'], answer: 'C', explanation: 'An elevation drawing shows an exterior vertical orthographic projection of a building facade.' },
+      { id: 2, type: 'objective', question: 'Which horizontal structural member is designed to carry bending loads?', options: ['A) Column', 'B) Beam', 'C) Foundation Pillar', 'D) Truss'], answer: 'B', explanation: 'Beams are horizontal members designed to support transverse bending loads.' },
+      { id: 3, type: 'objective', question: 'What does the acronym CAD stand for?', options: ['A) Computer-Aided Drafting', 'B) Computer-Aided Design', 'C) Construction-Architecture Drawing', 'D) Computerized Assembly Diagram'], answer: 'B', explanation: 'CAD stands for Computer-Aided Design.' },
+      { id: 4, type: 'subjective', question: 'Explain the function of a building foundation.', answerKeywords: ['transfer load', 'ground', 'soil', 'settlement', 'stability'], explanation: 'The foundation distributes the building\'s structural load safely to the supporting soil or bedrock, preventing uneven settlement.' },
+      { id: 5, type: 'subjective', question: 'What is a load-bearing wall?', answerKeywords: ['structural weight', 'roof', 'floor', 'gravity load', 'support'], explanation: 'A load-bearing wall is a structural wall that supports gravity loads from above structural components (like roofs and floors).' },
+      { id: 6, type: 'subjective', question: 'Explain the use of scale in architectural drawings.', answerKeywords: ['ratio', 'proportions', 'represent', 'dimensions', 'reduction'], explanation: 'Scale represents the ratio of drawing measurements to the actual physical dimensions of a building, allowing large structures to fit on sheets.' }
+    ]
+  },
+  'NUR101': {
+    title: 'NUR101 General Nursing & Patient Care Ethics Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'What is the primary purpose of triage in emergency nursing?', options: ['A) Billing patients', 'B) Prioritizing care based on severity', 'C) Discharging stable cases', 'D) Administering medicine'], answer: 'B', explanation: 'Triage classifies patients based on care urgency to optimize outcomes.' },
+      { id: 2, type: 'objective', question: 'Which regulation primarily safeguards patient medical records and privacy?', options: ['A) OSHA', 'B) HIPAA', 'C) FDA', 'D) WHO'], answer: 'B', explanation: 'The Health Insurance Portability and Accountability Act (HIPAA) sets privacy standards.' },
+      { id: 3, type: 'objective', question: 'What is the normal resting heart rate range for a healthy adult?', options: ['A) 40-60 bpm', 'B) 60-100 bpm', 'C) 100-120 bpm', 'D) 50-70 bpm'], answer: 'B', explanation: 'The standard resting adult pulse is 60 to 100 beats per minute.' },
+      { id: 4, type: 'subjective', question: 'Explain the nursing ethic of non-maleficence.', answerKeywords: ['do no harm', 'patient safety', 'minimize risk', 'injury prevention'], explanation: 'Non-maleficence obligates nursing practitioners to act in ways that avoid causing harm, distress, or injury to patients.' },
+      { id: 5, type: 'subjective', question: 'Explain the significance of maintaining patient confidentiality.', answerKeywords: ['trust', 'privacy', 'legal duty', 'records protection', 'information disclosure'], explanation: 'Confidentiality respects patient autonomy, builds clinical trust, and fulfills legal requirements regarding medical records.' },
+      { id: 6, type: 'subjective', question: 'List and describe the steps of the Nursing Process.', answerKeywords: ['assessment', 'diagnosis', 'planning', 'implementation', 'evaluation'], explanation: 'The nursing process consists of Assessment (gathering data), Diagnosis (identifying needs), Planning (setting goals), Implementation (action), and Evaluation (results analysis).' }
+    ]
+  },
+  'MED101': {
+    title: 'MED101 Clinical Diagnostics & Pathology Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'What does a high white blood cell (WBC) count in a blood panel typically suggest?', options: ['A) Anemia', 'B) Infection or inflammation', 'C) Dehydration', 'D) Clotting disorder'], answer: 'B', explanation: 'An elevated WBC count is the body\'s typical immune response to infection.' },
+      { id: 2, type: 'objective', question: 'What is the study of tissue structures to detect disease abnormalities?', options: ['A) Hematology', 'B) Histopathology', 'C) Immunology', 'D) Cytology'], answer: 'B', explanation: 'Histopathology examines biopsied tissue under microscopes to identify disease structures.' },
+      { id: 3, type: 'objective', question: 'Which diagnostic tool utilizes powerful magnetic fields and radio waves?', options: ['A) X-Ray', 'B) CT Scan', 'C) MRI', 'D) Ultrasound'], answer: 'C', explanation: 'MRI (Magnetic Resonance Imaging) provides high-resolution soft tissue diagnostics without radiation.' },
+      { id: 4, type: 'subjective', question: 'Explain the difference between acute and chronic diseases.', answerKeywords: ['onset', 'duration', 'sudden', 'gradual', 'long term', 'short term'], explanation: 'Acute diseases have rapid onset and short duration (e.g. flu). Chronic diseases develop slowly and persist long-term (e.g. diabetes).' },
+      { id: 5, type: 'subjective', question: 'Explain the purpose of a differential diagnosis.', answerKeywords: ['distinguish', 'similar symptoms', 'list possibilities', 'narrow down'], explanation: 'Differential diagnosis involves listing and evaluating candidate diseases that present similar symptoms to systematically narrow down to the correct one.' },
+      { id: 6, type: 'subjective', question: 'Describe the role of a biopsy in oncology.', answerKeywords: ['extract tissue', 'microscope', 'malignant', 'benign', 'cancer diagnosis', 'histology'], explanation: 'A biopsy extracts a tissue specimen for microscopic pathological analysis to determine if cells are benign or malignant.' }
+    ]
+  },
+  'PHA101': {
+    title: 'PHA101 Pharmaceutical Chemistry Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'What is the study of drug absorption, distribution, metabolism, and excretion?', options: ['A) Pharmacodynamics', 'B) Pharmacokinetics', 'C) Toxicology', 'D) Therapeutics'], answer: 'B', explanation: 'Pharmacokinetics defines what the body does to the drug.' },
+      { id: 2, type: 'objective', question: 'Which route of administration involves swallowing the medication?', options: ['A) Intravenous', 'B) Sublingual', 'C) Oral', 'D) Transdermal'], answer: 'C', explanation: 'Oral route involves gastrointestinal tract absorption.' },
+      { id: 3, type: 'objective', question: 'Which internal organ is primarily responsible for drug biotransformation?', options: ['A) Kidneys', 'B) Liver', 'C) Lungs', 'D) Heart'], answer: 'B', explanation: 'The liver contains hepatic enzymes that metabolize foreign chemical compounds.' },
+      { id: 4, type: 'subjective', question: 'Distinguish between pharmacokinetics and pharmacodynamics.', answerKeywords: ['body does to drug', 'drug does to body', 'adme', 'receptor', 'biochemistry'], explanation: 'Pharmacokinetics (PK) tracks drug movements through the body (ADME). Pharmacodynamics (PD) analyzes the drug\'s biochemical effects on biological receptors.' },
+      { id: 5, type: 'subjective', question: 'Define a drug\'s half-life.', answerKeywords: ['concentration', 'reduce', 'eliminate', 'fifty percent', 'half', 'plasma'], explanation: 'Drug half-life is the duration required for the drug\'s plasma concentration to decrease by 50% in the body.' },
+      { id: 6, type: 'subjective', question: 'Explain the concept of drug tolerance.', answerKeywords: ['repeated use', 'reduced response', 'higher dose', 'desensitization'], explanation: 'Tolerance occurs when repeated administration of a drug results in a decreased pharmacological response, requiring higher dosages to achieve the same effect.' }
+    ]
+  },
+  'LAW101': {
+    title: 'LAW101 Constitutional Law & Jurisprudence Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'Which body is the highest court of appeal under the Constitution of Ghana?', options: ['A) High Court', 'B) Court of Appeal', 'C) Supreme Court', 'D) Judicial Committee of Privy Council'], answer: 'C', explanation: 'The Supreme Court of Ghana holds ultimate constitutional interpretation and appellate jurisdiction.' },
+      { id: 2, type: 'objective', question: 'Under which chapter of Ghana\'s 1992 Constitution are fundamental human rights guaranteed?', options: ['A) Chapter 5', 'B) Chapter 6', 'C) Chapter 10', 'D) Chapter 2'], answer: 'A', explanation: 'Chapter 5 of the 1992 Constitution outlines fundamental human rights and freedoms.' },
+      { id: 3, type: 'objective', question: 'Which doctrine divides state authority into Executive, Legislative, and Judicial organs?', options: ['A) Federalism', 'B) Separation of Powers', 'C) Rule of Law', 'D) Parliamentary Sovereignty'], answer: 'B', explanation: 'Separation of powers delegates specific governmental functions to separate bodies to prevent tyranny.' },
+      { id: 4, type: 'subjective', question: 'Explain the concept of Judicial Review in constitutional law.', answerKeywords: ['constitutionality', 'declare void', 'executive action', 'legislative act', 'courts authority'], explanation: 'Judicial Review allows courts to examine executive actions or legislative enactments and strike them down if they violate constitutional clauses.' },
+      { id: 5, type: 'subjective', question: 'Define the Rule of Law.', answerKeywords: ['equality', 'no one above', 'fair trial', 'legal protection', 'law supremacy'], explanation: 'The Rule of Law states that law is supreme, no individual is above it, and justice must be administered through fair and established legal procedures.' },
+      { id: 6, type: 'subjective', question: 'Describe the separation of powers doctrine.', answerKeywords: ['branches', 'executive', 'legislative', 'judicial', 'checks and balances', 'concentration'], explanation: 'Separation of powers divides governance into three branches to maintain checks and balances and avoid the concentration of absolute authority.' }
+    ]
+  },
+  'ECO101': {
+    title: 'ECO101 Macroeconomic Principles Exam',
+    questions: [
+      { id: 1, type: 'objective', question: 'What does GDP stand for in macroeconomics?', options: ['A) Gross Domestic Product', 'B) General Demand Ratio', 'C) Government Debt Portfolio', 'D) Gross Development Profits'], answer: 'A', explanation: 'GDP measures the total market value of all final goods and services produced within a country.' },
+      { id: 2, type: 'objective', question: 'What is the term for a sustained increase in the general price level of goods and services?', options: ['A) Deflation', 'B) Stagnation', 'C) Inflation', 'D) Depreciation'], answer: 'C', explanation: 'Inflation decreases purchasing power over time as general prices rise.' },
+      { id: 3, type: 'objective', question: 'What policy tool adjusts interest rates and reserve requirements to manage liquidity?', options: ['A) Fiscal Policy', 'B) Trade Policy', 'C) Monetary Policy', 'D) Income Policy'], answer: 'C', explanation: 'Monetary policy is governed by central banks (like the Bank of Ghana) to regulate money supply.' },
+      { id: 4, type: 'subjective', question: 'Explain the difference between fiscal policy and monetary policy.', answerKeywords: ['government', 'taxation', 'spending', 'central bank', 'interest rates', 'money supply'], explanation: 'Fiscal policy is managed by the government via taxation and public expenditure. Monetary policy is managed by the central bank via interest rates and money supply regulation.' },
+      { id: 5, type: 'subjective', question: 'Define inflation and list its two main demand/supply causes.', answerKeywords: ['price level', 'demand pull', 'cost push', 'purchasing power', 'increase'], explanation: 'Inflation is a sustained increase in price levels. Its causes are Demand-Pull (aggregate demand exceeds supply) and Cost-Push (rising production costs).' },
+      { id: 6, type: 'subjective', question: 'Explain the business cycle and its phases.', answerKeywords: ['expansion', 'peak', 'contraction', 'recession', 'trough', 'fluctuations'], explanation: 'The business cycle represents national output fluctuations, moving through expansion (growth), peak, contraction/recession (decline), and trough.' }
+    ]
+  }
+};
