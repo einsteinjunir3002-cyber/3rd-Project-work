@@ -103,6 +103,10 @@ function checkPasswordStrength(pwd) {
 const openAuthModal = () => { D.show('auth-modal', true); D.show('auth-alert', false); switchAuthTab('signin'); }, closeAuthModal = () => D.show('auth-modal', false),
 switchAuthTab = tab => {
   activeAuthTab = tab; D.show('auth-alert', false); const isSignIn = tab === 'signin'; D.get('auth-modal-title').textContent = isSignIn ? 'Sign In to SmartLearn' : 'Create Academic Account'; D.get('tab-signin-btn').style.background = isSignIn ? 'var(--primary)' : 'transparent'; D.get('tab-signin-btn').style.color = isSignIn ? 'white' : 'var(--text-muted)'; D.get('tab-signup-btn').style.background = isSignIn ? 'transparent' : 'var(--primary)'; D.get('tab-signup-btn').style.color = isSignIn ? 'var(--text-muted)' : 'white'; D.show('auth-signin-form', isSignIn); D.show('auth-signup-form', !isSignIn);
+  if (!isSignIn) {
+    const r = D.val('signup-role-select') || 'student';
+    setSignupRole(r);
+  }
 },
 setSignupRole = role => {
   activeSignupRole = role;
@@ -119,8 +123,16 @@ setSignupRole = role => {
   const el = D.get('auth-alert'); if (!el) return; el.style.display = 'block'; el.style.background = isSuccess ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'; el.style.border = isSuccess ? '1px solid rgba(16,185,129,0.2)' : '1px solid rgba(239,68,68,0.2)'; el.style.color = isSuccess ? '#10b981' : '#ef4444'; el.innerHTML = msg;
 }; // activeAuthTab and activeSignupRole are declared in data.js
 async function handlePrototypeSignIn() {
-  const email = D.val('signin-email'), password = D.val('signin-password');
-  if (!email || !password) return showAuthAlert('Please fill in credentials.');
+  const emailOrUsername = D.val('signin-email'), password = D.val('signin-password');
+  if (!emailOrUsername || !password) return showAuthAlert('Please fill in credentials.');
+  
+  // Find user by email or username in the simulated users list first
+  const resolvedUser = getSimulatedUsers().find(u => 
+    u.email.toLowerCase() === emailOrUsername.toLowerCase() || 
+    (u.username && u.username.toLowerCase() === emailOrUsername.toLowerCase())
+  );
+  
+  const email = resolvedUser ? resolvedUser.email : emailOrUsername;
   
   // Lockout check
   const isLocked = localStorage.getItem(`smartlearn_locked_${email}`) === 'true';
@@ -130,7 +142,7 @@ async function handlePrototypeSignIn() {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/api/auth/signin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+    const res = await fetch(`${API_BASE}/api/auth/signin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: emailOrUsername, password }) });
     const data = await res.json();
     if (res.ok && data.token) {
       localStorage.removeItem(`smartlearn_failed_attempts_${email}`);
@@ -141,12 +153,11 @@ async function handlePrototypeSignIn() {
     }
   } catch (err) {}
 
-  const user = getSimulatedUsers().find(u => u.email === email && u.password === password);
-  if (user) {
+  if (resolvedUser && resolvedUser.password === password) {
     localStorage.removeItem(`smartlearn_failed_attempts_${email}`);
-    localStorage.setItem('proto_token', `simulated_token_${user.role}_${user.email}`);
-    appState.user = user; enableOfflineDemoIndicator(true); showAuthAlert('Success (Offline Demo)!', true);
-    setTimeout(() => { closeAuthModal(); setUserRole(user.role); }, 1000);
+    localStorage.setItem('proto_token', `simulated_token_${resolvedUser.role}_${resolvedUser.email}`);
+    appState.user = resolvedUser; enableOfflineDemoIndicator(true); showAuthAlert('Success (Offline Demo)!', true);
+    setTimeout(() => { closeAuthModal(); setUserRole(resolvedUser.role); }, 1000);
   } else {
     let attempts = parseInt(localStorage.getItem(`smartlearn_failed_attempts_${email}`) || '0');
     attempts++;
