@@ -57,7 +57,33 @@ const getSimulatedUsers = () => {
 }, saveSimulatedUsers = users => localStorage.setItem('smartlearn_simulated_users', JSON.stringify(users)),
 loadOfflineState = () => {
   const s = localStorage.getItem('smartlearn_offline_appstate');
-  if (s) { try { Object.assign(appState, JSON.parse(s)); } catch(e) {} }
+  if (s) {
+    try {
+      const parsed = JSON.parse(s);
+      if (parsed.courses) {
+        SMARTLEARN_STATIC_DATA.courses.forEach(c => {
+          if (!parsed.courses.some(pc => pc.id === c.id)) {
+            parsed.courses.push(c);
+          }
+        });
+      }
+      if (parsed.notes) {
+        SMARTLEARN_STATIC_DATA.notes.forEach(n => {
+          if (!parsed.notes.some(pn => pn.id === n.id)) {
+            parsed.notes.push(n);
+          }
+        });
+      }
+      if (parsed.assignments) {
+        SMARTLEARN_STATIC_DATA.assignments.forEach(a => {
+          if (!parsed.assignments.some(pa => pa.id === a.id)) {
+            parsed.assignments.push(a);
+          }
+        });
+      }
+      Object.assign(appState, parsed);
+    } catch(e) {}
+  }
 }, saveOfflineState = () => {
   localStorage.setItem('smartlearn_offline_appstate', JSON.stringify({
     courses: appState.courses, notes: appState.notes, assignments: appState.assignments, submissions: appState.submissions, forumThreads: appState.forumThreads, universities: appState.universities, students: appState.students,
