@@ -40,7 +40,10 @@ if (window.supabase) {
    OFFLINE ENGINE
    ========================================================================== */
 // isOfflineDemoMode is declared in data.js
-const API_BASE = 'http://localhost:5000';
+const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+  ? 'http://localhost:5000'
+  : window.location.origin;
+
 // Hardcoded demo accounts — always available regardless of localStorage state
 const DEMO_ACCOUNTS = [
   { id: 'user_std_1', name: 'Kofi Mensah', email: 'stu@smartlearn.com', password: 'password', role: 'student', department: 'Computing & Information Technology', program: 'BSc Computer Science', studentIdNumber: 'stu/csc/0001', phone: '+233 24 111 2222', gender: 'Male', level: '300', securityQuestion: 'What was the name of your first pet?', securityAnswer: 'Rex' },

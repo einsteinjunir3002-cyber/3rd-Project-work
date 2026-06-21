@@ -443,3 +443,6 @@ app.listen(PORT, () => {
         console.log('WARNING: Running in MOCK mode. Configure .env with SUPABASE_URL to connect to real database.');
     }
 });
+
+module.exports = app;
+
