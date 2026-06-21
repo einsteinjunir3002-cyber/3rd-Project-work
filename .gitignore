@@ -47,3 +47,10 @@ pnpm.exe
 *.tmp
 *.zip
 *.tar.gz
+
+# Python cache and scripts
+__pycache__/
+*.pyc
+*.py
+
+
