@@ -525,24 +525,7 @@ function sendResearchChatMessage(event) {
   input.value = '';
 }
 
-// Hook into the tab switcher to initialize safely
-setTimeout(() => {
-  if (typeof switchTab !== 'undefined') {
-    const originalSwitchTab = switchTab;
-    window.switchTab = function(role, tabId) {
-      try {
-        originalSwitchTab(role, tabId);
-        if (tabId === 'researcher-repository') {
-          fetchResearchDocuments();
-        } else if (tabId === 'researcher-collaboration') {
-          initResearchChat();
-        }
-      } catch (err) {
-        console.error("Error in switchTab wrapper:", err);
-      }
-    }
-  }
-}, 500);
+// switchTab hooks are consolidated lower down
 
 
 
@@ -597,6 +580,30 @@ async function fetchResearcherTasks() {
   }
 }
 
+// Hook into the tab switcher to initialize safely
+setTimeout(() => {
+  if (typeof switchTab !== 'undefined') {
+    const originalSwitchTab = switchTab;
+    window.switchTab = function(role, tabId) {
+      try {
+        originalSwitchTab(role, tabId);
+        if (tabId === 'researcher-repository') {
+          fetchResearchDocuments();
+        } else if (tabId === 'researcher-collaboration') {
+          initResearchChat();
+          fetchResearcherTasks();
+        } else if (tabId === 'researcher-dashboard') {
+          fetchResearcherDashboard();
+        } else if (tabId === 'researcher-ethics') {
+          renderResearcherScansTable();
+        }
+      } catch (err) {
+        console.error("Error in switchTab wrapper:", err);
+      }
+    }
+  }
+}, 500);
+
 // Call these immediately if we enter the portal, or on load
 document.addEventListener('DOMContentLoaded', () => {
   // Try fetching on load if authenticated or mock mode
@@ -606,17 +613,93 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 1000);
 });
 
-// Update the switchTab hook to also fetch dashboard stats
-setTimeout(() => {
-  if (typeof switchTab !== 'undefined') {
-    const prevSwitchTab = window.switchTab;
-    window.switchTab = function(role, tabId) {
-      if (prevSwitchTab) prevSwitchTab(role, tabId);
-      if (tabId === 'researcher-dashboard') {
-        fetchResearcherDashboard();
-      } else if (tabId === 'researcher-collaboration') {
-        fetchResearcherTasks();
-      }
-    }
+/* ---------- Researcher Plagiarism Scanner ---------- */
+function handleResearcherPlagFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  if (!file.name.toLowerCase().endsWith('.txt')) {
+    return showToastNotification('Allowed manual upload format for scanning: .txt files only.');
   }
-}, 600);
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    D.val('researcher-plag-text', e.target.result);
+    D.val('researcher-plag-docname', file.name);
+    showToastNotification('File content successfully loaded into the editor!');
+  };
+  reader.readAsText(file);
+}
+
+function runResearcherPlagScan() {
+  const text = (D.val('researcher-plag-text') || '').trim();
+  const docName = (D.val('researcher-plag-docname') || '').trim();
+
+  if (!text || text.length < 50) {
+    return showToastNotification('⚠️ Text too short. Please provide at least 50 characters.');
+  }
+
+  const name = docName || 'Research_Draft_Scan.txt';
+  if (typeof analyzeTextForPlagiarism === 'function') {
+    const report = analyzeTextForPlagiarism(text, name);
+    if (report.valid) {
+      if (!appState.plagiarismReports) appState.plagiarismReports = [];
+      appState.plagiarismReports.unshift(report);
+      saveOfflineState();
+      
+      renderPlagiarismReport(report);
+      renderResearcherScansTable();
+      earnBadge('plagiarism');
+      showToastNotification('Scan complete! Opening integrity analysis report.');
+      
+      // Clear inputs
+      D.val('researcher-plag-text', '');
+      D.val('researcher-plag-docname', '');
+      const fileInput = D.get('researcher-plag-file');
+      if (fileInput) fileInput.value = '';
+    }
+  } else {
+    showToastNotification('Plagiarism engine is not loaded.');
+  }
+}
+
+function renderResearcherScansTable() {
+  const container = D.get('researcher-scans-list');
+  if (!container) return;
+
+  const reports = (appState.plagiarismReports || []).concat(appState.demoPlagiarismReports || []);
+  
+  // Filter reports that are research/proposal/draft drafts or manual scans
+  const researchReports = reports.filter(r => 
+    r.documentName.toLowerCase().includes('proposal') || 
+    r.documentName.toLowerCase().includes('draft') ||
+    r.documentName.toLowerCase().includes('research') || 
+    r.documentName.toLowerCase().includes('malaria') ||
+    r.documentName.toLowerCase().includes('survey') || 
+    r.documentName.toLowerCase().includes('scan') ||
+    r.documentName.toLowerCase().endsWith('.txt')
+  );
+
+  if (!researchReports.length) {
+    container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; text-align:center; margin-top: 40px;">No scan history found. Run a new scan above to see reports here.</p>';
+    return;
+  }
+
+  container.innerHTML = researchReports.map((r, idx) => {
+    const recColor = r.recommendation === 'CLEAR' ? '#10b981' : r.recommendation === 'FLAG_CONCERN' ? '#ef4444' : '#f59e0b';
+    return `
+      <div class="glass" style="padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+        <div style="flex:1; min-width:0;">
+          <h4 style="font-size:0.8rem; margin:0 0 2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${r.documentName}">📄 ${r.documentName}</h4>
+          <p style="font-size:0.7rem; color:var(--text-muted); margin:0;">${r.analysisDate} · ${r.wordCount || '?'} words</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="text-align:right;">
+            <div style="font-size:0.95rem; font-weight:800; color:${recColor};">${r.overallSimilarity}%</div>
+            <div style="font-size:0.55rem; color:var(--text-muted);">Match</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="viewPlagiarismReportForFile('${r.documentName}')" style="font-size:0.65rem; padding:3px 6px;">Report</button>
+        </div>
+      </div>`;
+  }).join('');
+}

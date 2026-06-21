@@ -120,7 +120,6 @@
               <option value="Prospective Student">Prospective Student</option>
               <option value="Lecturer">Lecturer</option>
               <option value="Researcher">Researcher</option>
-              <option value="Entrepreneur">Entrepreneur</option>
               <option value="Alumni">Alumni</option>
               <option value="Career Advisor">Career Advisor</option>
               <option value="Industry Partner">Industry Partner</option>
@@ -1391,6 +1390,8 @@
           </div>
         </div>
       </section>
+  
+  
   <!-- ============================================================
        RESEARCHER PORTAL SECTIONS (7 Core Features, Expanded)
        ============================================================ -->
@@ -1794,10 +1795,39 @@
     </div>
 
     <div id="res-ethics-integrity" class="res-sub-view">
-      <div class="glass-panel">
-        <h3>Plagiarism & AI Generation Check</h3>
-        <p style="color:var(--text-muted); margin-bottom:12px;">Pre-screen your proposal before submission.</p>
-        <button class="btn btn-primary">Scan Document</button>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 24px; flex-wrap: wrap;">
+        <!-- Left Column: Scan Panel -->
+        <div class="glass-panel" style="padding: 24px;">
+          <h3 style="margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">🛡️ Pre-Screen Draft Integrity</h3>
+          <p style="color:var(--text-muted); font-size: 0.8rem; margin-bottom: 16px;">Paste text or upload a document to analyze similarities and detect AI patterns before final submission.</p>
+          
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Document Title / Name</label>
+            <input type="text" id="researcher-plag-docname" class="form-control" placeholder="E.g. Smart_Farming_Proposal_v2.docx" style="width:100%; font-size:0.85rem; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color);">
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Manuscript or Abstract Text</label>
+            <textarea id="researcher-plag-text" class="form-control" rows="8" placeholder="Paste your research manuscript draft or abstract content here (minimum 50 characters)..." style="width:100%; font-size:0.85rem; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); resize:vertical;"></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <input type="file" id="researcher-plag-file" style="display:none;" onchange="handleResearcherPlagFileUpload(event)">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('researcher-plag-file').click()" style="font-size: 0.75rem; display: flex; align-items: center; gap: 6px;">📎 Upload Text File</button>
+            </div>
+            <button class="btn btn-primary" onclick="runResearcherPlagScan()" style="font-size: 0.85rem; font-weight: 700; padding: 10px 20px;">🚀 Scan Draft</button>
+          </div>
+        </div>
+
+        <!-- Right Column: Scan History -->
+        <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column;">
+          <h3 style="margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">🕒 Your Pre-Screening History</h3>
+          <p style="color:var(--text-muted); font-size: 0.8rem; margin-bottom: 16px;">View previously evaluated draft reports and similarity statistics.</p>
+          <div id="researcher-scans-list" style="flex-grow:1; overflow-y:auto; max-height: 420px; display:flex; flex-direction:column; gap:10px;">
+            <p style="color:var(--text-muted); font-size:0.85rem; text-align:center; margin-top: 40px;">No scan history found. Run a new scan above to see reports here.</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2071,7 +2101,7 @@
     </div>
   </section>
 
-  <!-- Researcher Hub Pro -->
+    <!-- Researcher Hub Pro -->
   <section id="research-hub-expanded" class="portal-view" style="display:none;">
     <h2>🔬 Research Hub <span class="gradient-text">Pro</span></h2>
     <p style="color:var(--text-muted);margin-bottom:20px;">Kanban projects, grants, conferences, and ethics workflows.</p>
@@ -2264,7 +2294,6 @@
             <option value="prospective_student">Prospective Student</option>
             <option value="lecturer">Lecturer</option>
             <option value="researcher">Researcher</option>
-            <option value="entrepreneur">Entrepreneur</option>
             <option value="alumni">Alumni</option>
             <option value="industry_partner">Industry Partner</option>
             <option value="career_advisor">Career Advisor</option>
@@ -2356,7 +2385,7 @@
           </div>
         </div>
 
-        <div id="signup-prospective-student-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Intended Major</label> <input type="text" id="signup-intended-major" class="form-control" placeholder="E.g. Computer Science" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">High School</label> <input type="text" id="signup-highschool" class="form-control" placeholder="E.g. Achimota School" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-lecturer-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="width:70px;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Title</label> <select id="signup-title" style="width:100%; padding:10px 6px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem; cursor:pointer;"> <option>Dr.</option> <option>Prof.</option> <option>Mr.</option> <option>Mrs.</option> </select></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Office Location</label> <input type="text" id="signup-office" class="form-control" placeholder="E.g. Block C, Rm 4" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-researcher-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Research Area</label> <input type="text" id="signup-research-area" class="form-control" placeholder="E.g. AI / ML" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Institution</label> <input type="text" id="signup-research-institution" class="form-control" placeholder="E.g. KNUST" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-entrepreneur-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Startup Name</label> <input type="text" id="signup-startup-name" class="form-control" placeholder="E.g. SusuSmart" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Business Idea</label> <input type="text" id="signup-business-idea" class="form-control" placeholder="E.g. FinTech" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-alumni-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Graduation Year</label> <input type="text" id="signup-grad-year" class="form-control" placeholder="E.g. 2025" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Current Company</label> <input type="text" id="signup-alumni-company" class="form-control" placeholder="E.g. Hubtel" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-industry-partner-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Company Name</label> <input type="text" id="signup-partner-company" class="form-control" placeholder="E.g. MTN Ghana" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Industry Sector</label> <input type="text" id="signup-partner-sector" class="form-control" placeholder="E.g. Telecom" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-career-advisor-fields" style="display:none; margin-bottom:16px;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Advisor Expertise</label> <input type="text" id="signup-advisor-expertise" class="form-control" placeholder="E.g. Tech Careers & Resume Writing" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
+        <div id="signup-prospective-student-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Intended Major</label> <input type="text" id="signup-intended-major" class="form-control" placeholder="E.g. Computer Science" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">High School</label> <input type="text" id="signup-highschool" class="form-control" placeholder="E.g. Achimota School" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-lecturer-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="width:70px;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Title</label> <select id="signup-title" style="width:100%; padding:10px 6px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem; cursor:pointer;"> <option>Dr.</option> <option>Prof.</option> <option>Mr.</option> <option>Mrs.</option> </select></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Office Location</label> <input type="text" id="signup-office" class="form-control" placeholder="E.g. Block C, Rm 4" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-researcher-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Research Area</label> <input type="text" id="signup-research-area" class="form-control" placeholder="E.g. AI / ML" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Institution</label> <input type="text" id="signup-research-institution" class="form-control" placeholder="E.g. KNUST" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-alumni-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Graduation Year</label> <input type="text" id="signup-grad-year" class="form-control" placeholder="E.g. 2025" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Current Company</label> <input type="text" id="signup-alumni-company" class="form-control" placeholder="E.g. Hubtel" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-industry-partner-fields" style="display:none; gap:8px; margin-bottom:16px;"> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Company Name</label> <input type="text" id="signup-partner-company" class="form-control" placeholder="E.g. MTN Ghana" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div> <div style="flex:1;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Industry Sector</label> <input type="text" id="signup-partner-sector" class="form-control" placeholder="E.g. Telecom" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div></div>  <div id="signup-career-advisor-fields" style="display:none; margin-bottom:16px;"> <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Advisor Expertise</label> <input type="text" id="signup-advisor-expertise" class="form-control" placeholder="E.g. Tech Careers & Resume Writing" style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); font-size:0.85rem;"></div>
         <button type="submit" class="btn btn-primary" style="width:100%; padding:12px; font-weight:700; border-radius:10px; margin-bottom:8px; display:block;">Create Academic Account ✨</button>
       </form>
       

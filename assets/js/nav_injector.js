@@ -93,6 +93,7 @@
     if (btn) btn.classList.add('active');
     // Also close mobile sidebar
     document.querySelector('aside.portal-sidebar')?.classList.remove('open');
+    window.scrollTo(0, 0);
   };
 
   // Run after DOM is ready

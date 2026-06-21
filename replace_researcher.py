@@ -81,10 +81,10 @@ html_content = """
 
     <div id="res-dashboard-health" class="res-sub-view active" style="display:block;">
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px;">
-        <div class="stat-card glass"><h3>Active Projects</h3><div class="stat-val">4</div></div>
-        <div class="stat-card glass"><h3>Completed Stages</h3><div class="stat-val">12/24</div></div>
-        <div class="stat-card glass"><h3>Pending Reviews</h3><div class="stat-val" style="color:var(--warning);">3</div></div>
-        <div class="stat-card glass"><h3>Overall Health</h3><div class="stat-val" style="color:var(--success);">92%</div></div>
+        <div class="stat-card glass"><h3>Active Projects</h3><div id="api-active-projects" class="stat-val">...</div></div>
+        <div class="stat-card glass"><h3>Completed Stages</h3><div id="api-completed-stages" class="stat-val">...</div></div>
+        <div class="stat-card glass"><h3>Pending Reviews</h3><div id="api-pending-reviews" class="stat-val" style="color:var(--warning);">...</div></div>
+        <div class="stat-card glass"><h3>Overall Health</h3><div id="api-overall-health" class="stat-val" style="color:var(--success);">...</div></div>
       </div>
     </div>
     
@@ -313,15 +313,15 @@ html_content = """
         <div style="display:flex; gap:16px;">
           <div style="flex:1; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px;">
             <h4 style="margin-bottom:12px; font-size:0.9rem;">To Do</h4>
-            <div class="glass" style="padding:8px; font-size:0.85rem; margin-bottom:8px;">Draft Abstract (Assigned: Dr. Mensah)</div>
+            <div id="api-tasks-todo"></div>
           </div>
           <div style="flex:1; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px;">
             <h4 style="margin-bottom:12px; font-size:0.9rem;">In Progress</h4>
-            <div class="glass" style="padding:8px; font-size:0.85rem; margin-bottom:8px;">Data Cleaning (Assigned: RA)</div>
+            <div id="api-tasks-inprogress"></div>
           </div>
           <div style="flex:1; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px;">
             <h4 style="margin-bottom:12px; font-size:0.9rem;">Review</h4>
-            <div class="glass" style="padding:8px; font-size:0.85rem; margin-bottom:8px;">Hardware Specs (Assigned: Prof. Abena)</div>
+            <div id="api-tasks-review"></div>
           </div>
         </div>
       </div>
@@ -405,10 +405,39 @@ html_content = """
     </div>
 
     <div id="res-ethics-integrity" class="res-sub-view">
-      <div class="glass-panel">
-        <h3>Plagiarism & AI Generation Check</h3>
-        <p style="color:var(--text-muted); margin-bottom:12px;">Pre-screen your proposal before submission.</p>
-        <button class="btn btn-primary">Scan Document</button>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 24px; flex-wrap: wrap;">
+        <!-- Left Column: Scan Panel -->
+        <div class="glass-panel" style="padding: 24px;">
+          <h3 style="margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">🛡️ Pre-Screen Draft Integrity</h3>
+          <p style="color:var(--text-muted); font-size: 0.8rem; margin-bottom: 16px;">Paste text or upload a document to analyze similarities and detect AI patterns before final submission.</p>
+          
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Document Title / Name</label>
+            <input type="text" id="researcher-plag-docname" class="form-control" placeholder="E.g. Smart_Farming_Proposal_v2.docx" style="width:100%; font-size:0.85rem; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color);">
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-light); margin-bottom:6px;">Manuscript or Abstract Text</label>
+            <textarea id="researcher-plag-text" class="form-control" rows="8" placeholder="Paste your research manuscript draft or abstract content here (minimum 50 characters)..." style="width:100%; font-size:0.85rem; padding:10px 12px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-color); resize:vertical;"></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <input type="file" id="researcher-plag-file" style="display:none;" onchange="handleResearcherPlagFileUpload(event)">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('researcher-plag-file').click()" style="font-size: 0.75rem; display: flex; align-items: center; gap: 6px;">📎 Upload Text File</button>
+            </div>
+            <button class="btn btn-primary" onclick="runResearcherPlagScan()" style="font-size: 0.85rem; font-weight: 700; padding: 10px 20px;">🚀 Scan Draft</button>
+          </div>
+        </div>
+
+        <!-- Right Column: Scan History -->
+        <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column;">
+          <h3 style="margin-bottom: 8px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">🕒 Your Pre-Screening History</h3>
+          <p style="color:var(--text-muted); font-size: 0.8rem; margin-bottom: 16px;">View previously evaluated draft reports and similarity statistics.</p>
+          <div id="researcher-scans-list" style="flex-grow:1; overflow-y:auto; max-height: 420px; display:flex; flex-direction:column; gap:10px;">
+            <p style="color:var(--text-muted); font-size:0.85rem; text-align:center; margin-top: 40px;">No scan history found. Run a new scan above to see reports here.</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -689,7 +718,7 @@ def process():
 
     # Find the start and end of the Researcher Portal Sections
     start_marker = "<!-- ============================================================\n       RESEARCHER PORTAL SECTIONS"
-    end_marker = "<!-- Industry Partner Hub -->"
+    end_marker = "  <!-- Researcher Hub Pro -->"
 
     start_idx = content.find(start_marker)
     end_idx = content.find(end_marker)

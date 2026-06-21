@@ -357,7 +357,7 @@ function renderCreativityShowcase() {
     { icon: '🛡️', title: 'Plagiarism Detection', desc: 'Client-side Jaccard + n-gram text similarity engine checks submissions against a real academic corpus instantly.', color: '#2563eb' },
     { icon: '🏆', title: 'Badge & Achievement System', desc: 'Unlock badges for every milestone — from your first login to research breakthroughs. Gamified learning.', color: '#f59e0b' },
     { icon: '📊', title: 'Interactive GPA Predictor', desc: 'Drag sliders and watch your projected GPA update in real-time with university-specific grade scale support.', color: '#10b981' },
-    { icon: '🎓', title: '8 Role-Based Hubs', desc: 'Distinct portals for Students, Lecturers, Alumni, Researchers, Partners, Advisors, Entrepreneurs, and Admins.', color: '#ef4444' },
+    { icon: '🎓', title: '7 Role-Based Hubs', desc: 'Distinct portals for Students, Lecturers, Alumni, Researchers, Partners, Advisors, and Admins.', color: '#ef4444' },
     { icon: '🌍', title: 'Ghana-First Intelligence', desc: 'Built for Ghanaian tertiary education — local universities, WASSCE admission requirements, GH₵ salary data.', color: '#6366f1' },
   ];
   container.innerHTML = features.map((f,i) => `

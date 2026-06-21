@@ -18,11 +18,6 @@ const auditData = [
   { role: 'Researcher', feature: 'Publish Research Outputs', status: 'Implemented', priority: 'Critical', rec: 'Uploads linked via Resource Manager.' },
   { role: 'Researcher', feature: 'Apply for Grants', status: 'Missing', priority: 'Medium', rec: 'Create a generic grant application form (Demo Policy).' },
 
-  // Entrepreneur
-  { role: 'Entrepreneur', feature: 'Create Startup Profiles', status: 'Implemented', priority: 'High', rec: 'Handled via admin getStartups logic.' },
-  { role: 'Entrepreneur', feature: 'Access Incubation Programs', status: 'Missing', priority: 'Low', rec: 'Stub incubation program timeline in dashboard.' },
-  { role: 'Entrepreneur', feature: 'Pitch Events & Funding', status: 'Missing', priority: 'Low', rec: 'Add to dashboard events calendar.' },
-
   // Alumni
   { role: 'Alumni', feature: 'Alumni Directory', status: 'Partially Implemented', priority: 'Medium', rec: 'Currently viewable by admin, need public/alumni-only directory.' },
   { role: 'Alumni', feature: 'Request Transcripts', status: 'Missing', priority: 'High', rec: 'Add transcript request form.' },

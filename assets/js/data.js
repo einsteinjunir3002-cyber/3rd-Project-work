@@ -289,7 +289,6 @@ const MOCK_ROLES = [
   { name: 'student', permissions: ['Create Courses', 'Grade Assignments', 'Manage Users'], description: 'Academic learner access' },
   { name: 'lecturer', permissions: ['Create Courses', 'Grade Assignments'], description: 'Faculty instructor access' },
   { name: 'admin', permissions: ['Manage Users', 'View Reports', 'Access System Settings'], description: 'Institution administration access' },
-  { name: 'entrepreneur', permissions: ['Manage Startups'], description: 'Innovation hub candidate' },
   { name: 'researcher', permissions: ['Manage Research'], description: 'Research group investigator' },
   { name: 'mentor', permissions: ['Grade Assignments'], description: 'Industry advisory feedback provider' }
 ];

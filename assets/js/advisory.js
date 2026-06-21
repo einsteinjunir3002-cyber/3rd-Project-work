@@ -498,7 +498,16 @@ function renderDedicatedAssignmentsDeck() {
         badgeClass = 'badge-danger';
       }
       
-      statusBadgeHTML = `<span class="badge ${badgeClass}" style="margin-left: 6px;">Submitted: ${relativeStatusLabel}</span>`;
+      // Find plagiarism report matching file name
+      const reports = (appState.plagiarismReports || []).concat(appState.demoPlagiarismReports || []);
+      const report = reports.find(r => r.documentName === submission.fileName);
+      let plagBadgeHTML = '';
+      if (report) {
+        const recColor = report.recommendation === 'CLEAR' ? '#10b981' : report.recommendation === 'FLAG_CONCERN' ? '#ef4444' : '#f59e0b';
+        plagBadgeHTML = `<span class="badge" style="background:rgba(0,0,0,0.2); color:${recColor}; font-size:0.65rem; border:1px solid ${recColor}; cursor:pointer; margin-left:6px;" onclick="viewPlagiarismReportForFile('${submission.fileName}')" title="Click to view AI Plagiarism Report">🛡️ Plagiarism: ${report.overallSimilarity}%</span>`;
+      }
+      
+      statusBadgeHTML = `<span class="badge ${badgeClass}" style="margin-left: 6px;">Submitted: ${relativeStatusLabel}</span>${plagBadgeHTML}`;
       submissionInfoHTML = `<div style="font-size:0.8rem; color:var(--text-light); margin-top:4px;">Submitted: ${submission.date} (${submission.fileName})</div>`;
     } else {
       if (countdown.isPast) {

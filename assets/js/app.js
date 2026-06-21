@@ -8,7 +8,7 @@ function navigateTo(shellId) {
   if (shellId === 'portal-shell') { document.body.setAttribute('data-theme', appState.theme); updateSidebarDetails(); renderStateData(); }
   window.scrollTo(0,0); }
 function switchTab(role, tabId) {
-  const isStudentRole = ['student', 'entrepreneur', 'prospective_student'].includes(appState.role) || appState.role === 'admin';
+  const isStudentRole = ['student', 'prospective_student'].includes(appState.role) || appState.role === 'admin';
   const isResearcherRole = appState.role === 'researcher' || appState.role === 'admin';
   const isLecturerRole = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(appState.role) || appState.role === 'admin';
   if (role === 'lecturer' && !isLecturerRole) return showToastNotification('Access Denied: Lecturer role required.');
@@ -23,7 +23,9 @@ function switchTab(role, tabId) {
   else if (role === 'researcher') { appState.activeResearcherTab = tabId; if (tabId === 'researcher-settings') prepopulateUserSettings('researcher'); }
   else if (role === 'lecturer') { appState.activeLecturerTab = tabId; if (tabId === 'lecturer-settings') prepopulateUserSettings('lecturer'); }
   else if (role === 'admin') { appState.activeAdminTab = tabId; if (typeof renderAdminViews === 'function') renderAdminViews(); }
-  document.querySelector('aside.portal-sidebar')?.classList.remove('open'); }
+  document.querySelector('aside.portal-sidebar')?.classList.remove('open');
+  window.scrollTo(0, 0);
+}
 /* ==========================================================================
    SUPABASE INTEGRATION (SERVERLESS BACKEND)
    ========================================================================== */
@@ -158,7 +160,6 @@ setSignupRole = role => {
   D.show('signup-prospective-student-fields', role === 'prospective_student');
   D.show('signup-lecturer-fields', role === 'lecturer');
   D.show('signup-researcher-fields', role === 'researcher');
-  D.show('signup-entrepreneur-fields', role === 'entrepreneur');
   D.show('signup-alumni-fields', role === 'alumni');
   D.show('signup-industry-partner-fields', role === 'industry_partner');
   D.show('signup-career-advisor-fields', role === 'career_advisor');
@@ -275,9 +276,6 @@ async function handlePrototypeSignUp() {
   } else if (activeSignupRole === 'researcher') {
     payload.researchArea = D.val('signup-research-area') || 'Artificial Intelligence';
     payload.institution = D.val('signup-research-institution') || 'Ghana Research Institute';
-  } else if (activeSignupRole === 'entrepreneur') {
-    payload.startupName = D.val('signup-startup-name') || 'InnovateGhana';
-    payload.businessIdea = D.val('signup-business-idea') || 'AgriTech Solutions';
   } else if (activeSignupRole === 'alumni') {
     payload.graduationYear = D.val('signup-grad-year') || '2025';
     payload.companyName = D.val('signup-alumni-company') || 'TechCorp Ghana';
@@ -307,7 +305,6 @@ function setUserRole(role) {
         <option value="student">🎓 View: Student Portal</option>
         <option value="lecturer">💼 View: Lecturer Desk</option>
         <option value="researcher">🔬 View: Research Desk</option>
-        <option value="entrepreneur">💡 View: Founder Dashboard</option>
         <option value="alumni">🎓 View: Alumni Console</option>
         <option value="industry_partner">🤝 View: Partner Hub</option>
         <option value="career_advisor">🧭 View: Advisor Dashboard</option>
@@ -315,7 +312,7 @@ function setUserRole(role) {
       </select>` : ''; }
   if (role === 'admin') setAdminPrototypeView('admin');
   else {
-    const isStudentWorkspace = ['student', 'entrepreneur', 'prospective_student'].includes(role);
+    const isStudentWorkspace = ['student', 'prospective_student'].includes(role);
     const isResearcherWorkspace = role === 'researcher';
     const isLecturerWorkspace = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(role);
     document.querySelectorAll('.student-only').forEach(el => el.style.display = (isStudentWorkspace ? 'flex' : 'none')); 
@@ -330,7 +327,7 @@ function setUserRole(role) {
   updateAiSettingsVisibility();
 }
 const setAdminPrototypeView = view => {
-  const studentRoles = ['student', 'entrepreneur', 'prospective_student'];
+  const studentRoles = ['student', 'prospective_student'];
   const researcherRoles = ['researcher'];
   const lecturerRoles = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'];
   const isAdmin = view === 'admin';
@@ -361,7 +358,6 @@ const setAdminPrototypeView = view => {
   else if (view === 'alumni') targetTab = 'alumni-console';
   else if (view === 'industry_partner') targetTab = 'partner-hub';
   else if (view === 'career_advisor') targetTab = 'advisor-dashboard';
-  else if (view === 'entrepreneur') targetTab = 'student-dashboard';
   else if (view === 'prospective_student') targetTab = 'student-dashboard';
 
   const roleGroup = studentRoles.includes(view) ? 'student' : (researcherRoles.includes(view) ? 'researcher' : (lecturerRoles.includes(view) ? 'lecturer' : 'admin'));
@@ -429,9 +425,6 @@ function updateSidebarDetails() {
   } else if (role === 'researcher') {
     avatarEl.src = appState.user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${appState.user.name}`;
     roleEl.textContent = `${appState.user.researchArea || 'AI'} Researcher`;
-  } else if (role === 'entrepreneur') {
-    avatarEl.src = appState.user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${appState.user.name}`;
-    roleEl.textContent = `Founder, ${appState.user.startupName || 'InnovateGhana'}`;
   } else if (role === 'alumni') {
     avatarEl.src = appState.user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${appState.user.name}`;
     roleEl.textContent = `Alumni Class of ${appState.user.graduationYear || '2025'}`;
@@ -448,7 +441,7 @@ function updateSidebarDetails() {
 }
 
 function customizeSidebarMenuItems(role) {
-  const isStudentWorkspace = ['student', 'entrepreneur', 'prospective_student'].includes(role);
+  const isStudentWorkspace = ['student', 'prospective_student'].includes(role);
   const isResearcherWorkspace = role === 'researcher';
   const isLecturerWorkspace = ['lecturer', 'alumni', 'industry_partner', 'career_advisor'].includes(role);
   const isAdminWorkspace = role === 'admin';
@@ -462,10 +455,7 @@ function customizeSidebarMenuItems(role) {
     document.querySelectorAll('.student-only').forEach(el => {
       const tab = el.getAttribute('data-tab');
       let visible = true;
-      if (role === 'entrepreneur') {
-        visible = ['student-dashboard', 'student-innovation', 'student-forum', 'student-ai-assistant', 'student-contacts', 'student-settings'].includes(tab);
-        if (tab === 'student-dashboard') el.textContent = '💡 Founder Dashboard';
-      } else if (role === 'prospective_student') {
+      if (role === 'prospective_student') {
         visible = ['student-dashboard', 'student-universities', 'student-forum', 'student-ai-assistant', 'student-settings'].includes(tab);
         if (tab === 'student-dashboard') el.textContent = '🏫 Admissions Desk';
         if (tab === 'student-universities') el.textContent = '🏛️ University Explorer';
@@ -474,7 +464,6 @@ function customizeSidebarMenuItems(role) {
       } else {
         if (tab === 'student-dashboard') el.textContent = '📊 Dashboard Overview';
       }
-      el.style.display = visible ? 'block' : 'none';
       el.style.display = visible ? 'block' : 'none';
     });
   } else if (isResearcherWorkspace) {
@@ -554,6 +543,7 @@ async function fetchStateData() {
   } catch (err) { loadOfflineState(); enableOfflineDemoIndicator(true); } }
 const renderAllComponents = () => {
   renderStudentCourses(); renderStudentNotes(); renderStudentAssignments(); renderLecturerAnalytics(); renderLecturerSubmissions(); renderForums(); generateCalendarGrid(); renderDedicatedAssignmentsDeck(); renderStudentUniversities(); renderFacultyChat(); renderContactsDirectory(); renderProgramSelectionCards(); updateStudentDashboardMetrics(); renderSpaStartupsList();
+  if (typeof renderResearcherScansTable === 'function') renderResearcherScansTable();
   if (appState.role === 'admin' && typeof renderAdminViews === 'function') renderAdminViews();
 },
 updateStudentDashboardMetrics = () => {
@@ -740,6 +730,15 @@ renderStudentAssignments = () => {
       badgeClass = 'badge-danger';
     }
     
+    // Find plagiarism report matching file name
+    const reports = (appState.plagiarismReports || []).concat(appState.demoPlagiarismReports || []);
+    const report = reports.find(r => r.documentName === submission.fileName);
+    let plagBadgeHTML = '';
+    if (report) {
+      const recColor = report.recommendation === 'CLEAR' ? '#10b981' : report.recommendation === 'FLAG_CONCERN' ? '#ef4444' : '#f59e0b';
+      plagBadgeHTML = `<span class="badge" style="background:rgba(0,0,0,0.2); color:${recColor}; font-size:0.65rem; border:1px solid ${recColor}; cursor:pointer; margin-left:6px;" onclick="viewPlagiarismReportForFile('${submission.fileName}')" title="Click to view AI Plagiarism Report">🛡️ Plagiarism: ${report.overallSimilarity}%</span>`;
+    }
+
     const gradeVal = submission.grade || asg.grade;
     const act = `<div style="text-align:right;"><span style="font-weight:700; color:var(--success)">${gradeVal ? `Grade: ${gradeVal}/100` : 'Awaiting Grading'}</span></div>`;
     
@@ -749,6 +748,7 @@ renderStudentAssignments = () => {
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <span class="badge badge-info" style="font-size:0.65rem;">${code}</span>
             <span class="badge ${badgeClass}" style="font-size:0.65rem;">Submitted: ${relativeStatusLabel}</span>
+            ${plagBadgeHTML}
           </div>
           <h4 style="font-size:1.05rem; margin-top:6px; margin-bottom:4px;">${asg.title}</h4>
           <span style="font-size:0.8rem; color:var(--text-light)">Submitted on ${submission.date} (${submission.fileName})</span>
@@ -788,7 +788,18 @@ async function saveStudentGpa(id) {
 function renderLecturerSubmissions() {
   const el = D.get('lecturer-submissions-list'); if (!el) return;
   el.innerHTML = appState.submissions.map(sub => {
-    const asg = appState.assignments.find(a => a.id === sub.assignmentId); const gradingHtml = sub.grade ? `<span style="color:var(--success); font-weight:700;">Graded: ${sub.grade}/100</span>` : `
+    const asg = appState.assignments.find(a => a.id === sub.assignmentId);
+    
+    // Find plagiarism report matching file name
+    const reports = (appState.plagiarismReports || []).concat(appState.demoPlagiarismReports || []);
+    const report = reports.find(r => r.documentName === sub.fileName);
+    let plagHtml = '';
+    if (report) {
+      const recColor = report.recommendation === 'CLEAR' ? '#10b981' : report.recommendation === 'FLAG_CONCERN' ? '#ef4444' : '#f59e0b';
+      plagHtml = `<span style="font-size:0.75rem; color:var(--text-muted); margin-left:8px;">Plagiarism: <strong style="color:${recColor}; cursor:pointer;" onclick="viewPlagiarismReportForFile('${sub.fileName}')" title="Click to view detailed AI report">${report.overallSimilarity}% (${report.recommendation.replace(/_/g,' ')})</strong></span>`;
+    }
+
+    const gradingHtml = sub.grade ? `<span style="color:var(--success); font-weight:700;">Graded: ${sub.grade}/100</span>` : `
       <div style="display:flex; gap:8px;">
         <input type="number" id="grade-val-${sub.id}" placeholder="Grade" style="width:70px;">
         <input type="text" id="feedback-val-${sub.id}" placeholder="Feedback" style="width:150px;">
@@ -798,7 +809,7 @@ function renderLecturerSubmissions() {
       <div class="glass" style="padding:20px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
         <div>
           <h4>Student: <strong>${sub.studentName}</strong></h4>
-          <span style="font-size:0.8rem;">File: <a href="#" style="color:var(--primary);">${sub.fileName}</a></span><br>
+          <span style="font-size:0.8rem;">File: <a href="#" style="color:var(--primary);" onclick="event.preventDefault(); viewPlagiarismReportForFile('${sub.fileName}')">${sub.fileName}</a>${plagHtml}</span><br>
           <span style="font-weight:600;">Assignment: ${asg ? asg.title : 'General'}</span>
         </div>
         <div>${gradingHtml}</div>

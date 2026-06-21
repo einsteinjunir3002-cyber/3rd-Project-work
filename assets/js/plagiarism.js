@@ -410,3 +410,15 @@ function renderPlagiarismReportsTable(containerId) {
       </div>`;
   }).join('');
 }
+
+/* ---------- Global View Plagiarism Report By Filename ---------- */
+function viewPlagiarismReportForFile(fileName) {
+  const reports = (appState.plagiarismReports || []).concat(appState.demoPlagiarismReports || []);
+  const report = reports.find(r => r.documentName === fileName);
+  if (report) {
+    window._lastPlagiarismReport = report;
+    renderPlagiarismReport(report);
+  } else {
+    showToastNotification('No plagiarism report found for this file.');
+  }
+}
