@@ -1,85 +1,229 @@
 /* SMARTLEARN AI - ADVISORY, GPA & QUIZ SERVICES */
 
-let careerChatHistory = [];
+let careerQuizQuestions = [
+  { type: 'text', text: "Question 1/5: What subjects do you enjoy the most and why?" },
+  { type: 'text', text: "Question 2/5: What subjects or activities are you naturally best at?" },
+  { type: 'text', text: "Question 3/5: If money weren't a factor, what kind of work would you choose to do every day?" },
+  { type: 'rank', text: "Question 4/5: What matters most to you in a career? Please rank the following from most important (1) to least important (6):", 
+    options: ["High salary", "Helping people", "Creativity", "Job security", "Leadership", "Innovation"] },
+  { type: 'multi', text: "Question 5/5: Do you prefer working mainly with (Select all that apply):", 
+    options: ["People", "Technology", "Data", "Ideas/Research", "Physical things/Machines"] }
+];
+let currentCareerQuestionIndex = 0;
+let careerQuizAnswers = [];
 
 async function sendCareerChatMessage() {
-  const input = D.get('career-chat-input');
-  if (!input || !input.value.trim()) return;
-  const text = input.value.trim();
-  appendCareerChatMessage('user', text);
-  careerChatHistory.push({ role: 'user', content: text });
-  input.value = '';
+  const q = careerQuizQuestions[currentCareerQuestionIndex];
+  let answerText = "";
   
-  const box = D.get('career-chat-log');
-  const typing = document.createElement('div');
-  typing.className = 'message-bubble message-ai typing-indicator';
-  typing.innerHTML = 'Assessing...';
-  box.appendChild(typing);
-  box.scrollTop = box.scrollHeight;
-  
-  try {
-    const prompt = `User's response: "${text}". If they have stated any specific interest, hobby, or subject, output exactly: "RECOMMENDATION_READY" and do not output any other text. Only ask 1 follow up question if their answer was extremely vague. Do not drag out the conversation.`;
-    const res = await executeClientAiRequest(prompt, "You are an expert career advisor assessing a student via chat. Keep your replies very short (1-2 sentences).", 'career');
-    typing.remove();
-    
-    if (res.includes('RECOMMENDATION_READY')) {
-       showCareerResults();
-    } else {
-       appendCareerChatMessage('ai', res);
-       careerChatHistory.push({ role: 'assistant', content: res });
+  if (q.type === 'text') {
+    const input = D.get('career-chat-input');
+    if (!input || !input.value.trim()) return;
+    answerText = input.value.trim();
+    input.value = '';
+  } else if (q.type === 'rank') {
+    const selects = document.querySelectorAll('.q4-rank-select');
+    let ranks = [];
+    selects.forEach(s => {
+       if (s.value) ranks.push(s.value);
+    });
+    // Create a readable string from the array
+    answerText = "My ranking (1 to 6): " + ranks.join(', ');
+  } else if (q.type === 'multi') {
+    const checkboxes = document.querySelectorAll('.q5-multi-cb:checked');
+    let selected = Array.from(checkboxes).map(c => c.value);
+    if (!selected.length) {
+      if (typeof showToastNotification === 'function') showToastNotification("Please select at least one option.");
+      return;
     }
-  } catch (err) {
-    typing.remove();
-    const errBubble = document.createElement('div'); errBubble.className = 'message-bubble message-ai'; errBubble.style.color = 'var(--danger)'; errBubble.textContent = `Error: ${err.message}`; box.appendChild(errBubble);
+    answerText = selected.join(', ');
+  }
+
+  if (!answerText) return;
+
+  appendCareerChatMessage('user', answerText);
+  careerQuizAnswers.push({ question: q.text, answer: answerText });
+  
+  currentCareerQuestionIndex++;
+  
+  if (currentCareerQuestionIndex < careerQuizQuestions.length) {
+    askCurrentCareerQuestion();
+  } else {
+    // Update progress bar to 100%
+    const progressBar = D.get('career-progress-bar');
+    if (progressBar) progressBar.style.width = '100%';
+    
+    // All answered, process results
+    const box = D.get('career-chat-log');
+    const typing = document.createElement('div');
+    typing.className = 'message-bubble message-ai typing-indicator';
+    typing.innerHTML = '🔄 Analyzing all responses collectively... Please wait.';
+    box.appendChild(typing);
+    box.scrollTop = box.scrollHeight;
+    
+    const input = D.get('career-chat-input');
+    if (input) input.style.display = 'none';
+    const sendBtn = input ? input.parentElement.querySelector('.btn') : null;
+    if (sendBtn) sendBtn.style.display = 'none';
+
+    showCareerResults();
   }
 }
 
-function appendCareerChatMessage(sender, text) {
+function askCurrentCareerQuestion() {
+  const q = careerQuizQuestions[currentCareerQuestionIndex];
+  let html = '<strong>' + q.text + '</strong>';
+  
+  // Update progress bar
+  const progressBar = D.get('career-progress-bar');
+  if (progressBar) {
+    progressBar.style.width = ((currentCareerQuestionIndex / careerQuizQuestions.length) * 100) + '%';
+  }
+  
+  const input = D.get('career-chat-input');
+  const sendBtn = input ? input.parentElement.querySelector('.btn') : null;
+  
+  if (q.type === 'text') {
+    if(input) { input.style.display = 'block'; input.placeholder = 'Type your answer here...'; }
+    if(sendBtn) sendBtn.style.display = 'inline-flex';
+    appendCareerChatMessage('ai', html, false);
+    if(input) input.focus();
+  } else if (q.type === 'rank') {
+    if(input) input.style.display = 'none';
+    if(sendBtn) sendBtn.style.display = 'none';
+    const box = D.get('career-chat-log'); if (!box) return;
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble message-ai';
+    let formHtml = '<strong>' + q.text + '</strong>';
+    formHtml += '<div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">';
+    q.options.forEach(function(opt, i) {
+      formHtml += '<div style="display:flex; align-items:center; gap:8px;">'
+        + '<span style="font-size:0.85rem; min-width:18px; text-align:right; font-weight:700; color:var(--primary);">' + (i+1) + '.</span>'
+        + '<select class="form-control q4-rank-select" style="padding:6px 10px; font-size:0.82rem; flex:1;">'
+        + '<option value="">-- Select --</option>';
+      q.options.forEach(function(o) { formHtml += '<option value="' + o + '">' + o + '</option>'; });
+      formHtml += '</select></div>';
+    });
+    formHtml += '</div><button class="btn btn-primary btn-sm" style="margin-top:12px; width:100%;" onclick="sendCareerChatMessage()">Submit Ranking ➡️</button>';
+    bubble.innerHTML = formHtml;
+    box.appendChild(bubble);
+    box.scrollTop = box.scrollHeight;
+  } else if (q.type === 'multi') {
+    if(input) input.style.display = 'none';
+    if(sendBtn) sendBtn.style.display = 'none';
+    const box = D.get('career-chat-log'); if (!box) return;
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble message-ai';
+    let formHtml = '<strong>' + q.text + '</strong>';
+    formHtml += '<div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">';
+    q.options.forEach(function(opt) {
+      formHtml += '<label style="font-size:0.85rem; display:flex; align-items:center; gap:8px; cursor:pointer; padding:4px 0;">'
+        + '<input type="checkbox" class="q5-multi-cb" value="' + opt + '" style="width:16px; height:16px;"> ' + opt
+        + '</label>';
+    });
+    formHtml += '</div><button class="btn btn-primary btn-sm" style="margin-top:12px; width:100%;" onclick="sendCareerChatMessage()">Submit Selection ➡️</button>';
+    bubble.innerHTML = formHtml;
+    box.appendChild(bubble);
+    box.scrollTop = box.scrollHeight;
+  }
+}
+
+function appendCareerChatMessage(sender, text, isPlainText) {
   const box = D.get('career-chat-log'); if (!box) return;
   const bubble = document.createElement('div');
-  bubble.className = `message-bubble ${sender === 'user' ? 'message-user' : 'message-ai'}`;
-  bubble.innerHTML = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  bubble.className = 'message-bubble ' + (sender === 'user' ? 'message-user' : 'message-ai');
+  if (isPlainText !== false) {
+    bubble.innerHTML = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  } else {
+    bubble.innerHTML = text;
+  }
   box.appendChild(bubble); box.scrollTop = box.scrollHeight;
 }
 
 async function showCareerResults() {
   D.show('career-quiz-box', false); D.show('career-result-box', true);
-  D.html('career-result-title', `Analyzing Your Profile...`);
+  D.html('career-result-title', `Analyzing Your Complete Profile...`);
   D.html('career-result-desc', 'Please wait while AI constructs your personalized recommendation...');
   D.html('career-result-skills', ''); D.html('career-result-unis', '');
+  D.html('career-result-alternatives', '');
   
-  const summaryPrompt = "Based on the conversation history, recommend 1 specific career track, salary range in GH₵, demand level, top 4 skills to build, 2 top Ghanaian universities to attend for this, the specific program/degree to offer, and 3-4 electives or courses to take. Output JSON: { \"track\": \"string\", \"desc\": \"string\", \"salary\": \"string\", \"demand\": \"string\", \"skills\": [\"string\"], \"unis\": [\"string\"], \"program\": \"string\", \"courses\": [\"string\"] }";
+  const allContext = careerQuizAnswers.map((a, i) => `Q${i+1}: ${a.question}\nA: ${a.answer}`).join('\n\n');
+  
+  const summaryPrompt = `Analyze the following 5 user responses collectively to infer their interests, strengths, motivations, work style, and environment.
+${allContext}
+
+Based on the complete profile, recommend the absolute best career path, along with a degree, universities in Ghana, alternative careers, skills, and future outlook.
+Output ONLY JSON in this exact structure:
+{
+  "bestCareer": { "title": "string", "confidence": "High|Medium|Low", "explanation": "string" },
+  "degree": { "name": "string", "why": "string" },
+  "universities": ["University of Ghana (UG)", "KNUST", "Ashesi University", "etc..."],
+  "alternatives": [
+    { "career": "string", "degree": "string", "why": "string" }
+  ],
+  "skills": ["skill1", "skill2"],
+  "outlook": {
+    "demand": "string",
+    "salary": "string (GH₵)",
+    "employment": "string",
+    "international": "string",
+    "growth": "string"
+  }
+}`;
   
   try {
-    const res = await executeClientAiRequest(summaryPrompt, "You are a JSON-only career generator. Do not include markdown blocks.", 'career');
-    let clean = res.trim(); if (clean.includes('{')) clean = clean.substring(clean.indexOf('{'), clean.lastIndexOf('}') + 1);
+    const res = await executeClientAiRequest(summaryPrompt, "You are a JSON-only career generator. Do not include markdown blocks or any conversational text. Return only valid JSON.", 'career');
+    let clean = res.trim(); 
+    if (clean.includes('{')) clean = clean.substring(clean.indexOf('{'), clean.lastIndexOf('}') + 1);
     const data = JSON.parse(clean);
     
-    D.html('career-result-title', `Recommended Track: ${data.track}`);
-    D.html('career-result-desc', data.desc);
-    D.html('career-result-salary', data.salary);
-    D.html('career-result-demand', data.demand);
-    D.html('career-result-skills', (data.skills || []).map(s => `<span class="badge badge-primary">${s}</span>`).join(' '));
-    D.html('career-result-unis', (data.unis || []).map(u => `<li>📍 <strong>${u}</strong> - Highly recommended</li>`).join(''));
+    D.html('career-result-title', data.bestCareer?.title || 'Recommended Career');
+    D.html('career-result-confidence', `Confidence: ${data.bestCareer?.confidence || 'High'}`);
+    D.html('career-result-desc', data.bestCareer?.explanation || '');
     
-    const programStr = data.program || 'General Studies';
-    D.html('career-result-program', `🎓 ${programStr}`);
-    D.html('career-result-courses', (data.courses || []).map(c => `<span class="badge" style="background:rgba(255,255,255,0.05); border:1px solid var(--border);">${c}</span>`).join(' '));
+    D.html('career-result-program', `🎓 ${data.degree?.name || 'General Studies'}`);
+    D.html('career-result-program-why', data.degree?.why || '');
+    
+    D.html('career-result-unis', (data.universities || []).map(u => `<li>📍 <strong>${u}</strong></li>`).join(''));
+    
+    D.html('career-result-alternatives', (data.alternatives || []).map(a => 
+      `<div class="glass" style="padding:10px;">
+        <strong style="color:var(--primary); font-size: 1rem;">${a.career}</strong> <br> <span style="font-size:0.85rem; color:var(--text-light);">🎓 ${a.degree}</span>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin:6px 0 0;">${a.why}</p>
+       </div>`
+    ).join(''));
+    
+    D.html('career-result-skills', (data.skills || []).map(s => `<span class="badge badge-primary">${s}</span>`).join(' '));
+    
+    D.html('career-result-demand', data.outlook?.demand || 'N/A');
+    D.html('career-result-salary', data.outlook?.salary || 'N/A');
+    D.html('career-result-employment', data.outlook?.employment || 'N/A');
+    D.html('career-result-international', data.outlook?.international || 'N/A');
+    D.html('career-result-growth', data.outlook?.growth || 'N/A');
+    
   } catch (e) {
-    D.html('career-result-title', `Recommended Track: Business Administration`);
-    D.html('career-result-desc', "A broad field suitable for your diverse interests.");
+    D.html('career-result-title', `Error generating recommendation`);
+    D.html('career-result-desc', `We couldn't process your results at this moment. Please try again. (${e.message})`);
   }
 }
 
 function resetCareerQuiz() {
-  careerChatHistory = [];
+  currentCareerQuestionIndex = 0;
+  careerQuizAnswers = [];
   D.show('career-quiz-box', true); D.show('career-result-box', false);
   const log = D.get('career-chat-log');
   if (log) log.innerHTML = '';
   
-  const initMsg = "Hello! I am your AI Career Advisor. Briefly tell me your main interests, hobbies, or favorite subjects, and I will instantly match you with a career, university, and program in Ghana!";
-  appendCareerChatMessage('ai', initMsg);
-  careerChatHistory.push({ role: 'assistant', content: initMsg });
+  // Reset progress bar
+  const progressBar = D.get('career-progress-bar');
+  if (progressBar) progressBar.style.width = '0%';
+  
+  const input = D.get('career-chat-input');
+  if(input) { input.style.display = 'block'; input.value = ''; }
+  const sendBtn = input ? input.parentElement.querySelector('.btn') : null;
+  if(sendBtn) sendBtn.style.display = 'inline-flex';
+  
+  askCurrentCareerQuestion();
 }
 /* =========================================================
    GPA UNIVERSITY DROPDOWN — data + renderer

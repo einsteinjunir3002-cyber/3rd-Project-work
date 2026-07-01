@@ -927,40 +927,41 @@
               </div>
             </div>
             <div id="career-result-box" style="display:none; text-align:left;">
-              <span class="badge badge-success">AI Match Recommendations</span>
-              <h3 id="career-result-title" style="font-size:1.6rem; margin:12px 0 8px;">Recommended Track: Computer
-                Science</h3>
-              <p id="career-result-desc"
-                style="color:var(--text-muted); font-size:0.95rem; line-height:1.5; margin-bottom:20px;"> You are
-                heavily oriented towards software systems engineering. </p>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
-                <div class="glass" style="padding:12px;">
-                  <span style="font-size:0.75rem; color:var(--text-light);">EST. LOCAL SALARY</span>
-                  <p id="career-result-salary"
-                    style="font-weight:700; color:var(--success); font-size:1.1rem; margin-top:4px;">GH₵ 8,000 - 20,000
-                  </p>
-                </div>
-                <div class="glass" style="padding:12px;">
-                  <span style="font-size:0.75rem; color:var(--text-light);">JOB DEMAND LEVEL</span>
-                  <p id="career-result-demand"
-                    style="font-weight:700; color:var(--primary); font-size:1.1rem; margin-top:4px;">Critically High</p>
-                </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span class="badge badge-success">AI Comprehensive Assessment</span>
+                <span id="career-result-confidence" class="badge badge-primary">Confidence: High</span>
               </div>
-              <h4 style="font-size:1rem; margin-bottom:8px;">Core Skills to Build:</h4>
-              <div id="career-result-skills" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"> </div>
-              <h4 style="font-size:1rem; margin-bottom:8px;">Top Ghanaian Universities offering this:</h4>
-              <ul id="career-result-unis"
-                style="list-style:none; display:flex; flex-direction:column; gap:8px; font-size:0.9rem; margin-bottom: 20px;">
-              </ul>
-              <h4 style="font-size:1rem; margin-bottom:8px;">Recommended Program & Courses:</h4>
+              
+              <h3 id="career-result-title" style="font-size:1.6rem; margin:0 0 8px;">Recommended Career</h3>
+              <p id="career-result-desc" style="color:var(--text-muted); font-size:0.95rem; line-height:1.5; margin-bottom:24px;"></p>
+
+              <h4 style="font-size:1rem; margin-bottom:8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">🎓 Recommended Degree Program</h4>
               <div class="glass" style="padding:12px; margin-bottom:20px;">
-                <p id="career-result-program"
-                  style="font-weight:700; color:var(--primary); font-size:0.95rem; margin-top:0; margin-bottom:8px;">
-                  Program Name</p>
-                <div id="career-result-courses" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                <p id="career-result-program" style="font-weight:700; color:var(--primary); font-size:1rem; margin:0 0 8px;"></p>
+                <p id="career-result-program-why" style="font-size:0.85rem; color:var(--text-muted); margin:0;"></p>
               </div>
-              <button class="btn btn-secondary btn-sm" style="margin-top:24px; width:100%;"
-                onclick="resetCareerQuiz()">Retake Interest Quiz 🔄</button>
+
+              <h4 style="font-size:1rem; margin-bottom:8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">🏛️ Top Ghanaian Universities</h4>
+              <ul id="career-result-unis" style="list-style:none; display:flex; flex-direction:column; gap:8px; font-size:0.9rem; margin-bottom: 24px; padding-left:0;">
+              </ul>
+
+              <h4 style="font-size:1rem; margin-bottom:8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">💡 Alternative Career Paths</h4>
+              <div id="career-result-alternatives" style="display:grid; grid-template-columns: 1fr; gap:12px; margin-bottom:24px;">
+              </div>
+
+              <h4 style="font-size:1rem; margin-bottom:8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">🛠️ Skills to Develop</h4>
+              <div id="career-result-skills" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px;"></div>
+
+              <h4 style="font-size:1rem; margin-bottom:8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">🚀 Future Outlook</h4>
+              <div class="glass" style="padding:12px; margin-bottom:24px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem;">
+                <div><strong style="color:var(--text-light);">Demand:</strong> <span id="career-result-demand" style="color:var(--primary); font-weight:700;"></span></div>
+                <div><strong style="color:var(--text-light);">Salary Potential:</strong> <span id="career-result-salary" style="color:var(--success); font-weight:700;"></span></div>
+                <div style="grid-column: 1 / -1;"><strong style="color:var(--text-light);">Employment:</strong> <span id="career-result-employment"></span></div>
+                <div style="grid-column: 1 / -1;"><strong style="color:var(--text-light);">International:</strong> <span id="career-result-international"></span></div>
+                <div style="grid-column: 1 / -1;"><strong style="color:var(--text-light);">Growth:</strong> <span id="career-result-growth"></span></div>
+              </div>
+
+              <button class="btn btn-secondary btn-sm" style="margin-top:8px; width:100%;" onclick="resetCareerQuiz()">Retake Assessment 🔄</button>
             </div>
           </div>
           <div class="widget glass career-visualizer">
