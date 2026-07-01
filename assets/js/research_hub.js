@@ -358,56 +358,98 @@ let activeProjectId = 'b189a815-5e03-4f11-9685-6d63428f5223'; // Hardcoded for p
 let researchChatChannel = null;
 
 async function fetchResearchDocuments() {
-  if (!supabaseClient) return;
   const tbody = document.getElementById('research-doc-table-body');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
 
-  try {
-    const { data, error } = await supabaseClient
-      .from('Document')
-      .select('*')
-      .order('createdAt', { ascending: false });
-
-    // Fallback if table doesn't exist or RLS blocks it
-    if (error) {
-      console.warn('Supabase Document table error (fallback triggered):', error);
-      if (tbody) tbody.innerHTML = `
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:12px;">Healthcare_IoT_Dataset.csv (Local Fallback)</td><td style="padding:12px;">Data</td><td style="padding:12px;">200 KB</td><td style="padding:12px;"><button class="btn btn-sm btn-secondary">Download</button></td>
-        </tr>
-      `;
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No documents found.</td></tr>';
-      return;
-    }
-
-    if (tbody) tbody.innerHTML = data.map(doc => `
-      <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-        <td style="padding:12px;">${doc.title}</td>
-        <td style="padding:12px;">${doc.mimeType}</td>
-        <td style="padding:12px;">${Math.round(doc.sizeBytes / 1024)} KB</td>
-        <td style="padding:12px;">
-          <a href="${doc.fileUrl}" target="_blank" class="btn btn-sm btn-secondary">Download</a>
-          <button class="btn btn-sm btn-danger" onclick="deleteResearchDocument('${doc.id}', '${doc.filename}')">Delete</button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    console.error('Error fetching docs:', err);
-    if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">Error: ${err.message}</td></tr>`;
+  if (!appState.researchDocuments) {
+    appState.researchDocuments = [
+      {
+        id: 'doc_sim_1',
+        title: 'Healthcare_IoT_Dataset.csv',
+        filename: 'Healthcare_IoT_Dataset.csv',
+        fileUrl: '#',
+        sizeBytes: 204800,
+        mimeType: 'text/csv'
+      }
+    ];
   }
+
+  let docs = [...appState.researchDocuments];
+
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('Document')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+      if (!error && data) {
+        // Merge Supabase documents with local ones (avoid duplicates)
+        data.forEach(dbDoc => {
+          if (!docs.some(d => d.id === dbDoc.id || d.title === dbDoc.title)) {
+            docs.unshift(dbDoc);
+          }
+        });
+      } else if (error) {
+        console.warn('Supabase Document table error (falling back to local):', error);
+      }
+    } catch (err) {
+      console.warn('Supabase fetch error (falling back to local):', err);
+    }
+  }
+
+  if (docs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No documents found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = docs.map(doc => `
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:12px;">${doc.title}</td>
+      <td style="padding:12px;">${doc.mimeType}</td>
+      <td style="padding:12px;">${Math.round(doc.sizeBytes / 1024)} KB</td>
+      <td style="padding:12px;">
+        <a href="${doc.fileUrl}" target="_blank" download="${doc.title}" class="btn btn-sm btn-secondary" style="margin-right:4px;">Download</a>
+        <button class="btn btn-sm btn-danger" onclick="deleteResearchDocument('${doc.id}', '${doc.filename}')">Delete</button>
+      </td>
+    </tr>
+  `).join('');
 }
 
 async function uploadResearchDocument(event) {
-  if (!supabaseClient) return alert('Supabase client not initialized.');
   const file = event.target.files[0];
   if (!file) return;
 
+  // Local fallback / custom object URL generation
+  const localUrl = URL.createObjectURL(file);
+  const localDoc = {
+    id: `doc_sim_${Date.now()}`,
+    title: file.name,
+    filename: file.name,
+    fileUrl: localUrl,
+    sizeBytes: file.size,
+    mimeType: file.type || 'application/octet-stream'
+  };
+
+  if (!appState.researchDocuments) {
+    appState.researchDocuments = [];
+  }
+
+  // Push to local list first for instant offline capability
+  appState.researchDocuments.unshift(localDoc);
+  saveOfflineState();
+
+  if (!supabaseClient) {
+    showToastNotification('Document uploaded successfully (Local Fallback)!');
+    fetchResearchDocuments();
+    // Reset file input
+    event.target.value = '';
+    return;
+  }
+
   try {
-    showToastNotification('Uploading document...');
+    showToastNotification('Uploading document to Supabase...');
     
     // Upload to Supabase Storage
     const fileExt = file.name.split('.').pop();
@@ -442,31 +484,53 @@ async function uploadResearchDocument(event) {
 
     if (dbError) throw dbError;
 
-    showToastNotification('Document uploaded successfully!');
+    // Remove the temporary local placeholder since it was successfully uploaded to cloud
+    appState.researchDocuments = appState.researchDocuments.filter(d => d.id !== localDoc.id);
+    saveOfflineState();
+
+    showToastNotification('Document uploaded successfully to Supabase!');
     fetchResearchDocuments(); // Refresh list
 
   } catch (err) {
-    console.error('Upload error:', err);
-    alert(`Upload failed: ${err.message}`);
+    console.error('Supabase upload error (local copy preserved):', err);
+    showToastNotification('Cloud sync failed. Preserved locally.');
+    fetchResearchDocuments();
+  } finally {
+    // Reset file input
+    event.target.value = '';
   }
 }
 
 async function deleteResearchDocument(id, filename) {
-  if (!supabaseClient || !confirm('Are you sure you want to delete this document?')) return;
-  
-  try {
-    // Delete from Storage
-    await supabaseClient.storage.from('project-documents').remove([`project-documents/${filename}`]);
-    
-    // Delete from DB
-    const { error } = await supabaseClient.from('Document').delete().match({ id: id });
-    if (error) throw error;
-    
-    showToastNotification('Document deleted.');
-    fetchResearchDocuments();
-  } catch (err) {
-    console.error('Delete error:', err);
-    alert(`Delete failed: ${err.message}`);
+  if (!confirm('Are you sure you want to delete this document?')) return;
+
+  // Try local first
+  if (appState.researchDocuments) {
+    const idx = appState.researchDocuments.findIndex(d => d.id === id);
+    if (idx !== -1) {
+      appState.researchDocuments.splice(idx, 1);
+      saveOfflineState();
+      showToastNotification('Document deleted.');
+      fetchResearchDocuments();
+      return;
+    }
+  }
+
+  if (supabaseClient) {
+    try {
+      // Delete from Storage
+      await supabaseClient.storage.from('project-documents').remove([`project-documents/${filename}`]);
+      
+      // Delete from DB
+      const { error } = await supabaseClient.from('Document').delete().match({ id: id });
+      if (error) throw error;
+      
+      showToastNotification('Document deleted from cloud.');
+      fetchResearchDocuments();
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert(`Delete failed: ${err.message}`);
+    }
   }
 }
 
@@ -596,6 +660,8 @@ setTimeout(() => {
           fetchResearcherDashboard();
         } else if (tabId === 'researcher-ethics') {
           renderResearcherScansTable();
+        } else if (tabId === 'researcher-publications') {
+          fetchResearcherPublications();
         }
       } catch (err) {
         console.error("Error in switchTab wrapper:", err);
@@ -702,4 +768,156 @@ function renderResearcherScansTable() {
         </div>
       </div>`;
   }).join('');
+}
+
+/* ---------- Reviewer Comments & Open Access uploads ---------- */
+function fetchResearcherPublications() {
+  if (!appState.rebuttalDocs) {
+    appState.rebuttalDocs = [
+      {
+        id: 'rebuttal_sim_1',
+        title: 'Reviewer_Comments_Response_IEEE.docx',
+        sizeBytes: 153600,
+        uploadedAt: '15/06/2026, 14:32',
+        fileUrl: '#'
+      }
+    ];
+  }
+  if (!appState.dspaceDocs) {
+    appState.dspaceDocs = [
+      {
+        id: 'dspace_sim_1',
+        title: 'Preprint_ML_Healthcare_ATU.pdf',
+        sizeBytes: 1048576,
+        uploadedAt: '12/06/2026, 10:15',
+        status: 'Deposited',
+        fileUrl: '#'
+      }
+    ];
+  }
+  renderReviewerComments();
+  renderDSpaceArchive();
+}
+
+function renderReviewerComments() {
+  const tbody = document.getElementById('reviewer-comments-table-body');
+  if (!tbody) return;
+
+  const searchInput = document.getElementById('reviewer-comments-search');
+  const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+  const docs = (appState.rebuttalDocs || []).filter(doc => doc.title.toLowerCase().includes(query));
+
+  if (docs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No reviewer comments found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = docs.map(doc => `
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:12px;">${doc.title}</td>
+      <td style="padding:12px;">${Math.round(doc.sizeBytes / 1024)} KB</td>
+      <td style="padding:12px;">${doc.uploadedAt}</td>
+      <td style="padding:12px;">
+        <a href="${doc.fileUrl}" target="_blank" download="${doc.title}" class="btn btn-sm btn-secondary" style="margin-right:4px;">Download</a>
+        <button class="btn btn-sm btn-danger" onclick="deleteReviewerComment('${doc.id}')">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function handleReviewerCommentsUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const localDoc = {
+    id: `rebuttal_sim_${Date.now()}`,
+    title: file.name,
+    sizeBytes: file.size,
+    uploadedAt: new Date().toLocaleString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+    fileUrl: URL.createObjectURL(file)
+  };
+
+  if (!appState.rebuttalDocs) appState.rebuttalDocs = [];
+  appState.rebuttalDocs.unshift(localDoc);
+  saveOfflineState();
+
+  showToastNotification('Reviewer comments document uploaded successfully!');
+  renderReviewerComments();
+
+  // Reset file input
+  event.target.value = '';
+}
+
+function deleteReviewerComment(id) {
+  if (!confirm('Are you sure you want to delete this reviewer comment document?')) return;
+  if (appState.rebuttalDocs) {
+    appState.rebuttalDocs = appState.rebuttalDocs.filter(d => d.id !== id);
+    saveOfflineState();
+    showToastNotification('Document deleted.');
+    renderReviewerComments();
+  }
+}
+
+// Open Access pre-prints logic
+function renderDSpaceArchive() {
+  const tbody = document.getElementById('dspace-archive-table-body');
+  if (!tbody) return;
+
+  const searchInput = document.getElementById('dspace-archive-search');
+  const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+  const docs = (appState.dspaceDocs || []).filter(doc => doc.title.toLowerCase().includes(query));
+
+  if (docs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No deposited pre-prints found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = docs.map(doc => `
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:12px;">${doc.title}</td>
+      <td style="padding:12px;">${Math.round(doc.sizeBytes / 1024)} KB</td>
+      <td style="padding:12px;">${doc.uploadedAt}</td>
+      <td style="padding:12px;"><span class="badge ${doc.status === 'Deposited' ? 'badge-success' : 'badge-warning'}">${doc.status}</span></td>
+      <td style="padding:12px;">
+        <a href="${doc.fileUrl}" target="_blank" download="${doc.title}" class="btn btn-sm btn-secondary" style="margin-right:4px;">Download</a>
+        <button class="btn btn-sm btn-danger" onclick="deleteDSpaceArchive('${doc.id}')">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function handleDSpaceArchiveUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const localDoc = {
+    id: `dspace_sim_${Date.now()}`,
+    title: file.name,
+    sizeBytes: file.size,
+    uploadedAt: new Date().toLocaleString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+    status: 'Deposited',
+    fileUrl: URL.createObjectURL(file)
+  };
+
+  if (!appState.dspaceDocs) appState.dspaceDocs = [];
+  appState.dspaceDocs.unshift(localDoc);
+  saveOfflineState();
+
+  showToastNotification('Pre-print deposited to DSpace archive successfully!');
+  renderDSpaceArchive();
+
+  // Reset file input
+  event.target.value = '';
+}
+
+function deleteDSpaceArchive(id) {
+  if (!confirm('Are you sure you want to delete this pre-print from the DSpace archive?')) return;
+  if (appState.dspaceDocs) {
+    appState.dspaceDocs = appState.dspaceDocs.filter(d => d.id !== id);
+    saveOfflineState();
+    showToastNotification('Pre-print deleted.');
+    renderDSpaceArchive();
+  }
 }

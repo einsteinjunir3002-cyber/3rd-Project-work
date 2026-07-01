@@ -36,15 +36,16 @@ const SMARTLEARN_STATIC_DATA = {
     { id: 'user_std_3', name: 'Joseph Addo', email: 'joseph@smartlearn.edu', courses: 'CS101, MATH102', attendance: 65, cgpa: 1.95, status: 'Needs Help' }
   ],
   facultyContacts: [
-    { name: 'Dr. Kwame Mensah', role: 'CS101 Coordinator', email: 'k.mensah@smartlearn.edu', status: 'Online', avatar: 'avatar_lecturer.jpg', room: 'RM 302', hours: 'Tuesdays 2:00 PM - 4:00 PM' },
-    { name: 'Prof. Ama Serwaa', role: 'Calculus Lead', email: 'a.serwaa@smartlearn.edu', status: 'Online', avatar: 'avatar_lecturer.jpg', room: 'RM 412', hours: 'Mon/Wed 10:00 AM - 12:00 PM' },
-    { name: 'Joseph Addo (TA)', role: 'CS & Software Eng TA', email: 'j.addo@smartlearn.edu', status: 'Online', avatar: 'avatar_student.jpg', room: 'ICT Lab B', hours: 'Fridays 3:00 PM - 5:00 PM' }
+    { name: 'Dr. Kwame Mensah', role: 'CS101 Coordinator', email: 'Kwame@smartlearn.edu', status: 'Online', avatar: 'avatar_lecturer.jpg', room: 'RM 302', hours: 'Tuesdays 2:00 PM - 4:00 PM' },
+    { name: 'Prof. Ama Serwaa', role: 'Calculus Lead', email: 'Ama@smartlearn.edu', status: 'Online', avatar: 'avatar_lecturer.jpg', room: 'RM 412', hours: 'Mon/Wed 10:00 AM - 12:00 PM' },
+    { name: 'Mr. Emmanuel Osei', role: 'Software Eng Coordinator', email: 'Emmanuel@smartlearn.edu', status: 'Online', avatar: 'avatar_lecturer.jpg', room: 'RM 101', hours: 'Fridays 3:00 PM - 5:00 PM' },
+    { name: 'Dr. Sophia Tetteh', role: 'Engineering Lead', email: 'Sophia@smartlearn.edu', status: 'Online', avatar: 'avatar_lecturer.jpg', room: 'Block A, Rm 2', hours: 'Mondays 1:00 PM - 3:00 PM' }
   ],
   facultyChats: {
-    'k.mensah@smartlearn.edu': [{ sender: 'faculty', text: 'Hello Kofi! Welcome to CS101 consultation channel. How can I help you today?', timestamp: '2 hours ago' }],
-    'a.serwaa@smartlearn.edu': [{ sender: 'faculty', text: 'Hi Kofi, regarding the Calculus problem set, limits and continuity are core. Let me know if you want to walk through the questions.', timestamp: '1 day ago' }],
-    'j.addo@smartlearn.edu': [{ sender: 'faculty', text: 'Hey Kofi, I graded the latest UML assignment. Good job on classes! Let me know if you need help with sequences.', timestamp: '3 hours ago' }]
-  }, activeFacultyEmail: 'k.mensah@smartlearn.edu',
+    'Kwame@smartlearn.edu': [{ sender: 'faculty', text: 'Hello Kofi! Welcome to CS101 consultation channel. How can I help you today?', timestamp: '2 hours ago' }],
+    'Ama@smartlearn.edu': [{ sender: 'faculty', text: 'Hi Kofi, regarding the Calculus problem set, limits and continuity are core. Let me know if you want to walk through the questions.', timestamp: '1 day ago' }],
+    'Emmanuel@smartlearn.edu': [{ sender: 'faculty', text: 'Hey Kofi, I graded the latest UML assignment. Good job on classes! Let me know if you need help with sequences.', timestamp: '3 hours ago' }]
+  }, activeFacultyEmail: 'Kwame@smartlearn.edu',
   courses: [
     { id: 'CS101', title: 'Introduction to Computer Science & Coding', code: 'CS101', instructor: 'Dr. Kwame Mensah', avatar: 'avatar_lecturer.jpg', notesCount: 5, assignmentsCount: 3, program: 'BSc Computer Science' },
     { id: 'MATH102', title: 'Calculus & Applied Mathematics', code: 'MATH102', instructor: 'Prof. Ama Serwaa', avatar: 'avatar_lecturer.jpg', notesCount: 3, assignmentsCount: 2, program: 'BSc Computer Science' },
@@ -164,9 +165,26 @@ const appState = {
   activeLecturerTab: 'lecturer-dashboard',
   activeAdminTab: 'admin-dashboard',
   ...SMARTLEARN_STATIC_DATA,
-  activeFacultyEmail: 'k.mensah@smartlearn.edu',
+  activeFacultyEmail: 'Kwame@smartlearn.edu',
   selectedUniType: 'All',
-  uniSearchQuery: ''
+  uniSearchQuery: '',
+  aiPromptCount: 412,
+  aiPromptHistory: [
+    { timestamp: "10:24 AM 06/22/2026", prompt: "Explain the difference between mutable and immutable types in Python", mode: "study" },
+    { timestamp: "09:45 AM 06/22/2026", prompt: "Analyze suitability for BSc Computer Science with aggregate 12", mode: "career" },
+    { timestamp: "09:12 AM 06/22/2026", prompt: "Generate a 4-hour study schedule for engineering exams", mode: "study" },
+    { timestamp: "06:14 PM 06/21/2026", prompt: "Draft an abstract summary on the malaria detection paper", mode: "research" },
+    { timestamp: "04:30 PM 06/21/2026", prompt: "What are the local regulatory guidelines for FDA registration in Ghana?", mode: "innovation" },
+    { timestamp: "02:15 PM 06/21/2026", prompt: "Explain past question 3 from CS101 exam paper", mode: "study" },
+    { timestamp: "11:40 AM 06/21/2026", prompt: "How do I implement binary search in JavaScript?", mode: "tutor" },
+    { timestamp: "09:30 AM 06/21/2026", prompt: "What are the scholarship opportunities at Ashesi University?", mode: "admission" },
+    { timestamp: "04:10 PM 06/20/2026", prompt: "Provide a checklist for a software engineering pitch deck", mode: "innovation" },
+    { timestamp: "10:15 AM 06/20/2026", prompt: "Give code examples of logic gates in Python", mode: "tutor" }
+  ],
+  // Cross-Role Dynamic State
+  announcements: [],           // Admin broadcasts visible to all dashboards
+  dynamicNotifications: [],    // Live notifications from grading, forums, engagement
+  adminJobListings: []         // Admin-created jobs visible in student Career Hub
 };
 
 const careerQuizQuestions = [

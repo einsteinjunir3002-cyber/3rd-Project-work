@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const WebSocket = require('ws');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
@@ -10,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(__dirname));
 
 // Supabase Initialization
 const supabaseUrl = process.env.SUPABASE_URL || 'https://mock.supabase.co';
@@ -434,10 +437,587 @@ app.get('/api/admin/jobs', async (req, res) => {
 });
 
 // ==========================================
+// STUDENT-LECTURER ENGAGEMENT SYSTEM REST & WEBSOCKET ENGINE
+// ==========================================
+
+// Stateful in-memory stores for mock database fallback
+const mockFollowers = [];
+const mockAppointments = [
+    { id: 1, student_id: 'user_std_1', lecturer_id: 'user_lec_1', scheduled_time: '2026-06-25T14:00:00.000Z', topic: 'Recursion Help', status: 'Pending', notes: 'Need visual explainer', feedback: '' }
+];
+const mockQuestions = [
+    { id: 1, student_id: 'user_std_1', lecturer_id: 'user_lec_1', question_text: 'What is the base case in recursion?', answer_text: 'Think of it as the exit door. You must stop recurring once you reach the base case.', created_at: '2026-06-20T10:00:00.000Z', answered_at: '2026-06-20T11:00:00.000Z' }
+];
+const mockAnnouncements = [
+    { id: 1, lecturer_id: 'user_lec_1', title: 'Office Hours Rescheduled', content: 'This Friday office hours will start at 2pm instead of 10am.', created_at: '2026-06-22T08:00:00.000Z' }
+];
+const mockCommunities = [
+    { id: 1, lecturer_id: 'user_lec_1', name: 'Python Wizards', description: 'Academic discussion and resources for Python programming.', created_at: '2026-06-22T08:00:00.000Z' }
+];
+const mockCommunityMembers = [
+    { community_id: 1, student_id: 'user_std_1', joined_at: '2026-06-22T08:30:00.000Z' }
+];
+const mockPosts = [
+    { id: 1, community_id: 1, author_id: 'user_lec_1', author_name: 'Dr. Kwame Mensah', title: 'Dynamic Programming Insights', content: 'Dynamic programming is memoization + recursion. Check the uploaded PDF notes.', created_at: '2026-06-22T09:00:00.000Z' }
+];
+const mockComments = [
+    { id: 1, post_id: 1, author_id: 'user_std_1', author_name: 'Kofi Mensah', comment_text: 'Makes complete sense now, thank you!', created_at: '2026-06-22T10:00:00.000Z' }
+];
+const mockReactions = [
+    { post_id: 1, user_id: 'user_std_1', reaction_type: 'like' }
+];
+const mockInsights = [
+    { id: 1, lecturer_id: 'user_lec_1', title: 'Agile vs Waterfall', content: 'Agile is iterative and adapts to changes, Waterfall is linear and predictive.', type: 'insight', url: '', created_at: '2026-06-22T07:00:00.000Z' }
+];
+const mockEndorsements = [
+    { id: 1, project_type: 'startup', project_id: 2, lecturer_id: 'user_lec_1', endorsement_text: 'A highly functional and innovative financial Susu savings app for Ghana.', created_at: '2026-06-22T11:00:00.000Z' }
+];
+const mockFeedback = [
+    { id: 1, student_id: 'user_std_1', lecturer_id: 'user_lec_1', feedback_text: 'Keep practicing coding and working on logic flows. You are improving quickly!', created_at: '2026-06-22T11:15:00.000Z' }
+];
+const mockNotifications = [
+    { id: 1, user_id: 'user_std_1', text: 'Welcome to SmartLearn real-time notifications!', unread: true, created_at: '2026-06-22T11:00:00.000Z' }
+];
+const mockEngagementAnalytics = [
+    { user_id: 'user_std_1', posts_count: 0, comments_count: 1, likes_count: 1, appointments_count: 1 }
+];
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// WebSocket Server
+const wss = new WebSocket.Server({ server });
+const wsClients = new Map();
+
+wss.on('connection', (ws) => {
+    let wsUserId = null;
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            if (data.type === 'auth') {
+                wsUserId = data.userId;
+                wsClients.set(wsUserId, ws);
+                console.log(`WebSocket client authenticated: ${wsUserId}`);
+            } else if (data.type === 'chat_message') {
+                // Relays live chats to specific user
+                const recipientWs = wsClients.get(data.recipientId);
+                if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
+                    recipientWs.send(JSON.stringify({
+                        type: 'chat_relay',
+                        senderId: data.senderId,
+                        senderName: data.senderName,
+                        text: data.text,
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    }));
+                }
+            }
+        } catch (e) {
+            console.error('WS Error:', e);
+        }
+    });
+
+    ws.on('close', () => {
+        if (wsUserId) {
+            wsClients.delete(wsUserId);
+            console.log(`WebSocket client disconnected: ${wsUserId}`);
+        }
+    });
+});
+
+// Helper for notifications dispatch
+function dispatchNotification(userId, text) {
+    // Save locally
+    const notif = { id: Date.now(), user_id: userId, text, unread: true, created_at: new Date().toISOString() };
+    mockNotifications.unshift(notif);
+    
+    // Send via socket
+    const client = wsClients.get(userId);
+    if (client && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'notification', data: notif }));
+    }
+}
+
+// Helper for community websocket broadcasts
+function broadcastCommunityUpdate(payload) {
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: 'community_sync', payload }));
+        }
+    });
+}
+
+// Helper for Q&A websocket broadcasts
+function broadcastQaUpdate(userId, questionId, text, type) {
+    const client = wsClients.get(userId);
+    if (client && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type, questionId, text }));
+    }
+}
+
+// 1. Follows REST endpoints
+app.post('/api/lecturers/follow', async (req, res) => {
+    const { student_id, lecturer_id } = req.body;
+    if (isMockMode) {
+        if (!mockFollowers.some(f => f.student_id === student_id && f.lecturer_id === lecturer_id)) {
+            mockFollowers.push({ student_id, lecturer_id, followed_at: new Date().toISOString() });
+        }
+        dispatchNotification(lecturer_id, `A student (${student_id}) started following you.`);
+        return res.json({ success: true, message: 'Followed successfully (Offline)' });
+    }
+    try {
+        const { error } = await supabase.from('lecturer_follows').insert([{ student_id, lecturer_id }]);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/lecturers/unfollow', async (req, res) => {
+    const { student_id, lecturer_id } = req.body;
+    if (isMockMode) {
+        const idx = mockFollowers.findIndex(f => f.student_id === student_id && f.lecturer_id === lecturer_id);
+        if (idx !== -1) mockFollowers.splice(idx, 1);
+        return res.json({ success: true, message: 'Unfollowed successfully (Offline)' });
+    }
+    try {
+        const { error } = await supabase.from('lecturer_follows').delete().match({ student_id, lecturer_id });
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/lecturers/stats', async (req, res) => {
+    const { student_id } = req.query;
+    // Hardcoded lecturer directory metadata
+    const directory = [
+        { id: 'user_lec_1', name: 'Dr. Kwame Mensah', email: 'lec@smartlearn.com', research: 'Artificial Intelligence, Educational Technologies', officeHours: 'Monday/Wednesday 10:00 AM - 12:00 PM', role: 'lecturer' },
+        { id: 'user_lec_2', name: 'Prof. Ama Serwaa', email: 'ama@smartlearn.com', research: 'Computational Mathematics, Applied Calculus', officeHours: 'Tuesday/Thursday 1:00 PM - 3:00 PM', role: 'lecturer' },
+        { id: 'user_lec_3', name: 'Dr. Sophia Tetteh', email: 'sophia@smartlearn.com', research: 'Educational Psychology, Student Counseling', officeHours: 'Wednesday/Friday 10:00 AM - 11:00 AM', role: 'lecturer' },
+        { id: 'user_lec_4', name: 'Mr. Emmanuel Osei', email: 'osei@smartlearn.com', research: 'Software Architectures, Agile Systems Management', officeHours: 'Thursday 2:00 PM - 4:00 PM', role: 'lecturer' }
+    ];
+
+    if (isMockMode) {
+        const result = directory.map(lec => {
+            const followers = mockFollowers.filter(f => f.lecturer_id === lec.id);
+            const isFollowed = mockFollowers.some(f => f.student_id === student_id && f.lecturer_id === lec.id);
+            return { ...lec, followerCount: followers.length, followed: isFollowed };
+        });
+        return res.json(result);
+    }
+    try {
+        const [followsRes, dbUsers] = await Promise.all([
+            supabase.from('lecturer_follows').select('*'),
+            supabase.from('users').select('*').eq('role', 'lecturer')
+        ]);
+        const actualLecs = dbUsers.data && dbUsers.data.length ? dbUsers.data : directory;
+        const follows = followsRes.data || [];
+        const result = actualLecs.map(lec => {
+            const fCount = follows.filter(f => f.lecturer_id === lec.id).length;
+            const followed = follows.some(f => f.student_id === student_id && f.lecturer_id === lec.id);
+            return {
+                id: lec.id,
+                name: lec.name,
+                email: lec.email,
+                research: lec.research_interests || lec.research || 'AI Integration',
+                officeHours: lec.office_hours || lec.officeHours || 'Monday 10am',
+                followerCount: fCount,
+                followed: followed
+            };
+        });
+        res.json(result);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 2. Q&A REST endpoints
+app.post('/api/qa/question', async (req, res) => {
+    const { student_id, student_name, lecturer_id, question_text } = req.body;
+    if (isMockMode) {
+        const q = { id: Date.now(), student_id, student_name: student_name || 'Student', lecturer_id, question_text, answer_text: null, created_at: new Date().toISOString() };
+        mockQuestions.push(q);
+        dispatchNotification(lecturer_id, `New question from ${student_name || 'student'}: "${question_text.slice(0, 30)}..."`);
+        return res.status(201).json(q);
+    }
+    try {
+        const { data, error } = await supabase.from('qa_questions').insert([{ student_id, lecturer_id, question_text }]).select();
+        if (error) throw error;
+        res.status(201).json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/qa/answer', async (req, res) => {
+    const { question_id, answer_text } = req.body;
+    if (isMockMode) {
+        const q = mockQuestions.find(x => x.id == question_id);
+        if (q) {
+            q.answer_text = answer_text;
+            q.answered_at = new Date().toISOString();
+            dispatchNotification(q.student_id, `Your question has been answered: "${answer_text.slice(0, 30)}..."`);
+            broadcastQaUpdate(q.student_id, q.id, answer_text, 'qa_answer');
+            return res.json(q);
+        }
+        return res.status(404).json({ error: 'Question not found' });
+    }
+    try {
+        const { data, error } = await supabase.from('qa_questions').update({ answer_text, answered_at: new Date() }).eq('id', question_id).select();
+        if (error) throw error;
+        res.json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/qa', async (req, res) => {
+    const { user_id, role } = req.query;
+    if (isMockMode) {
+        const filterField = role === 'student' ? 'student_id' : 'lecturer_id';
+        const qList = mockQuestions.filter(x => x[filterField] === user_id);
+        return res.json(qList);
+    }
+    try {
+        const filterField = role === 'student' ? 'student_id' : 'lecturer_id';
+        const { data, error } = await supabase.from('qa_questions').select('*').eq(filterField, user_id);
+        if (error) throw error;
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 3. Appointments
+app.post('/api/appointments/request', async (req, res) => {
+    const { student_id, student_name, lecturer_id, scheduled_time, topic, notes } = req.body;
+    if (isMockMode) {
+        const appt = { id: Date.now(), student_id, student_name: student_name || 'Student', lecturer_id, scheduled_time, topic, notes, status: 'Pending', feedback: '' };
+        mockAppointments.push(appt);
+        dispatchNotification(lecturer_id, `New consultation requested by ${student_name || 'Student'} on ${new Date(scheduled_time).toLocaleDateString()}`);
+        return res.status(201).json(appt);
+    }
+    try {
+        const { data, error } = await supabase.from('appointments').insert([{ student_id, lecturer_id, scheduled_time, topic, notes }]).select();
+        if (error) throw error;
+        res.status(201).json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/appointments/respond', async (req, res) => {
+    const { appointment_id, status, feedback } = req.body;
+    if (isMockMode) {
+        const appt = mockAppointments.find(x => x.id == appointment_id);
+        if (appt) {
+            appt.status = status;
+            appt.feedback = feedback || '';
+            dispatchNotification(appt.student_id, `Consultation status update: ${status}. Notes: "${feedback}"`);
+            
+            // Increment analytics counts
+            if (status === 'Approved') {
+                const ana = mockEngagementAnalytics.find(x => x.user_id === appt.student_id);
+                if (ana) ana.appointments_count++;
+            }
+
+            return res.json(appt);
+        }
+        return res.status(404).json({ error: 'Appointment not found' });
+    }
+    try {
+        const { data, error } = await supabase.from('appointments').update({ status, feedback }).eq('id', appointment_id).select();
+        if (error) throw error;
+        res.json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/appointments', async (req, res) => {
+    const { user_id, role } = req.query;
+    if (isMockMode) {
+        const filterField = role === 'student' ? 'student_id' : 'lecturer_id';
+        return res.json(mockAppointments.filter(x => x[filterField] === user_id));
+    }
+    try {
+        const filterField = role === 'student' ? 'student_id' : 'lecturer_id';
+        const { data, error } = await supabase.from('appointments').select('*').eq(filterField, user_id);
+        if (error) throw error;
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 4. Communities
+app.get('/api/communities', async (req, res) => {
+    const { student_id } = req.query;
+    if (isMockMode) {
+        const mapped = mockCommunities.map(c => {
+            const isJoined = mockCommunityMembers.some(m => m.community_id == c.id && m.student_id === student_id);
+            const mCount = mockCommunityMembers.filter(m => m.community_id == c.id).length;
+            return { ...c, joined: isJoined, memberCount: mCount };
+        });
+        return res.json(mapped);
+    }
+    try {
+        const [coms, mems] = await Promise.all([
+            supabase.from('communities').select('*'),
+            supabase.from('community_members').select('*')
+        ]);
+        const result = (coms.data || []).map(c => {
+            const isJoined = (mems.data || []).some(m => m.community_id === c.id && m.student_id === student_id);
+            const mCount = (mems.data || []).filter(m => m.community_id === c.id).length;
+            return { id: c.id, lecturer_id: c.lecturer_id, name: c.name, description: c.description, joined: isJoined, memberCount: mCount };
+        });
+        res.json(result);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/communities', async (req, res) => {
+    const { lecturer_id, name, description } = req.body;
+    if (isMockMode) {
+        const c = { id: Date.now(), lecturer_id, name, description, created_at: new Date().toISOString() };
+        mockCommunities.push(c);
+        return res.status(201).json(c);
+    }
+    try {
+        const { data, error } = await supabase.from('communities').insert([{ lecturer_id, name, description }]).select();
+        if (error) throw error;
+        res.status(201).json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/communities/join', async (req, res) => {
+    const { community_id, student_id } = req.body;
+    if (isMockMode) {
+        if (!mockCommunityMembers.some(m => m.community_id == community_id && m.student_id === student_id)) {
+            mockCommunityMembers.push({ community_id: parseInt(community_id), student_id, joined_at: new Date().toISOString() });
+        }
+        return res.json({ success: true });
+    }
+    try {
+        const { error } = await supabase.from('community_members').insert([{ community_id, student_id }]);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/communities/post', async (req, res) => {
+    const { community_id, author_id, author_name, title, content } = req.body;
+    if (isMockMode) {
+        const post = { id: Date.now(), community_id: parseInt(community_id), author_id, author_name: author_name || 'Author', title, content, created_at: new Date().toISOString() };
+        mockPosts.push(post);
+        
+        // Track analytics
+        let ana = mockEngagementAnalytics.find(x => x.user_id === author_id);
+        if (!ana) { ana = { user_id: author_id, posts_count: 0, comments_count: 0, likes_count: 0, appointments_count: 0 }; mockEngagementAnalytics.push(ana); }
+        ana.posts_count++;
+
+        broadcastCommunityUpdate({ action: 'new_post', post });
+        return res.status(201).json(post);
+    }
+    try {
+        const { data, error } = await supabase.from('posts').insert([{ community_id, author_id, title, content }]).select();
+        if (error) throw error;
+        res.status(201).json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/communities/comment', async (req, res) => {
+    const { post_id, author_id, author_name, comment_text } = req.body;
+    if (isMockMode) {
+        const comment = { id: Date.now(), post_id: parseInt(post_id), author_id, author_name: author_name || 'Commenter', comment_text, created_at: new Date().toISOString() };
+        mockComments.push(comment);
+        
+        // Track analytics
+        let ana = mockEngagementAnalytics.find(x => x.user_id === author_id);
+        if (!ana) { ana = { user_id: author_id, posts_count: 0, comments_count: 0, likes_count: 0, appointments_count: 0 }; mockEngagementAnalytics.push(ana); }
+        ana.comments_count++;
+
+        broadcastCommunityUpdate({ action: 'new_comment', comment });
+        return res.status(201).json(comment);
+    }
+    try {
+        const { data, error } = await supabase.from('comments').insert([{ post_id, author_id, comment_text }]).select();
+        if (error) throw error;
+        res.status(201).json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/communities/react', async (req, res) => {
+    const { post_id, user_id, reaction_type } = req.body;
+    if (isMockMode) {
+        const react = { post_id: parseInt(post_id), user_id, reaction_type };
+        const idx = mockReactions.findIndex(x => x.post_id == post_id && x.user_id === user_id && x.reaction_type === reaction_type);
+        if (idx === -1) {
+            mockReactions.push(react);
+            
+            // Track analytics
+            let ana = mockEngagementAnalytics.find(x => x.user_id === user_id);
+            if (!ana) { ana = { user_id: user_id, posts_count: 0, comments_count: 0, likes_count: 0, appointments_count: 0 }; mockEngagementAnalytics.push(ana); }
+            ana.likes_count++;
+        } else {
+            mockReactions.splice(idx, 1);
+        }
+        broadcastCommunityUpdate({ action: 'reaction_sync', post_id, reactions: mockReactions.filter(r => r.post_id == post_id) });
+        return res.json({ success: true });
+    }
+    try {
+        const { error } = await supabase.from('reactions').insert([{ post_id, user_id, reaction_type }]);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/communities/posts', async (req, res) => {
+    const { community_id } = req.query;
+    if (isMockMode) {
+        const posts = mockPosts.filter(p => p.community_id == community_id);
+        const result = posts.map(p => {
+            const comments = mockComments.filter(c => c.post_id == p.id);
+            const reactions = mockReactions.filter(r => r.post_id == p.id);
+            return { ...p, comments, reactions };
+        });
+        return res.json(result);
+    }
+    try {
+        const [postsRes, commentsRes, reactionsRes] = await Promise.all([
+            supabase.from('posts').select('*').eq('community_id', community_id),
+            supabase.from('comments').select('*'),
+            supabase.from('reactions').select('*')
+        ]);
+        const result = (postsRes.data || []).map(p => {
+            const comments = (commentsRes.data || []).filter(c => c.post_id === p.id);
+            const reactions = (reactionsRes.data || []).filter(r => r.post_id === p.id);
+            return { ...p, comments, reactions };
+        });
+        res.json(result);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 5. Insights & Endorsements
+app.post('/api/insights', async (req, res) => {
+    const { lecturer_id, title, content, type, url } = req.body;
+    if (isMockMode) {
+        const ins = { id: Date.now(), lecturer_id, title, content, type, url: url || '', created_at: new Date().toISOString() };
+        mockInsights.push(ins);
+        
+        // Push notification to all followers
+        mockFollowers.filter(f => f.lecturer_id === lecturer_id).forEach(f => {
+            dispatchNotification(f.student_id, `Prof. Kwame Mensah shared a new ${type}: "${title}"`);
+        });
+
+        return res.status(201).json(ins);
+    }
+    try {
+        const { data, error } = await supabase.from('insights_resources').insert([{ lecturer_id, title, content, type, url }]).select();
+        if (error) throw error;
+        res.status(201).json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/insights', async (req, res) => {
+    if (isMockMode) {
+        return res.json(mockInsights);
+    }
+    try {
+        const { data, error } = await supabase.from('insights_resources').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/endorsements', async (req, res) => {
+    const { project_type, project_id, lecturer_id, endorsement_text } = req.body;
+    if (isMockMode) {
+        const end = { id: Date.now(), project_type, project_id: parseInt(project_id), lecturer_id, endorsement_text, created_at: new Date().toISOString() };
+        mockEndorsements.push(end);
+        
+        // Notify student author
+        const startupName = project_id == 2 ? "SusuSmart" : (project_id == 1 ? "AgriFlow" : "Student Project #" + project_id);
+        dispatchNotification('user_std_1', `Your startup project "${startupName}" was endorsed by Dr. Kwame Mensah!`);
+
+        return res.status(201).json(end);
+    }
+    try {
+        const { data, error } = await supabase.from('endorsements').insert([{ project_type, project_id, lecturer_id, endorsement_text }]).select();
+        if (error) throw error;
+        res.status(201).json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/endorsements', async (req, res) => {
+    if (isMockMode) {
+        return res.json(mockEndorsements);
+    }
+    try {
+        const { data, error } = await supabase.from('endorsements').select('*');
+        if (error) throw error;
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 6. Personalized Feedback
+app.post('/api/feedback', async (req, res) => {
+    const { student_id, lecturer_id, feedback_text } = req.body;
+    if (isMockMode) {
+        const fb = { id: Date.now(), student_id, lecturer_id, feedback_text, created_at: new Date().toISOString() };
+        mockFeedback.push(fb);
+        dispatchNotification(student_id, `New personal feedback notes from Lecturer: "${feedback_text.slice(0, 30)}..."`);
+        return res.status(201).json(fb);
+    }
+    try {
+        const { data, error } = await supabase.from('personalized_feedback').insert([{ student_id, lecturer_id, feedback_text }]).select();
+        if (error) throw error;
+        res.status(201).json(data[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/feedback', async (req, res) => {
+    const { student_id } = req.query;
+    if (isMockMode) {
+        return res.json(mockFeedback.filter(x => x.student_id === student_id));
+    }
+    try {
+        const { data, error } = await supabase.from('personalized_feedback').select('*').eq('student_id', student_id);
+        if (error) throw error;
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 7. Notifications API
+app.get('/api/notifications', async (req, res) => {
+    const { user_id } = req.query;
+    if (isMockMode) {
+        return res.json(mockNotifications.filter(x => x.user_id === user_id));
+    }
+    try {
+        const { data, error } = await supabase.from('notifications').select('*').eq('user_id', user_id).order('created_at', { ascending: false });
+        if (error) throw error;
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/notifications/read', async (req, res) => {
+    const { id } = req.body;
+    if (isMockMode) {
+        const n = mockNotifications.find(x => x.id == id);
+        if (n) n.unread = false;
+        return res.json({ success: true });
+    }
+    try {
+        const { error } = await supabase.from('notifications').update({ unread: false }).eq('id', id);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 8. Engagement Analytics
+app.get('/api/engagement/analytics', async (req, res) => {
+    const { student_id } = req.query;
+    if (isMockMode) {
+        const stats = mockEngagementAnalytics.find(x => x.user_id === student_id) || { user_id: student_id, posts_count: 0, comments_count: 0, likes_count: 0, appointments_count: 0 };
+        return res.json(stats);
+    }
+    try {
+        const { data, error } = await supabase.from('engagement_analytics').select('*').eq('user_id', student_id).single();
+        if (error && error.code !== 'PGRST116') throw error;
+        res.json(data || { user_id: student_id, posts_count: 0, comments_count: 0, likes_count: 0, appointments_count: 0 });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+// ==========================================
 // SERVER START
 // ==========================================
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`SmartLearn Backend API running on http://localhost:${PORT}`);
     if (isMockMode) {
         console.log('WARNING: Running in MOCK mode. Configure .env with SUPABASE_URL to connect to real database.');

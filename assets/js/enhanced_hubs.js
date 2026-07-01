@@ -111,11 +111,19 @@ function renderAlumniTab(tab) {
       </div>`;
 
   } else if (tab === 'jobboard') {
+    let alumniJobs = appState.demoCareerJobs || [];
+    if (appState.adminJobListings && appState.adminJobListings.length > 0) {
+      const mappedAdminJobs = appState.adminJobListings.map(j => ({
+        title: j.title, company: j.company, location: j.location || 'Remote/Ghana',
+        salary: j.salary || 'Competitive', type: j.type || 'Full-Time', match: 100
+      }));
+      alumniJobs = [...mappedAdminJobs, ...alumniJobs];
+    }
     body.innerHTML = `
       <h3 style="margin-bottom:20px;">💼 Alumni Network Job Board</h3>
       <p style="color:var(--text-muted);margin-bottom:20px;">Exclusive opportunities posted by our alumni network for current students.</p>
       <div style="display:flex;flex-direction:column;gap:14px;">
-        ${(appState.demoCareerJobs || []).map(job => `
+        ${alumniJobs.map(job => `
           <div class="glass" style="padding:18px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
             <div>
               <h4 style="font-size:0.95rem;margin-bottom:4px;">${job.title}</h4>
@@ -693,7 +701,7 @@ function renderPartnerHubTab(tab) {
         <button class="btn btn-primary btn-sm" onclick="showToastNotification('New internship form opened!')">+ Post Internship</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:14px;">
-        ${internships.map(i => `
+        ${internships.map((i, idx) => `
           <div class="glass" style="padding:18px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
             <div>
               <h4 style="font-size:0.92rem;margin-bottom:4px;">${i.title}</h4>
@@ -704,7 +712,7 @@ function renderPartnerHubTab(tab) {
               </div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button class="btn btn-secondary btn-sm" style="font-size:0.7rem;" onclick="showToastNotification('Viewing ${i.applicants} applicants...')">👥 View Applicants</button>
+              <button class="btn btn-secondary btn-sm" style="font-size:0.7rem;" onclick="viewInternshipApplicants(${idx})">👥 View Applicants</button>
               <button class="btn btn-sm" style="font-size:0.7rem;background:rgba(239,68,68,0.15);color:#ef4444;" onclick="showToastNotification('Listing closed.')">Close</button>
             </div>
           </div>`).join('')}
@@ -792,7 +800,18 @@ function renderAdvisorTab(tab) {
   const body = D.get('advisor-dashboard-body');
   if (!body) return;
   const students = appState.demoCareerStudents || [];
-  const jobs = appState.demoCareerJobs || [];
+  let jobs = appState.demoCareerJobs || [];
+  if (appState.adminJobListings && appState.adminJobListings.length > 0) {
+    const mappedAdminJobs = appState.adminJobListings.map(j => ({
+      title: j.title,
+      company: j.company,
+      location: j.location || 'Remote/Ghana',
+      salary: j.salary || 'Competitive',
+      type: j.type || 'Full-Time',
+      match: Math.floor(Math.random() * 20) + 75 // Mock match percentage
+    }));
+    jobs = [...mappedAdminJobs, ...jobs];
+  }
   const qa = appState.demoInterviewQA || [];
 
   if (tab === 'profiles') {
@@ -956,3 +975,113 @@ if (document.readyState === 'loading') {
 } else {
   initEnhancedHubs();
 }
+
+window.viewInternshipApplicants = function(idx, filter = 'all') {
+  const internships = appState.demoInternshipListings || [];
+  const internship = internships[idx];
+  if (!internship) return;
+
+  const body = document.getElementById('partner-hub-body');
+  if (!body) return;
+
+  // Mock applicants
+  if (!internship._cachedApplicants) {
+    const allStudents = appState.demoCareerStudents || appState.students || [];
+    const numApplicants = internship.applicants;
+    let applicants = [];
+    for (let i = 0; i < numApplicants; i++) {
+      const student = allStudents[i % allStudents.length];
+      applicants.push({
+        id: student?.id || `app_${i}`,
+        name: student?.name || `Applicant ${i+1}`,
+        department: student?.program || student?.department || 'General',
+        matchScore: Math.floor(Math.random() * 30) + 70, // 70-99
+        status: i === 0 ? 'Shortlisted' : 'Pending',
+        skills: student?.skills || ['Communication', 'Teamwork']
+      });
+    }
+    internship._cachedApplicants = applicants;
+  }
+  
+  let applicants = internship._cachedApplicants;
+  if (filter === 'shortlisted') {
+    applicants = applicants.filter(a => a.status === 'Shortlisted');
+  }
+
+  body.innerHTML = `
+    <div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn btn-secondary btn-sm" onclick="renderPartnerHubTab('internships')">← Back to Internships</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn ${filter === 'all' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="viewInternshipApplicants(${idx}, 'all')">All Applicants (${internship._cachedApplicants.length})</button>
+        <button class="btn ${filter === 'shortlisted' ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="viewInternshipApplicants(${idx}, 'shortlisted')">Shortlisted (${internship._cachedApplicants.filter(a => a.status === 'Shortlisted').length})</button>
+      </div>
+    </div>
+    <div style="margin-bottom:24px;">
+      <h3 style="margin-bottom:8px;">👥 ${filter === 'shortlisted' ? 'Shortlisted ' : ''}Applicants for ${internship.title}</h3>
+      <p style="color:var(--text-muted);">Review and shortlist candidates for this position.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      ${applicants.length === 0 ? '<p style="color:var(--text-muted);">No applicants found.</p>' : ''}
+      ${applicants.map((a, appIdx) => {
+        // Need the real index in the cached array for shortlisting
+        const realIdx = internship._cachedApplicants.findIndex(ca => ca === a);
+        return `
+        <div class="glass" style="padding:18px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:1.4rem;">👤</div>
+            <div>
+              <h4 style="font-size:1rem;margin-bottom:4px;">${a.name}</h4>
+              <p style="font-size:0.78rem;color:var(--text-muted);">${a.department}</p>
+              <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                ${a.skills.map(s => `<span class="badge" style="background:rgba(124,58,237,0.1);color:var(--primary);font-size:0.6rem;">${s}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+            <div style="font-size:0.75rem;font-weight:700;color:${a.matchScore >= 90 ? '#10b981' : '#f59e0b'};">Match: ${a.matchScore}%</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary btn-sm" style="font-size:0.7rem;" onclick="viewApplicantResume('${a.name}', '${a.department}')">📄 Resume</button>
+              ${a.status === 'Shortlisted' 
+                ? `<button class="btn btn-success btn-sm" style="font-size:0.7rem;" disabled>✅ Shortlisted</button>` 
+                : `<button class="btn btn-primary btn-sm" style="font-size:0.7rem;" id="shortlist-btn-${realIdx}" onclick="shortlistApplicant(${idx}, ${realIdx})">Shortlist</button>`
+              }
+            </div>
+          </div>
+        </div>
+      `}).join('')}
+    </div>
+  `;
+};
+
+window.shortlistApplicant = function(internshipIdx, applicantIdx) {
+  const internship = appState.demoInternshipListings[internshipIdx];
+  const applicant = internship._cachedApplicants[applicantIdx];
+  applicant.status = 'Shortlisted';
+
+  if (typeof showToastNotification === 'function') {
+    showToastNotification(`${applicant.name} has been shortlisted for an interview.`);
+  } else {
+    alert(`${applicant.name} has been shortlisted for an interview.`);
+  }
+  const btn = document.getElementById(`shortlist-btn-${applicantIdx}`);
+  if (btn) {
+    btn.className = 'btn btn-success btn-sm';
+    btn.innerHTML = '✅ Shortlisted';
+    btn.disabled = true;
+  }
+};
+
+window.viewApplicantResume = function(name, department) {
+  const modal = document.getElementById('applicant-resume-modal');
+  if (modal) {
+    document.getElementById('resume-modal-name').textContent = name;
+    document.getElementById('resume-modal-dept').textContent = department;
+    modal.style.display = 'flex';
+  }
+};
+
+window.closeResumeModal = function() {
+  const modal = document.getElementById('applicant-resume-modal');
+  if (modal) modal.style.display = 'none';
+};
+

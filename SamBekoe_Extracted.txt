@@ -1,0 +1,608 @@
+DESIGN AND IMPLEMENTATION OF AN AI-INTEGRATED LEARNING MANAGEMENT SYSTEM (SMARTLEARN AI) WITH DYNAMIC MULTI-ROLE PROFESSIONAL ECOSYSTEMS FOR TERTIARY INSTITUTIONS IN GHANA
+A Case Study of Blended Learning and AI-Driven Career Advising in Ghanaian Higher Education
+BY
+SAMUEL BEKOE
+INDEX NUMBER: UG-CS-2026-0489
+A PROJECT REPORT SUBMITTED TO THE DEPARTMENT OF COMPUTER SCIENCE,
+UNIVERSITY OF GHANA, LEGON
+IN PARTIAL FULFILLMENT OF THE REQUIREMENTS FOR THE AWARD OF THE
+BACHELOR OF SCIENCE (B.SC.) DEGREE IN COMPUTER SCIENCE
+JULY, 2026
+
+
+# DECLARATION
+
+STUDENT'S DECLARATION
+I, Samuel Bekoe, hereby declare that this project report, titled "*Design and Implementation of an AI-Integrated Learning Management System (SmartLearn AI) with Dynamic Multi-Role Professional Ecosystems for Tertiary Institutions in Ghana*", is my own original work. It has been composed by myself and has not been submitted in any previous application for a degree or professional qualification in this university or elsewhere. All sources of information, references, and literature used herein have been duly acknowledged.
+Signature: _______________________                    Date: _______________________
+SUPERVISOR'S CERTIFICATION
+I hereby certify that this project report was prepared and written by Samuel Bekoe under my direct supervision in the Department of Computer Science, University of Ghana, Legon. I have reviewed the system design, code implementations, and testing procedures, and confirm that this work is ready for evaluation.
+Signature: _______________________                    Date: _______________________
+Supervisor: Dr. Kwame Mensah (Senior Lecturer, Department of Computer Science)
+
+
+# DEDICATION
+
+This work is dedicated to my beloved parents, Mr. and Mrs. Bekoe, whose constant prayers, unwavering financial support, and endless encouragement kept me motivated throughout my university education. It is also dedicated to my siblings and close friends who offered valuable critique, programming sanity checks, and moral support during the long nights of debugging and writing.
+
+
+# ACKNOWLEDGEMENTS
+
+First and foremost, I thank God Almighty for giving me health, strength, and intellectual capacity to complete this undergraduate project work successfully.
+I express my deepest gratitude to my project supervisor, Dr. Kwame Mensah, for his priceless guidance, technical insights, patient feedback, and encouragement. His expert knowledge in Artificial Intelligence and Web Technologies significantly shaped the scope and implementation of this project.
+I also extend my sincere thanks to all lecturers and teaching assistants in the Department of Computer Science, University of Ghana, who provided the academic foundation that enabled me to construct this system. Special thanks to my colleagues in the computer laboratories who participated in the user testing sessions, providing constructive feedback that refined the usability and visual elements of the application.
+
+
+# ABSTRACT
+
+Traditional Learning Management Systems (LMS) used in tertiary institutions across Ghana, such as Sakai and Moodle, frequently operate as passive file repositories. They lack interactive personalization, real-time feedback loops, and automated support tailored for diverse user categories. This study designs and implements SmartLearn AI, an intelligent, next-generation, web-based LMS prototype featuring a dynamic 8-role ecosystem (Student, Researcher, Entrepreneur, Lecturer, Alumni, Industry Partner, Career Advisor, and Administrator). Built on a robust Three-Tier Architecture, SmartLearn AI integrates a high-fidelity Vite-React single-page application frontend, a Node.js and Express backend API, a real-time WebSocket state synchronizer, and a database tier (MongoDB and Supabase) alongside secure AI routing to Groq, Gemini, and OpenAI APIs. The system introduces several dynamic modules: a Multi-Mode AI Advisor (supporting four specialized tutoring personalities), an interactive GPA predictor, an emoji-based study stress tracker, a dynamic career path matcher, an automated citation formatter, and a startup pitch deck validator connected to Ghanaian regulatory frameworks (GSA, FDA, RGDB). Rigorous system and integration testing verified that course note uploads, assignment grading, and real-time forum discussions propagate instantaneously across student and lecturer portals. The evaluation results indicate that the system decreases grading turnaround times and provides highly localized, relevant academic and career advising. This work contributes a novel, scalable design template demonstrating how generative AI and role-adaptive layouts can be unified under a single educational portal to enhance academic productivity and collaboration in higher education.
+
+
+# TABLE OF CONTENTS
+
+DECLARATION...................................................................ii
+DEDICATION...................................................................iii
+ACKNOWLEDGEMENTS..............................................................iv
+ABSTRACT.......................................................................v
+LIST OF TABLES...............................................................vii
+LIST OF FIGURES.............................................................viii
+LIST OF ABBREVIATIONS.........................................................ix
+CHAPTER ONE: INTRODUCTION......................................................1
+1.1 Background to the Study..................................................1
+1.2 Problem Statement........................................................2
+1.3 Aim of the Study.........................................................3
+1.4 Specific Objectives......................................................3
+1.5 Research Questions.......................................................3
+1.6 Significance of the Study................................................4
+1.7 Scope of the Study.......................................................5
+1.8 Limitations of the Study.................................................5
+1.9 Organization of the Study................................................6
+CHAPTER TWO: LITERATURE REVIEW.................................................7
+2.1 Introduction.............................................................7
+2.2 Conceptual Review........................................................7
+2.3 Review of Relevant Technologies..........................................9
+2.4 Theoretical or Conceptual Framework.....................................10
+2.5 Review of Existing Systems or Related Works.............................11
+2.6 Identified Gap..........................................................13
+2.7 Summary of Literature Review............................................13
+CHAPTER THREE: SYSTEM ANALYSIS AND DESIGN.....................................14
+3.1 Introduction............................................................14
+3.2 Analysis of the Existing System.........................................14
+3.3 Problems of the Existing System.........................................15
+3.4 Requirements Analysis...................................................16
+3.4.1 Functional Requirements.............................................16
+3.4.2 Non-Functional Requirements.........................................17
+3.5 Proposed System.........................................................18
+3.6 System Architecture.....................................................18
+3.7 System Design...........................................................19
+3.8 Database Design.........................................................21
+3.9 Input Design............................................................22
+3.10 Output Design..........................................................23
+3.11 Tools and Technologies Used............................................24
+3.12 Development Methodology................................................25
+3.13 Summary of System Design...............................................25
+CHAPTER FOUR: SYSTEM IMPLEMENTATION, TESTING AND DISCUSSION...................26
+4.1 Introduction............................................................26
+4.2 System Implementation...................................................26
+4.3 Description of Major Modules............................................27
+4.4 User Interface Presentation.............................................29
+4.5 System Testing..........................................................30
+4.6 Test Results............................................................31
+4.7 Discussion of Results...................................................32
+4.8 Summary of Chapter......................................................33
+CHAPTER FIVE: SUMMARY, CONCLUSION AND RECOMMENDATIONS.........................34
+5.1 Summary of the Study....................................................34
+5.2 Conclusion..............................................................35
+5.3 Recommendations.........................................................35
+5.4 Contribution of the Study...............................................36
+5.5 Suggestions for Further Work............................................36
+REFERENCES....................................................................37
+APPENDICES....................................................................39
+Appendix A: Database Collection Schemas.....................................39
+Appendix B: Selected Backend Source Code Snippets...........................41
+Appendix C: Environmental Configuration File Layout.........................43
+
+
+# LIST OF TABLES
+
+Table 2.1: Analysis and Workspace Demarcation of the 8-Role Professional Ecosystem.....................8
+Table 2.2: Comparative Summary of Existing Learning Management Platforms and Gaps.................12
+Table 3.1: Functional Requirements Specification Matrix for SmartLearn AI Portal.........................16
+Table 3.2: Hardware and Software Deployment Prerequisites.............................................................24
+Table 4.1: Integration and System Testing Results Suite...................................................................31
+
+
+# LIST OF FIGURES
+
+Figure 1.1: Organizational Flow and Context Model of Tertiary Blended Learning............................1
+Figure 3.1: Unified Three-Tier System Architecture Model for SmartLearn AI Platform.....................18
+Figure 3.2: System-Wide Use Case Diagram Encompassing Students, Lecturers, and Advisors..........20
+Figure 3.3: Entity-Relationship Diagram (ERD) Representing Storage and Data Schemas....................21
+Figure 4.1: Dynamic 2x4 Interactive Grid Selector UI Flow during SignUp.......................................29
+
+
+# LIST OF ABBREVIATIONS
+
+AI		Artificial Intelligence
+AIEd		Artificial Intelligence in Education
+API		Application Programming Interface
+CWA		Cumulative Weighted Average
+DBAC	Department-Based Access Control
+DOM		Document Object Model
+ERD		Entity-Relationship Diagram
+FDA		Food and Drugs Authority (Ghana)
+GPA		Grade Point Average
+GSA		Ghana Standards Authority
+HCI		Human-Computer Interaction
+HTML		HyperText Markup Language
+JWT		JSON Web Token
+LMS		Learning Management System
+MVC		Model-View-Controller
+RBAC		Role-Based Access Control
+REST		Representational State Transfer
+RGDB		Registrar General's Department of Ghana
+SDLC		Software Development Life Cycle
+SPA		Single-Page Application
+SVG		Scalable Vector Graphics
+TAM		Technology Acceptance Model
+UAT		User Acceptance Testing
+UG		University of Ghana
+UI/UX		User Interface / User Experience
+Vite		Next-generation Frontend Tooling Tool
+WASSCE	West African Senior School Certificate Examination
+WS		WebSocket Protocol
+
+
+# CHAPTER ONE: INTRODUCTION
+
+
+
+## 1.1 Background to the Study
+
+Modern higher education systems worldwide have transitioned toward hybrid or fully remote learning delivery models, a trend accelerated by the COVID-19 pandemic. Tertiary institutions in Ghana, such as the University of Ghana (UG), Kwame Nkrumah University of Science and Technology (KNUST), and Ashesi University, have invested heavily in Learning Management Systems (LMS) to support their growing student populations. In particular, the Sakai LMS at the University of Ghana and custom Moodle platforms elsewhere have become essential structures for administering assignments, distributing course slides, and organizing student records.
+However, these traditional LMS installations serve primarily as static file repositories and top-down communication channels. Lecturers upload lecture notes, and students submit documents, but the system itself remains passive. There is an absence of real-time feedback, adaptive tutoring, and customized support for the diverse professional paths students follow. For example, a student pursuing computer science needs different workspace widgets (like programming code explainers) compared to a student focusing on scientific research (requiring academic referencing aids) or a student aiming to build a business (requiring startup plan validators).
+Furthermore, educational administration is heavily strained. The student-to-lecturer ratio in public Ghanaian universities often exceeds fifty-to-one, leading to significant delays in grading assessments and returning constructive feedback. Consequently, students experience heightened academic stress, struggling to predict their GPA/CWA performance or align their coursework interests with realistic career objectives and university cut-off criteria. This study addresses these systemic challenges by designing and implementing SmartLearn AI, an intelligent LMS with a role-based professional ecosystem and integrated Generative AI advisor modules. By shifting the paradigm from static pages to an interactive, AI-driven Single-Page Application (SPA), the proposed platform aims to enhance academic productivity, streamline administrative operations, and foster collaboration between students, faculty, alumni, and industry partners.
+
+
+## 1.2 Problem Statement
+
+Despite the widespread implementation of educational portals, tertiary institutions face notable operational bottlenecks and software deficiencies. The specific problems that motivate the development of SmartLearn AI include:
+- Tedious and Passive Content Management: Current systems require manual organization of academic resources, forcing students to search through disorganized folders for relevant syllabus guides and lecture slides.
+- High Turnaround and Feedback Lag: Lecturers face high administrative loads, causing delays in grading student submissions. Students do not receive timely feedback to correct conceptual errors before examinations.
+- Lack of Personalized Advising: Students lack round-the-clock academic guidance, leaving them to guess appropriate career directions, suitable courses, and university transfer alignments.
+- One-Size-Fits-All Interfaces: Academic portals present identical menus to every user, failing to customize workspaces for research-focused students, budding student-entrepreneurs, alumni mentors, or external corporate partners.
+- Ineffective Discussion Channels: Student forums in existing LMS designs lack real-time synchronization and automatic moderation, leading to low engagement and unanswered questions.
+- Absence of Self-Monitoring Tools: Students lack integrated, dynamic calculators to compute real-time GPA predictions based on estimated grades, hindering proactive academic planning.
+
+
+## 1.3 Aim of the Study
+
+The primary aim of this study is to design and implement a web-based, AI-integrated Learning Management System (SmartLearn AI) featuring a dynamic multi-role professional ecosystem that personalizes academic workspaces, provides automated feedback, and facilitates real-time collaboration within Ghanaian tertiary institutions.
+
+
+## 1.4 Specific Objectives
+
+To achieve the general aim, the project focuses on the following specific and measurable objectives:
+- To analyze the administrative and architectural limitations of currently deployed LMS platforms in Ghanaian universities.
+- To design a robust Three-Tier Software Architecture that decouples user interfaces, application logic, and database schemas.
+- To implement a dynamic role switcher supporting eight distinct professional personas (Student, Lecturer, Researcher, Entrepreneur, Alumni, Industry Partner, Career Advisor, and Administrator).
+- To integrate multi-mode Generative AI services (Groq, Gemini, OpenAI) utilizing secure, controller-level API routing to provide instant study assistance, coding reviews, and pitch validation.
+- To deploy a real-time communication framework utilizing WebSocket connections to enable instant chat, forum notifications, and peer resource sharing.
+- To test and evaluate the system's security (RBAC/DBAC), performance, and user acceptance using detailed test suites.
+
+
+## 1.5 Research Questions
+
+The design and execution of this study are guided by the following research questions:
+- What are the primary functional and operational bottlenecks in Sakai and Moodle installations currently used by Ghanaian universities?
+- How can software roles be structured to dynamically render distinct workspace panels (such as reference formatters or pitch checkers) without increasing client-side storage overhead?
+- How can the LMS securely interface with generative AI models without exposing sensitive API keys in the client-side code?
+- To what extent does a real-time, WebSocket-backed engagement system improve student-lecturer collaboration and grading efficiency?
+
+
+## 1.6 Significance of the Study
+
+This project work provides academic and practical contributions for multiple groups within the educational environment:
+- For Students: Provides instant study help, code debugging, GPA projections, and automatic interest mapping, promoting independent, self-paced learning.
+- For Lecturers: Automates feedback generation, manages course pages with department-level filtering, and coordinates grading workflows, reducing administrative workloads.
+- For Researchers: Offers citation formatters (APA, IEEE, Harvard, MLA) and abstract summarizing utilities to accelerate academic output.
+- For Entrepreneurs: Validates business ideas against Ghanaian regulatory frameworks (FDA, GSA, Registrar General) and supports local collaboration.
+- For Alumni and Industry Partners: Connects graduates with mentorship boards, internships, and sponsored project opportunities.
+- For University Administration: Secures data structures with Role-Based Access Control and tracks administrative changes via system audit logs.
+
+
+## 1.7 Scope of the Study
+
+The operational scope of the project focuses on tertiary institutions in Ghana. The system supports eight specific user roles, demarcated by Student Hub and Lecturer Hub layouts. Functional modules include the Student GPA/CWA Predictor, Multi-Mode AI Assistant, Career Interest Quiz, and real-time WebSocket communication center. Technically, the project encompasses both a full-stack Node.js/Express server connecting to Supabase/MongoDB and a static HTML5/JS frontend prototype configured for local offline demonstrations via local storage emulation.
+The system does not cover external payment gateways (Mobile Money APIs are simulated) or automated exam proctoring algorithms, which are left as suggestions for future extensions.
+
+
+## 1.8 Limitations of the Study
+
+During the design and implementation phases, the following constraints were identified:
+- Internet and API Dependencies: The AI modules require active internet access to query Groq, Gemini, or OpenAI API gateways. Without connection, the system runs in Keyless fallback mode.
+- Resource and Financial Constraints: Direct access to enterprise cloud deployments was limited. Development relied on free tier databases (Supabase and MongoDB Atlas) and localhost environments.
+- Time Restrictions: The academic semester timeline limited testing to sample sizes of students and lecturers, rather than university-wide deployments.
+
+
+## 1.9 Organization of the Study
+
+This project report is organized into five chapters, structured as follows:
+- Chapter One introduces the background, problem statement, objectives, research questions, significance, scope, and constraints.
+- Chapter Two reviews the literature, detailing key concepts, developmental technologies, theoretical frameworks, existing systems, and the identified gaps.
+- Chapter Three covers system analysis and design, describing the current system limitations, functional and non-functional requirements, architectural diagrams, ERD schemas, and database schemas.
+- Chapter Four presents implementation, module descriptions, key user interfaces, testing protocols, test result matrices, and discussions of performance.
+- Chapter Five provides the summary, final conclusions, practical recommendations, and suggestions for future research work.
+
+
+# CHAPTER TWO: LITERATURE REVIEW
+
+
+
+## 2.1 Introduction
+
+This chapter examines existing literature and architectural frameworks relevant to Learning Management Systems, Artificial Intelligence in Education (AIEd), and modern single-page applications. It establishes the theoretical foundations for the three-tier system and evaluates existing platforms to define the design gap SmartLearn AI addresses.
+
+
+## 2.2 Conceptual Review
+
+To establish a technical baseline, the core concepts of the proposed system are defined and analyzed below:
+1. Learning Management Systems (LMS): Software applications designed to administer, document, track, report, and deliver educational courses. While standard LMS platforms focus on file distribution, modern educational research emphasizes the transition to Intelligent Learning Environments (ILE) that actively support student workflows.
+2. Artificial Intelligence in Education (AIEd): Refers to the application of AI tools to support learning. This includes Intelligent Tutoring Systems (ITS) that emulate human tutors, natural language processing for explaining concepts, and automated algorithms for pre-grading assignments.
+3. Single-Page Applications (SPA): A web application design that loads a single document and dynamically updates body elements via JavaScript DOM manipulations. SPAs provide fluid transitions and lower latency, essential for interactive dashboards.
+4. Role-Based and Department-Based Access Control (RBAC/DBAC): Security paradigms that restrict resource access based on a user's role and departmental affiliation. SmartLearn AI enforces DBAC to ensure lecturers only grade students enrolled in their respective departments.
+Table 2.1: Analysis and Workspace Demarcation of the 8-Role Professional Ecosystem
+
+[TABLE DATA]
+Role | Workspace | Captured Metadata | Features
+Student | Student Hub | Department, Year | GPA Predictor, Stress Check, Chat
+Lecturer | Lecturer Hub | Office, Title | Assignment Creator, Grading, Analytics
+Researcher | Student Hub | Research Area | APA/MLA/IEEE Reference Formatter
+Entrepreneur | Student Hub | Startup Sector | AI Pitch Validity, Regulatory Checks
+Alumni | Lecturer Hub | Graduation Year | Mentorship Portal, Jobs Boards
+Industry Partner | Lecturer Hub | Sector, Company | Job Posting, Collaboration Desk
+Career Advisor | Lecturer Hub | Expertise Area | Advising Roster, Career Paths
+Superadmin | Admin Portal | System Privilege | AI Provider Settings, Audit Logs
+[END OF TABLE]
+
+
+
+## 2.3 Review of Relevant Technologies
+
+The technical stack chosen for SmartLearn AI is selected for responsiveness, security, and scalability:
+- Frontend Presentation: React with TypeScript and TailwindCSS generates a type-safe, responsive layout. The application leverages Lucide Icons for micro-animations and aesthetic visual panels.
+- Backend Application Layer: Node.js and Express provide an asynchronous, event-driven architecture, well-suited for handling streaming AI responses and WebSocket connections.
+- Data Tier: Supabase and MongoDB manage data storage. Supabase provides PostgreSQL structures with real-time listeners, while MongoDB handles metadata for the dynamic profiles.
+- AI Integrations: Securing keys via backend routes allows safe communication with Groq (Llama-3), Gemini (Google), and OpenAI APIs, enabling real-time academic advising.
+
+
+## 2.4 Theoretical or Conceptual Framework
+
+The development of SmartLearn AI is guided by the following design paradigms:
+- Technology Acceptance Model (TAM): TAM suggests that perceived usefulness and ease of use determine user adoption. SmartLearn AI addresses this by providing automated features (like reference generators) and a clean glassmorphism UI.
+- Human-Computer Interaction (HCI) Principles: Visual ergonomics, readable typography (Times New Roman/Inter), and a toggleable light/dark mode reduce eye strain and support accessibility during extended study sessions.
+- Software Development Life Cycle (Agile Methodology): An Agile approach was utilized to develop the project. Two-week sprints allowed incremental testing and refinement of the role-based dashboard widgets.
+- Three-Tier Architecture: Strictly separates the presentation, application, and database tiers, ensuring that security updates (such as JWT session validations) do not affect user interfaces.
+
+
+## 2.5 Review of Existing Systems or Related Works
+
+To contextualize the development, three widely used platforms in higher education are reviewed below:
+1. Moodle (2002): An open-source LMS deployed globally and locally. While highly customizable through plugins, Moodle's core design remains visually complex, requiring significant server maintenance and lacking native, context-aware AI advisors.
+2. Canvas (2011): A cloud-based LMS that offers clean layouts and integrations. However, Canvas remains focused on administrative features and does not provide built-in tools tailored for student-researchers or startup validation.
+3. Sakai LMS (University of Ghana): The central portal for the University of Ghana. Sakai serves as a secure file vault for lecture notes but suffers from high latency during peak hours and does not offer real-time GPA planning, career interest matching, or interactive study assistance.
+Table 2.2: Comparative Summary of Existing Learning Management Platforms and Gaps
+
+[TABLE DATA]
+System | Year | Core Objectives | Key Strengths | Identified Weakness
+Moodle | 2002 | Open-source course management | Extensive plugin library | Clunky UI, lacks native AI models
+Canvas | 2011 | Cloud-based content delivery | Modern UI, mobile apps | No tailored research/entrepreneur tools
+Sakai | 2013 | Administrative university portal | Secure course structures | High load latency, passive repository
+SmartLearn AI | 2026 | AI-integrated, multi-role LMS | 8-role dynamic UI, secure AI | Prototype scale, internet dependent
+[END OF TABLE]
+
+
+
+## 2.6 Identified Gap
+
+The literature and existing platforms reveal a clear gap in intelligent personalization within learning management systems. Current educational portals treat all users as generic accounts. There is a lack of integrated tools that assist with specialized academic tasks (such as citation formatting) or career planning (such as matching interest scores with university directories). Additionally, security gaps persist, as client-side AI setups often expose API keys. SmartLearn AI fills these gaps by routing queries securely through Express controllers and dynamically rendering dashboards based on user roles.
+
+
+## 2.7 Summary of Literature Review
+
+This chapter outlined the theoretical foundations of SmartLearn AI, confirming the utility of a Three-Tier Architecture under the TAM model. The review of Canvas, Moodle, and Sakai highlighted the limitations of passive repositories. By implementing role-adaptive workspaces and a secure AI gateway, SmartLearn AI addresses these gaps to provide a more interactive learning environment.
+
+
+# CHAPTER THREE: SYSTEM ANALYSIS AND DESIGN
+
+
+
+## 3.1 Introduction
+
+This chapter describes the system analysis and design for SmartLearn AI. It evaluates existing manual and static workflows, specifies functional and non-functional requirements, and outlines the system architecture, database schemas, and input/output designs.
+
+
+## 3.2 Analysis of the Existing System
+
+At the University of Ghana and other public institutions, the Sakai LMS serves as the primary system for academic administration. The typical workflow operates as follows:
+- Enrollment: Lecturers and students log in using institutional active directory credentials. The portal maps users to standard course structures based on registration records.
+- Content Distribution: Lecturers upload PDF syllabus guides, assignments, and slides. Students log in, locate their course code, and download the materials.
+- Assessment: Students complete their assignments locally and upload them back to the portal. Lecturers open each submission, review it manually, assign a grade, and type feedback in a text area.
+While functional, this workflow remains linear and administrative. It relies heavily on manual grading and lacks interactive features for career guidance, research help, or student engagement.
+
+
+## 3.3 Problems of the Existing System
+
+The manual and static aspects of existing portals result in several operational challenges:
+- High Grading Workload: Lecturers often manage large classes, leading to delays in grading and returning feedback to students.
+- Lack of Interactive Advising: Students struggle to access personalized career or academic advice, relying on busy department advisors.
+- Underutilized Student Forums: Standard discussion threads lack real-time updates, which limits peer collaboration.
+- Static Layouts: Portals present the same interface to all users, failing to support specialized workflows for student-researchers or entrepreneurs.
+- API Key Vulnerabilities: Client-side AI setups run the risk of exposing sensitive API keys in frontend source code.
+
+
+## 3.4 Requirements Analysis
+
+The requirements of the proposed system are categorized into functional and non-functional specifications below:
+
+
+### 3.4.1 Functional Requirements
+
+Functional requirements define the core operations the system must perform for its users:
+Table 3.1: Functional Requirements Specification Matrix for SmartLearn AI Portal
+
+[TABLE DATA]
+Req ID | Module | User Story Description | Priority Level
+FR-01 | Auth / Roles | Users sign up via 2x4 grid and access role-specific dashboards. | Critical
+FR-02 | AI Advisor | Students consult four AI tutoring personalities for study, coding, or career help. | High
+FR-03 | Grade Center | Lecturers grade assignments and provide feedback, which triggers real-time updates. | Critical
+FR-04 | GPA Predictor | Students slide values to calculate project GPAs dynamically in the browser. | Medium
+FR-05 | Forum Boards | Users post threads, reply, and upvote content with real-time syncing. | Medium
+FR-06 | Admin Portal | Advisors/Admins update global AI models and audit database transactions. | High
+[END OF TABLE]
+
+
+
+### 3.4.2 Non-Functional Requirements
+
+Non-functional requirements specify system criteria that qualify functional operations:
+- Security: Enforces strict RBAC and DBAC filters. Session states are authenticated using JSON Web Tokens (JWT) stored in HTTP-only cookies, with API routing isolated on the backend.
+- Usability: The layout uses clean glassmorphism styling, a 4.5:1 color contrast ratio, and responds to dark/light theme toggles.
+- Performance: AI requests are routed through optimized controllers to keep response times for tutoring queries low.
+- Reliability: The system includes automatic error handling. If a database connection fails, the frontend defaults to localStorage parameters to maintain usability.
+- Scalability: The application handles database operations asynchronously, using WebSocket connections to sync real-time chat operations.
+
+
+## 3.5 Proposed System
+
+SmartLearn AI addresses the limitations of traditional LMS platforms by introducing role-adaptive interfaces, automated feedback, and real-time collaboration tools. The platform includes:
+- A Role Switcher that updates the sidebar navigation based on the user's role.
+- A Multi-Mode AI Advisor that provides study support, code explanations, and career matching.
+- An Interactive Career Interest Quiz that suggests fitting careers and Ghanaian universities based on user responses.
+- A GPA Predictor that recalculates grade expectations dynamically in the dashboard.
+- Real-time Collaboration Modules using WebSocket connections for instant chat and notifications.
+
+
+## 3.6 System Architecture
+
+The project uses a standard Three-Tier Architecture to maintain a separation of concerns:
+- Presentation Layer: Built with React, TypeScript, and TailwindCSS for the production app, and HTML5/JS for the prototype, providing responsive user dashboards.
+- Application Logic Layer: Express and Node.js serve as the API gateway. This layer handles session authentication, role-based routing, and secure connections to AI service providers.
+- Data Tier: MongoDB Atlas handles database storage, and Supabase manages structured post-relationship models. The prototype uses localStorage for offline persistence.
+- AI Integration Gateway: Manages API calls to Groq, Gemini, and OpenAI model keys on the backend, preventing key exposure in frontend environments.
+
+
+## 3.7 System Design
+
+The structural layout of the application is designed to support the 8-role ecosystem. Key components include:
+- Use Case Diagram: Models student activities (GPA prediction, AI chat, forum posting) and lecturer actions (course notes upload, grading, answering questions).
+- Data Flow Diagram: Maps how course notes, assignment uploads, and grader evaluations flow between portals, updating the dashboard components.
+- Entity-Relationship Diagram: Represents the database collections (Users, Courses, Assignments, Submissions, Forums) and their relational keys.
+
+
+## 3.8 Database Design
+
+The system uses MongoDB schemas and Supabase Postgres tables. The primary data models include:
+- User Schema: Stores credentials (email, hashed password, role) and dynamic metadata attributes (startup name, research area, or office hours).
+- Course Schema: Stores title, code, instructor references, and department markers.
+- Assignment Schema: Links to course codes, storing points, instructions, and deadlines.
+- Submission Schema: Stores files, upload timestamps, grades, and lecturer feedback.
+- Forum Schema: Stores threads, user IDs, text bodies, upvotes, and comments.
+
+
+## 3.9 Input Design
+
+Inputs are structured to simplify data entry and validate user submissions:
+- SignUp Grid: A 2x4 interactive grid that displays custom text fields based on the selected role.
+- AI Advisor Panel: A text input box with dropdown options to select from four tutor personalities.
+- GPA Calculator Widget: Range sliders that update estimated course grades and recalculate projected GPAs in real-time.
+- Consultation Request Form: Date pickers and text areas for scheduling appointments with lecturers.
+
+
+## 3.10 Output Design
+
+Outputs are designed to display relevant data clearly on the user dashboards:
+- Student Metrics: Displays current GPA, stress meters, and upcoming assignment deadlines.
+- Career Track Diagram: Renders a flowchart matching interests to Ghanaian institutions (UG, KNUST, Ashesi).
+- Lecturer Analytics: Displays grading progress bars and lists student submissions.
+- Notification Alerts: Triggers real-time alerts when assignments are graded or questions answered.
+
+
+## 3.11 Tools and Technologies Used
+
+The development tools and packages are selected to support the three-tier framework:
+- Frontend Tools: React, TailwindCSS, TypeScript, Lucide Icons, and standard web browsers.
+- Backend Tools: Node.js, Express, WebSocket, and JWT authentication libraries.
+- Database Management: MongoDB Atlas, Mongoose, and Supabase client libraries.
+- Development Environment: VS Code, Git, and npm package managers.
+
+
+## 3.12 Development Methodology
+
+The project followed an Agile Scrum Methodology, organizing development into two-week sprints. This iterative approach supported continuous updates, helping to refine the role-based workspaces and AI advisor models based on feedback from testing sessions.
+
+
+## 3.13 Summary of System Design
+
+The system design outlines the structure of SmartLearn AI. It defines the three-tier setup, specifies functional requirements, and models database and interface designs. This configuration supports the implementation and testing steps detailed in the next chapter.
+
+
+# CHAPTER FOUR: SYSTEM IMPLEMENTATION, TESTING AND DISCUSSION
+
+
+
+## 4.1 Introduction
+
+This chapter describes the implementation and testing of SmartLearn AI. It details the development of core modules, presents key interface elements, lists system testing results, and discusses overall performance.
+
+
+## 4.2 System Implementation
+
+The implementation phase translated the system designs into functional code. The React frontend manages UI layouts, using TypeScript to validate data props. The Express backend handles authentication routes, session checks, and database updates. Real-time updates (such as chat messages and grading alerts) are synced via WebSocket connections.
+
+
+## 4.3 Description of Major Modules
+
+SmartLearn AI is divided into the following functional modules:
+- Authentication Module: Manages secure signups, using dynamic forms to collect role-specific metadata and hashing passwords on the backend.
+- Student Hub: Displays GPA calculation widgets, timetables, and stress level sliders.
+- Lecturer Hub: Renders grading forms, student performance matrices, and course note upload utilities.
+- AI Advisor Module: Routes queries to Llama-3, Gemini, or OpenAI models. It supports four personalities: Study Assistant, Career Advisor, Assignment Helper, and Programming Tutor.
+- Researcher Citation Desk: Formats reference entries in APA, Harvard, IEEE, or MLA styles.
+- Entrepreneur Pitch Checker: Evaluates startup ideas against Ghanaian regulatory frameworks.
+- WebSocket Chat Server: Connects users to chat threads and updates forum pages in real-time.
+
+
+## 4.4 User Interface Presentation
+
+The interfaces use modern styling to present data clearly on different devices:
+- Master Landing Page: Features illustrative SVG campus drawings (UG Legon, KNUST, Ashesi, UPSA).
+- SignUp Screen: An interactive grid that displays custom inputs based on the chosen role.
+- Student GPA Widget: A slider interface that recalculates and updates GPAs dynamically in the browser.
+- Grader Dashboard: Displays grading progress bars and lists student submissions.
+- AI Assistant Chat: A chat interface that displays formatted answers and highlighted code blocks.
+
+
+## 4.5 System Testing
+
+Testing verified that the system operates correctly under different conditions:
+- Unit Testing: Checked that role-based routing filters navigation options correctly.
+- Integration Testing: Verified that upload and grading actions propagate between lecturer and student portals instantly.
+- System Testing: Evaluated performance, load handling during forum updates, and API key security.
+- User Acceptance Testing (UAT): Evaluated usability and layout clarity with feedback from a sample of student testers.
+Table 4.1: Integration and System Testing Results Suite
+
+[TABLE DATA]
+Test ID | Component Tested | Expected Result | Actual Result | Status
+TC-01 | Role Switcher Grid | Renders correct forms for the selected user role. | Custom fields displayed correctly. | Pass
+TC-02 | AI Advisor Route | Backend routes queries securely without exposing keys. | AI responses rendered in the frontend. | Pass
+TC-03 | Real-Time Notes Sync | Notes uploaded by lecturers appear in student download lists. | Document list updated instantly. | Pass
+TC-04 | GPA Predictor Slider | Calculates and updates projected GPA in the dashboard. | Projects calculations in the UI. | Pass
+TC-05 | Assignment Grade Loop | Grading submissions updates student dashboard widgets. | Grades updated with feedback. | Pass
+TC-06 | WebSocket Forum Thread | Forum posts sync across active user connections. | Posts propagated in real-time. | Pass
+TC-07 | DBAC Department Filter | Blocks lecturers from access to other department grades. | Access denied message displayed. | Pass
+[END OF TABLE]
+
+
+
+## 4.6 Test Results
+
+The integration testing verified the core logic of the application. The database handled role-based schemas correctly, and WebSocket connections synced message lists during chat trials. API keys remained secure within the Express backend configurations. User testing feedback confirmed that the GPA widget and citation formatter were simple to locate and use.
+
+
+## 4.7 Discussion of Results
+
+The testing outcomes support the design choices made for the platform:
+- Response Latency: The secure backend AI routing handled API requests with minimal delay, returning answers quickly.
+- Usability and Accessibility: User feedback indicated high satisfaction with the glassmorphism layout, confirming that the role switcher simplified menu navigation.
+- Sync Reliability: The simulated database in the prototype provided a reliable local fallback when remote server connections were unavailable.
+- System Limitations: Active internet access remains a requirement for the AI advisor features, meaning offline use is restricted to mock data configurations.
+
+
+## 4.8 Summary of Chapter
+
+This chapter detailed the implementation and testing of SmartLearn AI. Unit and integration testing verified that the roles, AI routing, and WebSocket features operate correctly. The results support the project conclusions and recommendations discussed in the final chapter.
+
+
+# CHAPTER FIVE: SUMMARY, CONCLUSION AND RECOMMENDATIONS
+
+
+
+## 5.1 Summary of the Study
+
+This study designed and implemented SmartLearn AI, an intelligent, next-generation Learning Management System prototype for tertiary institutions in Ghana. Chapter One established the background, noting that traditional platforms like Sakai function primarily as passive file directories. Chapter Two reviewed the relevant literature, conceptualizing AIEd and SPAs, and analyzing existing platforms. Chapter Three detailed the three-tier design, database structures, and requirements. Chapter Four described the system implementation, showing how key modules (such as GPA calculators, citation formatters, and pitch validators) operate, and listing the results of integration testing.
+
+
+## 5.2 Conclusion
+
+The project successfully met its primary objectives. The implementation of a dynamic role switcher and multi-mode AI assistant demonstrates how personalized workspaces can support different student activities. Testing verified that the backend secured credentials and routed queries correctly. The GPA calculator and citation formatter simplified standard tasks, showing that the prototype addresses key limitations of traditional, passive LMS platforms.
+
+
+## 5.3 Recommendations
+
+Based on development and testing outcomes, the following improvements are suggested:
+- Production Database Migration: Migrate the Express backend to a fully configured Postgres or MongoDB database cluster to support larger student populations.
+- Mobile Application Development: Build native iOS and Android versions using React Native, sharing the backend Express API logic.
+- Real-time Push Notifications: Expand WebSocket operations to support push notifications when the web application is closed.
+- Accessibility Improvements: Integrate text-to-speech features to support visually impaired students.
+- Local Network Caching: Implement Service Workers to cache resources, allowing offline access to downloaded lecture materials.
+
+
+## 5.4 Contribution of the Study
+
+This project demonstrates how specialized academic workflows (like citation formatting and pitch checking) can be integrated with standard LMS features. It outlines a method for securing AI routing on a backend server, providing a design template for developer-centric, personalized learning portals in resource-constrained environments.
+
+
+## 5.5 Suggestions for Further Work
+
+Future research can explore the following extensions:
+- Integrating automated plagiarism checkers that evaluate submissions locally against peer databases.
+- Developing offline-first syncing capabilities using SQLite, helping students study without continuous internet access.
+- Adding voice navigation to the advisor interface to simplify chat operations.
+
+
+# REFERENCES
+
+Alavi, M., & Gallupe, R. B. (2003). Using information technology in learning: Case studies in business education. *Academy of Management Learning & Education*, 2(2), 139-153.
+Beck, K., Beedle, M., van Bennekum, A., Cockburn, A., Cunningham, W., Fowler, M., ... & Kern, J. (2001). Manifesto for agile software development. *Agile Alliance*.
+Davis, F. D. (1989). Perceived usefulness, perceived ease of use, and user acceptance of information technology. *MIS Quarterly*, 13(3), 319-340.
+Holmes, W., Bialik, M., & Fadel, C. (2019). *Artificial intelligence in education: Promises and implications for teaching and learning*. Center for Curriculum Redesign.
+Larkin, J. H., & Chabay, R. W. (2015). *Computer-assisted instruction and intelligent tutoring systems: Shared goals and complementary approaches*. Routledge.
+Nielsen, J. (1994). *Usability engineering*. Morgan Kaufmann.
+Pressman, R. S. (2014). *Software engineering: A practitioner's approach*. McGraw-Hill Education.
+S Sakai Project. (2013). *Sakai LMS documentation*. Sakai Foundation. https://www.sakailms.org/
+Venkatesh, V., Morris, M. G., Davis, G. B., & Davis, F. D. (2003). User acceptance of information technology: Toward a unified view. *MIS Quarterly*, 27(3), 425-478.
+Witten, I. H., Frank, E., Hall, M. A., & Pal, C. J. (2016). *Data mining: Practical machine learning tools and techniques*. Morgan Kaufmann.
+
+
+# APPENDICES
+
+
+
+## Appendix A: Database Collection Schemas
+
+The database structures represent user collections, course catalogs, assignment details, and grading records. Below is a sample PostgreSQL definition for user metadata management:
+
+[TABLE DATA]
+CREATE TABLE users (     id VARCHAR(50) PRIMARY KEY DEFAULT 'user_' || ext_id(),     name VARCHAR(100) NOT NULL,     email VARCHAR(100) UNIQUE NOT NULL,     password VARCHAR(255) NOT NULL,     role VARCHAR(30) NOT NULL CHECK (         role IN ('student', 'lecturer', 'admin', 'superadmin', 'researcher',                   'entrepreneur', 'alumni', 'industry_partner', 'career_advisor')     ),     department VARCHAR(100),     office_location VARCHAR(100),     student_id_number VARCHAR(30),     startup_name VARCHAR(100),     research_area VARCHAR(150),     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );  CREATE TABLE student_submissions (     id SERIAL PRIMARY KEY,     assignment_id INT NOT NULL,     student_id VARCHAR(50) REFERENCES users(id),     file_name VARCHAR(255) NOT NULL,     grade NUMERIC(5, 2),     feedback TEXT,     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+[END OF TABLE]
+
+
+
+## Appendix B: Selected Backend Source Code Snippets
+
+The following Express route implementation secures the AI routing, retrieving parameters from backend configurations to connect with service models:
+
+[TABLE DATA]
+// Express route handler for secure AI queries app.post('/api/ai/query', async (req, res) => {     const { prompt, personality } = req.body;     const apiKey = process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY;      if (!apiKey) {         // keyless mode fallback trigger         const fallbackResponse = await queryKeylessAPI(prompt, personality);         return res.json({ response: fallbackResponse, mode: 'keyless' });     }      try {         const systemInstruction = getSystemInstruction(personality);         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {             method: 'POST',             headers: {                 'Authorization': `Bearer ${apiKey}`,                 'Content-Type': 'application/json'             },             body: JSON.stringify({                 model: 'llama3-8b-8192',                 messages: [                     { role: 'system', content: systemInstruction },                     { role: 'user', content: prompt }                 ]             })         });         const data = await response.json();         res.json({ response: data.choices[0].message.content, mode: 'secure' });     } catch (err) {         res.status(500).json({ error: 'AI Query failed', details: err.message });     } });
+[END OF TABLE]
+
+
+
+## Appendix C: Environmental Configuration File Layout
+
+To prevent exposing credential keys, system parameters are configured in a local .env file:
+
+[TABLE DATA]
+# System Server configuration PORT=3000 NODE_ENV=development  # Database settings (Supabase / MongoDB Atlas) SUPABASE_URL=https://your-project.supabase.co SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-key-do-not-share MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/smartlearn?retryWrites=true  # AI Model Keys GROQ_API_KEY=gsk_your_groq_api_key_string_secret GEMINI_API_KEY=AIzaSy_your_gemini_api_key_secret OPENAI_API_KEY=sk-proj-your_openai_api_key_secret  # Session JWT Settings JWT_SECRET=super-secret-jwt-signing-key-string
+[END OF TABLE]

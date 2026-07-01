@@ -25,6 +25,10 @@
       { name: 'Nana Agyei Prempeh', avatar: '👨🏾', graduationYear: 2021, role: 'Mobile Developer', company: 'Zeepay Ghana', location: 'Accra', skills: ['Flutter', 'Kotlin', 'Firebase'], quote: 'The plagiarism checker saved me from an accidental citation error in my final year.' },
       { name: 'Fatima Al-Hassan', avatar: '👩🏾', graduationYear: 2023, role: 'Graduate Trainee', company: 'Standard Chartered', location: 'Accra', skills: ['Finance', 'Excel', 'Banking'], quote: 'The career advisor dashboard matched me with the perfect internship opportunity.' },
       { name: 'Bright Ofori', avatar: '👨🏾‍🎓', graduationYear: 2022, role: 'Electrical Engineer', company: 'Ghana Grid Company', location: 'Accra', skills: ['AutoCAD', 'Circuit Design', 'MATLAB'], quote: 'My final year project on solar microgrids started with a research search here.' },
+      { name: 'Mawuli Segbefia', avatar: '👨🏾‍🔧', graduationYear: 2022, role: 'Mechanical Engineer', company: 'Nestle Ghana', location: 'Tema', skills: ['SolidWorks', 'Thermodynamics', 'Agile'], quote: 'The engineering design tutorials on this platform were absolute gold.' },
+      { name: 'Selasi Doku', avatar: '👩🏾‍⚖️', graduationYear: 2021, role: 'Legal Associate', company: 'Bentsi-Enchill, Letsa & Annan', location: 'Accra', skills: ['Litigation', 'Corporate Law', 'Writing'], quote: 'The interactive mock court cases built my confidence for real litigation.' },
+      { name: 'Baaba Ansah', avatar: '👩🏾‍⚕️', graduationYear: 2023, role: 'Clinical Nurse', company: 'Korle Bu Teaching Hospital', location: 'Accra', skills: ['Patient Care', 'Diagnostics', 'Pediatrics'], quote: 'Clinical diagnostics templates kept my revisions focused and structured.' },
+      { name: 'Ekow Taylor', avatar: '👨🏾', graduationYear: 2023, role: 'Seeking Placement (BSc Computer Science Graduate)', company: '', location: 'Accra', skills: ['Python', 'SQL', 'React Native'], quote: 'Looking to bring my mobile development and backend engineering skills to local tech teams.' }
     ];
 
     /* --- Alumni Events [DEMO CONTENT] --- */

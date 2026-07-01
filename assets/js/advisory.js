@@ -385,7 +385,25 @@ function generateCalendarGrid() {
   container.innerHTML = html; 
 }
 // activeSubmittingAsgId is declared in data.js
-const openSubmitAssignmentModal = (id, title) => { activeSubmittingAsgId = id; D.html('modal-asg-title', title); D.show('assignment-submit-modal', true); }, closeSubmitAssignmentModal = () => D.show('assignment-submit-modal', false);
+const openSubmitAssignmentModal = (id, title) => { 
+  activeSubmittingAsgId = id; 
+  D.html('modal-asg-title', title); 
+  const asg = appState.assignments.find(a => a.id == id);
+  if (asg) {
+    const course = appState.courses.find(c => c.id == asg.courseId || c.code == asg.courseId);
+    if (course) {
+      D.html('modal-asg-course-code', course.code);
+      D.html('modal-asg-course-title', course.title);
+      D.html('modal-asg-instructor', course.instructor);
+    } else {
+      D.html('modal-asg-course-code', asg.courseId);
+      D.html('modal-asg-course-title', 'Unknown Course');
+      D.html('modal-asg-instructor', 'Unknown Lecturer');
+    }
+  }
+  D.show('assignment-submit-modal', true); 
+};
+const closeSubmitAssignmentModal = () => D.show('assignment-submit-modal', false);
 async function simulateSubmitFile() {
   const input = D.get('asg-file-upload'); if (!input || !input.files.length) return showToastNotification('Select a file.'); const file = input.files[0]; if (!/\.(pdf|docx|ppt|zip|txt)$/i.test(file.name)) return showToastNotification('Allowed formats: PDF, DOCX, PPT, ZIP, TXT.'); const token = localStorage.getItem('proto_token');
   if (token && token.startsWith('simulated_token_')) {
@@ -417,24 +435,198 @@ async function simulateSubmitFile() {
   try {
     const res = await fetch(`${API_BASE}/api/assignments/submit`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData }); const data = await res.json(); if (res.ok) { closeSubmitAssignmentModal(); showToastNotification(`Submitted! Plagiarism: ${data.plagiarismScore}%`); renderStateData(); }
   } catch (e) {} }
+function handleLecNoteFileSelect(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  _previewLecNoteFile(file);
+}
+
+function handleLecNoteFileDrop(event) {
+  const file = event.dataTransfer.files && event.dataTransfer.files[0];
+  if (!file) return;
+  // Also assign to the real input so simulateLecturerUploadNote can read it
+  const input = document.getElementById('lec-note-file-input');
+  if (input) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+  }
+  _previewLecNoteFile(file);
+}
+
+function _previewLecNoteFile(file) {
+  const display = document.getElementById('lec-note-file-display');
+  if (!display) return;
+  if (file.size > 15 * 1024 * 1024) {
+    showToastNotification('❌ File too large. Max 15 MB allowed.');
+    return;
+  }
+  const sizeStr = file.size > 1024 * 1024
+    ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+    : (file.size / 1024).toFixed(0) + ' KB';
+  display.innerHTML = `
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center;">
+      <div style="font-size:2rem;">📄</div>
+      <div style="text-align:left;">
+        <div style="font-weight:700; font-size:0.9rem; color:var(--primary);">${file.name}</div>
+        <div style="font-size:0.72rem; color:var(--text-muted);">${sizeStr} · Ready to publish</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" style="font-size:0.7rem; padding:4px 10px;"
+        onclick="document.getElementById('lec-note-file-input').value=''; document.getElementById('lec-note-file-display').innerHTML='<div style=\\'font-size:2rem;margin-bottom:8px;\\'>📄</div><strong>Click to browse or drag &amp; drop</strong><p style=\\'font-size:0.75rem;color:var(--text-light);margin-top:4px;\\'>Max 15 MB · PDF, DOCX, PPT, ZIP</p>';">✕ Remove</button>
+    </div>`;
+}
+
 async function simulateLecturerUploadNote() {
-  if (appState.role !== 'lecturer' && appState.role !== 'admin') return showToastNotification('Lecturers only.'); const title = D.val('lecturer-note-title'), courseId = D.val('lecturer-note-course'); if (!title) return showToastNotification('Enter a title.'); const token = localStorage.getItem('proto_token');
+  if (appState.role !== 'lecturer' && appState.role !== 'admin') return showToastNotification('Lecturers only.');
+  const titleInput = D.val('lecturer-note-title');
+  const courseId = D.val('lecturer-note-course');
+  const fileInput = document.getElementById('lec-note-file-input');
+  const file = fileInput && fileInput.files && fileInput.files[0];
+
+  if (!titleInput) return showToastNotification('Enter a title for the lecture note.');
+  if (!file) return showToastNotification('📁 Please select or drag a file to upload.');
+  if (file.size > 15 * 1024 * 1024) return showToastNotification('❌ File too large. Max 15 MB.');
+
+  const sizeStr = file.size > 1024 * 1024
+    ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+    : (file.size / 1024).toFixed(0) + ' KB';
+  const uploadedTitle = `${titleInput} (${file.name})`;
+  const token = localStorage.getItem('proto_token');
+
   if (token && token.startsWith('simulated_token_')) {
-    appState.notes.push({ id: Date.now(), courseId, title: `${title}.pdf`, date: new Date().toISOString().split('T')[0], size: '1.2 MB' }); appState.courses.find(c => c.id == courseId).notesCount++;
-    appState.notifications.unshift({ id: Date.now(), text: `New notes: ${title}`, date: 'Just now', unread: true }); D.val('lecturer-note-title', ''); saveOfflineState(); showToastNotification('Uploaded successfully (Offline)!'); renderStateData(); return; }
-  const noteBlob = new Blob([`Content: ${title}`], { type: 'application/pdf' }), formData = new FormData(); formData.append('courseId', courseId); formData.append('title', title); formData.append('note', noteBlob, `${title}.pdf`);
+    // Store in appState with real file metadata
+    appState.notes.push({
+      id: Date.now(),
+      courseId,
+      title: uploadedTitle,
+      date: new Date().toISOString().split('T')[0],
+      size: sizeStr,
+      fileName: file.name,
+      objectUrl: URL.createObjectURL(file)
+    });
+    const course = appState.courses.find(c => c.id == courseId);
+    if (course) course.notesCount++;
+    appState.notifications.unshift({ id: Date.now(), text: `New notes uploaded: ${uploadedTitle}`, date: 'Just now', unread: true });
+    D.val('lecturer-note-title', '');
+    // Reset file input & display
+    fileInput.value = '';
+    const display = document.getElementById('lec-note-file-display');
+    if (display) display.innerHTML = '<div style="font-size:2rem;margin-bottom:8px;">📄</div><strong>Click to browse or drag &amp; drop your file here</strong><p style="font-size:0.75rem;color:var(--text-light);margin-top:4px;">Max file size: 15 MB · Supported: PDF, DOCX, PPT, ZIP</p>';
+    saveOfflineState();
+    showToastNotification(`✅ "${file.name}" published to ${courseId} students!`);
+    renderStateData();
+    return;
+  }
+  // Online path: real FormData upload
+  const formData = new FormData();
+  formData.append('courseId', courseId);
+  formData.append('title', titleInput);
+  formData.append('note', file, file.name);
   try {
     const res = await fetch(`${API_BASE}/api/courses/upload-note`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-    if (res.ok) { D.val('lecturer-note-title', ''); showToastNotification('Uploaded notes successfully!'); renderStateData(); }
-  } catch (e) {} }
+    if (res.ok) {
+      D.val('lecturer-note-title', '');
+      fileInput.value = '';
+      showToastNotification(`✅ "${file.name}" uploaded successfully!`);
+      renderStateData();
+    }
+  } catch (e) { showToastNotification('Upload failed. Check your connection.'); }
+}
+
+function handleLecAsgFileSelect(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  _previewLecAsgFile(file);
+}
+
+function handleLecAsgFileDrop(event) {
+  const file = event.dataTransfer.files && event.dataTransfer.files[0];
+  if (!file) return;
+  const input = document.getElementById('lecturer-asg-file-input');
+  if (input) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+  }
+  _previewLecAsgFile(file);
+}
+
+function _previewLecAsgFile(file) {
+  const display = document.getElementById('lec-asg-file-display');
+  if (!display) return;
+  if (file.size > 15 * 1024 * 1024) {
+    showToastNotification('❌ File too large. Max 15 MB allowed.');
+    return;
+  }
+  const sizeStr = file.size > 1024 * 1024
+    ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+    : (file.size / 1024).toFixed(0) + ' KB';
+  display.innerHTML = `
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center;">
+      <div style="font-size:2rem;">📄</div>
+      <div style="text-align:left;">
+        <strong style="display:block; color:var(--primary);">${file.name}</strong>
+        <span style="font-size:0.8rem; color:var(--text-light);">${sizeStr}</span>
+      </div>
+    </div>
+  `;
+}
+
 async function simulateLecturerCreateAsg() {
-  if (appState.role !== 'lecturer' && appState.role !== 'admin') return showToastNotification('Lecturers only.'); const title = D.val('lecturer-asg-title'), courseId = D.val('lecturer-asg-course'), deadline = D.val('lecturer-asg-deadline') || '2026-06-10'; if (!title) return showToastNotification('Enter a title.'); const token = localStorage.getItem('proto_token');
+  if (appState.role !== 'lecturer' && appState.role !== 'admin') return showToastNotification('Lecturers only.'); 
+  const title = D.val('lecturer-asg-title'), courseId = D.val('lecturer-asg-course'), deadline = D.val('lecturer-asg-deadline') || '2026-06-10'; 
+  if (!title) return showToastNotification('Enter a title.'); 
+
+  const fileInput = document.getElementById('lecturer-asg-file-input');
+  const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+
+  const token = localStorage.getItem('proto_token');
   if (token && token.startsWith('simulated_token_')) {
-    appState.assignments.push({ id: Date.now(), courseId, title, deadline, totalPoints: 100, status: 'Pending' }); appState.courses.find(c => c.id == courseId).assignmentsCount++; D.val('lecturer-asg-title', ''); saveOfflineState(); showToastNotification('Assignment created (Offline)!'); renderStateData(); return; }
+    appState.assignments.push({ 
+      id: Date.now(), courseId, title, deadline, totalPoints: 100, status: 'Pending',
+      document: file ? file.name : null
+    }); 
+    appState.courses.find(c => c.id == courseId).assignmentsCount++; 
+    
+    D.val('lecturer-asg-title', ''); 
+    if (fileInput) fileInput.value = '';
+    const display = document.getElementById('lec-asg-file-display');
+    if (display) display.innerHTML = `<div style="font-size: 2rem; margin-bottom: 8px;">📄</div><strong>Click to browse or drag &amp; drop your file here</strong><p style="font-size: 0.75rem; color: var(--text-light); margin-top: 4px;">Max file size: 15 MB &nbsp;·&nbsp; Supported: PDF, DOCX, ZIP</p>`;
+
+    saveOfflineState(); 
+    showToastNotification('Assignment created (Offline)!'); 
+    renderStateData(); 
+    return; 
+  }
+  
   try {
-    const res = await fetch(`${API_BASE}/api/assignments/create`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ title, courseId, deadline, totalPoints: 100, description: 'Solve assignment guidelines.' }) });
-    if (res.ok) { D.val('lecturer-asg-title', ''); showToastNotification('Assignment published!'); renderStateData(); }
-  } catch (e) {} }
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('courseId', courseId);
+    formData.append('deadline', deadline);
+    formData.append('totalPoints', 100);
+    formData.append('description', 'Solve assignment guidelines.');
+    if (file) formData.append('document', file);
+
+    const res = await fetch(`${API_BASE}/api/assignments/create`, { 
+      method: 'POST', 
+      headers: { 'Authorization': `Bearer ${token}` }, 
+      body: formData 
+    });
+    
+    if (res.ok) { 
+      D.val('lecturer-asg-title', ''); 
+      if (fileInput) fileInput.value = '';
+      const display = document.getElementById('lec-asg-file-display');
+      if (display) display.innerHTML = `<div style="font-size: 2rem; margin-bottom: 8px;">📄</div><strong>Click to browse or drag &amp; drop your file here</strong><p style="font-size: 0.75rem; color: var(--text-light); margin-top: 4px;">Max file size: 15 MB &nbsp;·&nbsp; Supported: PDF, DOCX, ZIP</p>`;
+      
+      showToastNotification('Assignment published!'); 
+      renderStateData(); 
+    }
+  } catch (e) {
+    showToastNotification('Failed to create assignment.');
+  } 
+}
 async function calculateProgramSuitability(program, score) {
   const box = D.get('ai-suitability-display-box'); if (!box) return; box.innerHTML = '<div class="glass" style="padding: 24px; text-align: center;">Calculating compatibility...</div>';
   try {
@@ -536,7 +728,8 @@ function renderDedicatedAssignmentsDeck() {
               ${statusBadgeHTML}
             </div>
             <h4 style="margin-top:8px; margin-bottom:4px;">${asg.title}</h4>
-            <span style="font-size:0.8rem; color:var(--text-light)">Deadline: ${asg.deadline}</span>
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 4px;">Course: ${course ? course.title : 'Unknown'} | Lecturer: <span style="font-weight:600; color:var(--primary);">${course ? course.instructor : 'Unknown Lecturer'}</span></div>
+            <div style="font-size:0.8rem; color:var(--text-light)">Deadline: ${asg.deadline}</div>
             ${submissionInfoHTML}
           </div>
           ${actionHTML}

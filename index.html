@@ -183,6 +183,38 @@
     [data-theme="dark"] .gpu-option:hover {
       background: rgba(124, 58, 237, 0.18);
     }
+
+    /* ── Quick Analytics Insights Hover Effects ────────────────────── */
+    .hover-opacity-analytics {
+      padding: 6px 12px;
+      margin: 0 -12px;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hover-opacity-analytics:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateX(4px);
+    }
+    [data-theme="light"] .hover-opacity-analytics:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    /* ── Interactive Metric Cards Hover Effects ────────────────────── */
+    .metrics-row .metric-card.glass {
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .metrics-row .metric-card.glass:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    [data-theme="light"] .metrics-row .metric-card.glass:hover {
+      background: rgba(0, 0, 0, 0.04);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      border-color: rgba(0, 0, 0, 0.1);
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -471,6 +503,9 @@
         <div class="sidebar-nav-item student-only" data-tab="student-contacts"
           onclick="switchTab('student', 'student-contacts')"
           title="Directly message course instructors or book live consultations">📞 Contact Faculty</div>
+        <div class="sidebar-nav-item student-only" data-tab="student-engagement"
+          onclick="switchTab('student', 'student-engagement')"
+          title="Connect with lecturers, follow profiles, book office hours, join communities">🤝 Lecturer Connection</div>
         <div class="sidebar-nav-item student-only" data-tab="student-faculty-chat"
           onclick="switchTab('student', 'student-faculty-chat')"
           title="Chat directly with active professors and teaching assistants">💬 Faculty Chat Forum</div>
@@ -551,31 +586,13 @@
         <div class="sidebar-nav-item admin-only" data-tab="admin-settings"
           onclick="switchTab('admin', 'admin-settings')" title="Global Platform Settings" style="display: none;">⚙️
           System Settings</div>
-        <!-- Admin Hub Viewer: access all role-specific platforms -->
-        <div class="sidebar-nav-item admin-only"
-          style="display:none; font-size:0.7rem; font-weight:700; color:var(--text-muted); padding:8px 16px 4px; text-transform:uppercase; letter-spacing:0.06em; pointer-events:none;">
-          ─ Platform Viewer</div>
-        <div class="sidebar-nav-item admin-only" data-tab="admin-view-student"
-          onclick="switchTabExtended('admin','student-dashboard')" title="View Student Hub as Administrator"
-          style="display: none;">🎓 Student Hub View</div>
-        <div class="sidebar-nav-item admin-only" data-tab="admin-view-lecturer"
-          onclick="switchTabExtended('admin','lecturer-dashboard')" title="View Lecturer Hub as Administrator"
-          style="display: none;">👩‍🏫 Lecturer Hub View</div>
-        <div class="sidebar-nav-item admin-only" data-tab="admin-view-researcher"
-          onclick="switchTabExtended('admin','research-hub-expanded')" title="View Researcher Hub as Administrator"
-          style="display: none;">🔬 Researcher Hub View</div>
-        <div class="sidebar-nav-item admin-only" data-tab="admin-view-partner"
-          onclick="switchTabExtended('admin','partner-hub')" title="View Business Partner Hub as Administrator"
-          style="display: none;">🏢 Business Partner View</div>
-        <div class="sidebar-nav-item admin-only" data-tab="admin-view-alumni"
-          onclick="switchTabExtended('admin','alumni-console')" title="View Alumni Console as Administrator"
-          style="display: none;">🎓 Alumni Console View</div>
-        <div class="sidebar-nav-item admin-only" data-tab="admin-view-advisor"
-          onclick="switchTabExtended('admin','advisor-dashboard')"
-          title="View Career Advisor Dashboard as Administrator" style="display: none;">🧭 Career Advisor View</div>
+
         <div class="sidebar-nav-item active lecturer-only" data-tab="lecturer-dashboard"
           onclick="switchTab('lecturer', 'lecturer-dashboard')"
           title="Monitor student performance analytics and enrollment roster lists">📊 Lecturer Dashboard</div>
+        <div class="sidebar-nav-item lecturer-only" data-tab="lecturer-engagement"
+          onclick="switchTab('lecturer', 'lecturer-engagement')"
+          title="Create communities, reply to student Q&A, and manage appointments">👥 Student Connection</div>
         <div class="sidebar-nav-item lecturer-only" data-tab="lecturer-materials"
           onclick="switchTab('lecturer', 'lecturer-materials')" title="Upload new course note PDF slides for students">
           📤 Upload Lecture Notes</div>
@@ -606,10 +623,11 @@
         <div class="portal-nav-actions">
           <div id="portal-role-switcher-container" style="display:inline-block; margin-right:12px;"></div>
           <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
-          <button class="action-icon-btn" onclick="alert('Viewing Alerts: New note uploaded by Dr. Kwame Mensah!')"
+          <button class="action-icon-btn" onclick="document.getElementById('dynamic-notifications-modal').style.display='flex'"
             title="View latest alerts and updates"> 🔔 <span class="notification-dot"></span> </button>
         </div>
       </div>
+      <div id="dashboard-announcements-banner" style="margin-bottom: 20px; display: none;"></div>
       <section id="student-dashboard" class="portal-view student-view active">
         <h2>Welcome back, <span id="dashboard-welcome-name" class="gradient-text">Kofi Mensah</span>!</h2>
         <p style="color:var(--text-muted); margin-bottom: 24px;">Track your grades, GPA projections, and customized AI
@@ -750,18 +768,9 @@
             </div>
             <div class="widget glass">
               <h3>💼 Internships & Job Opportunities</h3>
-              <ul
+              <ul id="student-internships-list"
                 style="list-style:none; display:flex; flex-direction:column; gap:12px; margin-top:12px; font-size:0.9rem;">
-                <li style="padding-bottom:10px; border-bottom:1px solid var(--border);">
-                  <div style="display:flex; justify-content:space-between;"><strong>Software Eng Intern</strong> <span
-                      class="badge badge-success">Intern</span></div>
-                  <span style="font-size:0.75rem; color:var(--text-muted)">Hubtel Ghana - Accra</span>
-                </li>
-                <li>
-                  <div style="display:flex; justify-content:space-between;"><strong>Graduate National Service</strong>
-                    <span class="badge badge-primary">NSP</span></div> <span
-                    style="font-size:0.75rem; color:var(--text-muted)">Ecobank Corporate HQ - Accra</span>
-                </li>
+                <!-- Dynamically populated from appState.adminJobListings -->
               </ul>
             </div>
           </div>
@@ -776,13 +785,15 @@
         <div id="student-notes-list"> </div>
       </section>
       <section id="student-ai-assistant" class="portal-view student-view">
-        <h2>SmartLearn <span class="gradient-text">AI Academic Tutor</span></h2>
-        <p style="color:var(--text-muted); margin-bottom: 20px;">Ask academic queries, translate files, evaluate buggy
+        <h2 id="ai-section-title">SmartLearn <span class="gradient-text">AI Academic Tutor</span></h2>
+        <p id="ai-section-subtitle" style="color:var(--text-muted); margin-bottom: 20px;">Ask academic queries, translate files, evaluate buggy
           code, or run plagiarism checks.</p>
         <div class="ai-chat-layout glass">
           <div class="ai-sidebar" style="border-right:1px solid var(--border);">
             <h4 style="font-size:0.9rem; color:var(--text-muted); margin-bottom:10px;">Select AI Assistant Mode</h4>
-            <button class="ai-mode-btn active" data-mode="study" onclick="setAiMode('study')">🤖 Study
+            <button class="ai-mode-btn active" id="ai-btn-admission" data-mode="admission" onclick="setAiMode('admission')" style="display:none;">🎓 Admissions Advisor</button>
+            <button class="ai-mode-btn" id="ai-btn-scholarship" data-mode="admission" onclick="setAiMode('admission')" style="display:none;">🏆 Scholarships</button>
+            <button class="ai-mode-btn active" id="ai-btn-study" data-mode="study" onclick="setAiMode('study')">🤖 Study
               Assistant</button>
             <button class="ai-mode-btn" data-mode="career" onclick="setAiMode('career')">💼 Career Advisor</button>
             <button class="ai-mode-btn" data-mode="helper" onclick="setAiMode('helper')">✍️ Assignment Helper</button>
@@ -1607,16 +1618,199 @@
           </div>
         </div>
       </section>
+      <!-- STUDENT-LECTURER ENGAGEMENT SYSTEM (STUDENT PORTAL) -->
+      <section id="student-engagement" class="portal-view student-view">
+        <h2>🤝 Lecturer <span class="gradient-text">Connection</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Build relationships, view lecturer office hours and research, request consultation slots, ask academic questions, and join community study groups.</p>
+        
+        <div class="dashboard-grid">
+          <!-- Main Content (Left: 2 columns) -->
+          <div class="widget glass" style="grid-column: span 2;">
+            <!-- Tabs Header -->
+            <div class="tabs-header" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+              <button class="btn btn-primary btn-sm engagement-tab-btn active" onclick="switchEngagementTab('student', 'directory')" id="tab-btn-std-directory" style="margin-bottom:5px;">📁 Faculty Directory</button>
+              <button class="btn btn-secondary btn-sm engagement-tab-btn" onclick="switchEngagementTab('student', 'appointments')" id="tab-btn-std-appointments" style="margin-bottom:5px;">📅 Consultations & Q&A</button>
+              <button class="btn btn-secondary btn-sm engagement-tab-btn" onclick="switchEngagementTab('student', 'communities')" id="tab-btn-std-communities" style="margin-bottom:5px;">👥 Academic Communities</button>
+              <button class="btn btn-secondary btn-sm engagement-tab-btn" onclick="switchEngagementTab('student', 'insights')" id="tab-btn-std-insights" style="margin-bottom:5px;">💡 Insights & Endorsements</button>
+            </div>
+            
+            <!-- Tab Content 1: Directory -->
+            <div id="engagement-std-directory" class="engagement-tab-pane">
+              <div style="margin-bottom:16px;">
+                <input type="text" id="engagement-std-search-lecturer" class="form-control" placeholder="🔍 Search lecturers by name, research interest, or office hours..." oninput="renderLecturerDirectory()">
+              </div>
+              <div class="lecturer-card-grid" id="lecturer-directory-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:16px;">
+                <!-- Dynamically loaded cards -->
+              </div>
+            </div>
+            
+            <!-- Tab Content 2: Appointments & Q&A -->
+            <div id="engagement-std-appointments" class="engagement-tab-pane" style="display:none;">
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <!-- Book Consultation & Ask Q&A -->
+                <div>
+                  <h4 style="margin-bottom:12px; color:var(--primary);">📅 Request Academic Consultation</h4>
+                  <form id="engagement-std-appointment-form" onsubmit="handleRequestAppointment(event)">
+                    <div class="form-group">
+                      <label>Select Lecturer</label>
+                      <select id="appt-lecturer-select" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                      <label>Scheduled Date & Time</label>
+                      <input type="datetime-local" id="appt-datetime" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Topic / Subject</label>
+                      <input type="text" id="appt-topic" class="form-control" placeholder="E.g., Assistance with dynamic programming" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Additional Notes</label>
+                      <textarea id="appt-notes" class="form-control" rows="2" placeholder="Detail your specific questions..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" style="margin-top:8px; width:100%;">Request Session 🚀</button>
+                  </form>
+                  
+                  <h4 style="margin-top:24px; margin-bottom:12px; color:var(--secondary);">💬 Direct Q&A Question</h4>
+                  <form id="engagement-std-question-form" onsubmit="handleAskQuestion(event)">
+                    <div class="form-group">
+                      <label>Ask Lecturer</label>
+                      <select id="qa-lecturer-select" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                      <label>Your Question</label>
+                      <textarea id="qa-question-text" class="form-control" rows="2" placeholder="Write your question..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" style="margin-top:8px; width:100%;">Send Question 💬</button>
+                  </form>
+                </div>
+                
+                <!-- History Logs -->
+                <div>
+                  <h4 style="margin-bottom:12px;">📅 Consultation Schedule</h4>
+                  <div id="engagement-std-appointments-list" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; margin-bottom:20px; padding-right:5px;">
+                    <!-- Dynamically populated list -->
+                  </div>
+                  
+                  <h4 style="margin-bottom:12px;">💬 Academic Q&A Log</h4>
+                  <div id="engagement-std-qa-list" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:5px;">
+                    <!-- Dynamically populated list -->
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Tab Content 3: Academic Communities -->
+            <div id="engagement-std-communities" class="engagement-tab-pane" style="display:none;">
+              <div style="display:grid; grid-template-columns: 200px 1fr; gap:20px;">
+                <!-- Communities List -->
+                <div style="border-right: 1px solid var(--border); padding-right:15px;">
+                  <h4 style="margin-bottom:12px; font-weight:700;">🏫 Study Boards</h4>
+                  <div id="engagement-std-communities-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Loaded dynamically -->
+                  </div>
+                </div>
+                
+                <!-- Community Feed -->
+                <div>
+                  <div id="engagement-std-active-community-header" style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                    <h3>Select a Community</h3>
+                    <p style="color:var(--text-muted); font-size:0.85rem;">Join a subject board to participate in discussions.</p>
+                  </div>
+                  
+                  <div id="engagement-std-community-join-banner" style="display:none; text-align:center; padding:30px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px dashed var(--border); margin-bottom:20px;">
+                    <p style="margin-bottom:15px; color:var(--text-muted);">You have not joined this community yet.</p>
+                    <button class="btn btn-primary btn-sm" onclick="handleJoinCommunity()">Join Community Study Group 🤝</button>
+                  </div>
+                  
+                  <div id="engagement-std-community-feed-container" style="display:none;">
+                    <!-- New Post Form -->
+                    <form id="engagement-std-post-form" onsubmit="handleCreatePost(event)" style="margin-bottom:20px; padding:12px; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid var(--border);">
+                      <div class="form-group" style="margin-bottom:8px;">
+                        <input type="text" id="post-title" class="form-control form-control-sm" placeholder="Post title / Topic..." required>
+                      </div>
+                      <div class="form-group" style="margin-bottom:8px;">
+                        <textarea id="post-content" class="form-control form-control-sm" rows="2" placeholder="Post a new discussion thread..." required></textarea>
+                      </div>
+                      <button type="submit" class="btn btn-primary btn-sm">Post Thread 📢</button>
+                    </form>
+                    
+                    <!-- Posts Feed -->
+                    <div id="engagement-std-posts-list" style="max-height:400px; overflow-y:auto; display:flex; flex-direction:column; gap:16px; padding-right:5px;">
+                      <!-- Dynamically loaded posts -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Tab Content 4: Insights & Endorsements -->
+            <div id="engagement-std-insights" class="engagement-tab-pane" style="display:none;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                <!-- Academic Insights Feed -->
+                <div>
+                  <h4 style="margin-bottom:12px; color:var(--primary);">💡 Faculty Insights & Resources</h4>
+                  <div id="engagement-std-insights-feed" style="max-height:450px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; padding-right:5px;">
+                    <!-- Dynamically populated list -->
+                  </div>
+                </div>
+                <!-- Project Endorsements list -->
+                <div>
+                  <h4 style="margin-bottom:12px; color:var(--secondary);">🏆 Startup & Project Endorsements</h4>
+                  <div id="engagement-std-endorsements-list" style="max-height:450px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; padding-right:5px;">
+                    <!-- Dynamically populated list -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Sticky Side Panel (Right: 1 column) -->
+          <div class="widget glass" style="grid-column: span 1; height: fit-content;">
+            <h3>📊 Academic Relationship Index</h3>
+            <div class="analytics-stat" style="margin:20px 0; text-align:center;">
+              <div style="font-size:2.5rem; font-weight:700; color:var(--primary);" id="engagement-std-score">0</div>
+              <div style="color:var(--text-muted); font-size:0.8rem; margin-top:4px;">My Engagement Index</div>
+              <!-- Progress Bar -->
+              <div style="background:rgba(255,255,255,0.05); border-radius:10px; height:8px; width:100%; margin-top:12px; overflow:hidden;">
+                <div id="engagement-std-score-progress" style="background:linear-gradient(90deg, var(--primary), var(--secondary)); height:100%; width:0%;"></div>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; text-align:center; font-size:0.8rem; border-top:1px solid var(--border); padding-top:15px;">
+              <div style="background:rgba(0,0,0,0.1); padding:8px; border-radius:6px;">
+                <strong style="font-size:1.1rem; color:#4ade80;" id="engagement-stat-posts">0</strong>
+                <div style="color:var(--text-muted); font-size:0.7rem;">Threads</div>
+              </div>
+              <div style="background:rgba(0,0,0,0.1); padding:8px; border-radius:6px;">
+                <strong style="font-size:1.1rem; color:#60a5fa;" id="engagement-stat-comments">0</strong>
+                <div style="color:var(--text-muted); font-size:0.7rem;">Comments</div>
+              </div>
+              <div style="background:rgba(0,0,0,0.1); padding:8px; border-radius:6px;">
+                <strong style="font-size:1.1rem; color:#f472b6;" id="engagement-stat-likes">0</strong>
+                <div style="color:var(--text-muted); font-size:0.7rem;">Likes</div>
+              </div>
+              <div style="background:rgba(0,0,0,0.1); padding:8px; border-radius:6px;">
+                <strong style="font-size:1.1rem; color:#fbbf24;" id="engagement-stat-appointments">0</strong>
+                <div style="color:var(--text-muted); font-size:0.7rem;">Sessions</div>
+              </div>
+            </div>
+            
+            <h3 style="margin-top:30px; margin-bottom:12px; border-top:1px solid var(--border); padding-top:20px;">🔔 Real-Time Notifications</h3>
+            <div id="engagement-std-notifications-list" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:5px;">
+              <!-- Notifications dynamically loaded -->
+            </div>
+          </div>
+        </div>
+      </section>
       <section id="lecturer-dashboard" class="portal-view lecturer-view">
         <h2>Welcome back, <span id="lecturer-welcome-name" class="gradient-text">Faculty Member</span>!</h2>
         <p style="color:var(--text-muted); margin-bottom: 24px;">Publish lesson modules, grade submitted assets, and
           check student progress.</p>
         <div class="metrics-row">
-          <div class="metric-card glass">
+          <div class="metric-card glass" id="lec-metric-roster">
             <div class="metric-icon-box" style="background: rgba(37,99,235,0.1); color: var(--primary);">👥</div>
             <div class="metric-info">
               <p>Active Roster</p>
-              <h3>142 Students</h3>
+              <h3 id="lec-roster-count">—</h3>
             </div>
           </div>
           <div class="metric-card glass">
@@ -1626,18 +1820,18 @@
               <h3 id="class-average-gpa-display">3.24</h3>
             </div>
           </div>
-          <div class="metric-card glass">
+          <div class="metric-card glass" id="lec-metric-notes">
             <div class="metric-icon-box" style="background: rgba(245,158,11,0.1); color: var(--warning);">📤</div>
             <div class="metric-info">
               <p>Notes Published</p>
-              <h3>14 Modules</h3>
+              <h3 id="lec-notes-count">—</h3>
             </div>
           </div>
-          <div class="metric-card glass">
+          <div class="metric-card glass" id="lec-metric-grading">
             <div class="metric-icon-box" style="background: rgba(239,68,68,0.1); color: var(--danger);">💯</div>
             <div class="metric-info">
               <p>Grading Queue</p>
-              <h3 id="lecturer-grading-queue-count">1 Submission</h3>
+              <h3 id="lecturer-grading-queue-count">—</h3>
             </div>
           </div>
         </div>
@@ -1676,15 +1870,21 @@
               <option value="MATH102">MATH102 - Calculus & Algebra</option>
               <option value="ENG201">ENG201 - Software Engineering</option>
             </select></div>
-          <div
-            style="border: 2px dashed var(--border); padding: 32px; border-radius: var(--radius-sm); text-align: center; margin: 20px 0; background: var(--bg-base);">
-            <div style="font-size: 2rem; margin-bottom: 8px;">📄</div>
-            <strong>Drag your study PDF / ZIP files here</strong>
-            <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 4px;">Max file size: 15 MB. Supported
-              formats: PDF, DOCX, ZIP.</p>
+          <div id="lec-note-drop-zone"
+            style="border: 2px dashed var(--border); padding: 24px 32px; border-radius: var(--radius-sm); text-align: center; margin: 20px 0; background: var(--bg-base); cursor:pointer; transition:border-color 0.2s, background 0.2s;"
+            onclick="document.getElementById('lec-note-file-input').click()"
+            ondragover="event.preventDefault(); this.style.borderColor='var(--primary)'; this.style.background='rgba(37,99,235,0.05)';"
+            ondragleave="this.style.borderColor='var(--border)'; this.style.background='var(--bg-base)';"
+            ondrop="event.preventDefault(); this.style.borderColor='var(--border)'; this.style.background='var(--bg-base)'; handleLecNoteFileDrop(event);">
+            <input type="file" id="lec-note-file-input" accept=".pdf,.docx,.ppt,.pptx,.zip"
+              style="display:none" onchange="handleLecNoteFileSelect(this)">
+            <div id="lec-note-file-display">
+              <div style="font-size: 2rem; margin-bottom: 8px;">📄</div>
+              <strong>Click to browse or drag &amp; drop your file here</strong>
+              <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 4px;">Max file size: 15 MB &nbsp;·&nbsp; Supported: PDF, DOCX, PPT, ZIP</p>
+            </div>
           </div>
-          <button class="btn btn-primary" style="width: 100%;" onclick="simulateLecturerUploadNote()">Publish Lecture
-            Note 🚀</button>
+          <button class="btn btn-primary" style="width: 100%;" onclick="simulateLecturerUploadNote()">Publish Lecture Note 🚀</button>
         </div>
       </section>
       <section id="lecturer-assignments" class="portal-view lecturer-view">
@@ -1703,6 +1903,21 @@
             </select></div>
           <div class="form-group"> <label>Deadline Date</label> <input type="date" id="lecturer-asg-deadline"
               class="form-control" value="2026-06-05"></div>
+          <div class="form-group">
+            <label>Assignment Document (Optional)</label>
+            <div class="file-drop-zone" onclick="document.getElementById('lecturer-asg-file-input').click()"
+              ondragover="event.preventDefault(); this.style.borderColor='var(--primary)'"
+              ondragleave="event.preventDefault(); this.style.borderColor='var(--border)'"
+              ondrop="event.preventDefault(); this.style.borderColor='var(--border)'; handleLecAsgFileDrop(event)">
+              <input type="file" id="lecturer-asg-file-input" accept=".pdf,.doc,.docx,.zip"
+                style="display:none" onchange="handleLecAsgFileSelect(this)">
+              <div id="lec-asg-file-display">
+                <div style="font-size: 2rem; margin-bottom: 8px;">📄</div>
+                <strong>Click to browse or drag &amp; drop your file here</strong>
+                <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 4px;">Max file size: 15 MB &nbsp;·&nbsp; Supported: PDF, DOCX, ZIP</p>
+              </div>
+            </div>
+          </div>
           <button class="btn btn-primary" style="width: 100%; margin-top:16px;"
             onclick="simulateLecturerCreateAsg()">Publish Assignment Guidelines 📝</button>
         </div>
@@ -1763,33 +1978,121 @@
           </div>
         </div>
       </section>
+      <!-- STUDENT-LECTURER ENGAGEMENT SYSTEM (LECTURER PORTAL) -->
+      <section id="lecturer-engagement" class="portal-view lecturer-view">
+        <h2>👥 Student <span class="gradient-text">Engagement Hub</span></h2>
+        <p style="color:var(--text-muted); margin-bottom: 24px;">Interact with your students, host learning boards, publish insights/resources, endorse project work, and manage your consultation calendar.</p>
+        
+        <div class="dashboard-grid">
+          <div class="widget glass" style="grid-column: span 3;">
+            <!-- Tabs Header -->
+            <div class="tabs-header" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+              <button class="btn btn-primary btn-sm engagement-tab-btn active" onclick="switchEngagementTab('lecturer', 'appointments')" id="tab-btn-lec-appointments" style="margin-bottom:5px;">📅 Consultations Booking Manager</button>
+              <button class="btn btn-secondary btn-sm engagement-tab-btn" onclick="switchEngagementTab('lecturer', 'communities')" id="tab-btn-lec-communities" style="margin-bottom:5px;">👥 Subject Communities</button>
+              <button class="btn btn-secondary btn-sm engagement-tab-btn" onclick="switchEngagementTab('lecturer', 'qa')" id="tab-btn-lec-qa" style="margin-bottom:5px;">💬 Direct Q&A Inbox & Feedback</button>
+            </div>
+            
+            <!-- Tab Content 1: Consultations Booking Manager -->
+            <div id="engagement-lec-appointments" class="engagement-tab-pane">
+              <h3 style="margin-bottom:12px;">📅 Consultation Booking Requests</h3>
+              <div id="engagement-lec-appointments-list" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:16px;">
+                <!-- Booking Cards Dynamically Loaded -->
+              </div>
+            </div>
+            
+            <!-- Tab Content 2: My Subject Communities -->
+            <div id="engagement-lec-communities" class="engagement-tab-pane" style="display:none;">
+              <div style="display:grid; grid-template-columns: 200px 1fr; gap:20px;">
+                <!-- Left: Communities list -->
+                <div style="border-right: 1px solid var(--border); padding-right:15px;">
+                  <button class="btn btn-primary btn-sm" style="margin-bottom:15px; width:100%;" onclick="openCreateCommunityModal()">➕ Create Board</button>
+                  <h4 style="margin-bottom:10px;">My Boards</h4>
+                  <div id="engagement-lec-communities-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Loaded dynamically -->
+                  </div>
+                </div>
+                
+                <!-- Right: Active Community view -->
+                <div>
+                  <div id="engagement-lec-active-community-header" style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                    <h3>Select a Community</h3>
+                    <p style="color:var(--text-muted); font-size:0.85rem;">Manage discussions, post research suggestions, or endorse student concepts.</p>
+                  </div>
+                  
+                  <div id="engagement-lec-community-panel" style="display:none;">
+                    <!-- Community actions -->
+                    <div style="display:flex; gap:10px; margin-bottom:20px; background:rgba(0,0,0,0.1); padding:10px; border-radius:8px; border:1px solid var(--border); flex-wrap:wrap;">
+                      <button class="btn btn-secondary btn-sm" onclick="openCreateCommunityPostModal('insight')">💡 Share Insight</button>
+                      <button class="btn btn-secondary btn-sm" onclick="openCreateCommunityPostModal('resource')">📚 Recommend Resource</button>
+                      <button class="btn btn-secondary btn-sm" onclick="openEndorseProjectModal()">🏆 Endorse Student Project</button>
+                    </div>
+                    
+                    <!-- Posts Feed -->
+                    <div id="engagement-lec-posts-list" style="max-height:400px; overflow-y:auto; display:flex; flex-direction:column; gap:16px;">
+                      <!-- Loaded dynamically -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Tab Content 3: Q&A Inbox & Feedback -->
+            <div id="engagement-lec-qa" class="engagement-tab-pane" style="display:none;">
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <!-- Q&A inbox -->
+                <div>
+                  <h3 style="margin-bottom:12px;">💬 Academic Q&A Inbox</h3>
+                  <div id="engagement-lec-qa-list" style="max-height:450px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; padding-right:5px;">
+                    <!-- Q&A question entries with reply field -->
+                  </div>
+                </div>
+                <!-- Personal Feedback Dispatcher -->
+                <div>
+                  <h3 style="margin-bottom:12px;">✍️ Write Personalized Student Feedback</h3>
+                  <form id="engagement-lec-feedback-form" onsubmit="handleSendFeedback(event)" style="padding:16px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px;">
+                    <div class="form-group">
+                      <label>Select Student</label>
+                      <select id="feedback-student-select" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                      <label>Academic Feedback Notes</label>
+                      <textarea id="feedback-notes-text" class="form-control" rows="5" placeholder="Provide direct guidance on academic courses, projects, or professional opportunities..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" style="margin-top:12px; width:100%;">Deliver Personal Feedback 📬</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
       <section id="admin-dashboard" class="portal-view admin-view">
         <h2>Welcome, <span id="admin-welcome-name" class="gradient-text">Administrator</span>!</h2>
         <p style="color:var(--text-muted); margin-bottom: 24px;">Institutional executive command hub • Student, faculty,
           and systems oversight.</p>
         <div class="metrics-row">
-          <div class="metric-card glass">
+          <div class="metric-card glass" onclick="showAdminAnalyticsDetails('users')" title="Click to view all registered users">
             <div class="metric-icon-box" style="background: rgba(124,58,237,0.1); color: var(--secondary);">👥</div>
             <div class="metric-info">
               <p>Total Registered Users</p>
               <h3 id="admin-metric-users">145</h3>
             </div>
           </div>
-          <div class="metric-card glass">
+          <div class="metric-card glass" onclick="showAdminAnalyticsDetails('students')" title="Click to view student directory">
             <div class="metric-icon-box" style="background: rgba(16,185,129,0.1); color: var(--success);">🎓</div>
             <div class="metric-info">
               <p>Active Students</p>
               <h3 id="admin-metric-students">142</h3>
             </div>
           </div>
-          <div class="metric-card glass">
+          <div class="metric-card glass" onclick="showAdminAnalyticsDetails('lecturers')" title="Click to view faculty directory">
             <div class="metric-icon-box" style="background: rgba(245,158,11,0.1); color: var(--warning);">👩‍🏫</div>
             <div class="metric-info">
               <p>Active Lecturers</p>
               <h3 id="admin-metric-lecturers">3</h3>
             </div>
           </div>
-          <div class="metric-card glass">
+          <div class="metric-card glass" onclick="showAdminAnalyticsDetails('startups')" title="Click to view tracked startups">
             <div class="metric-icon-box" style="background: rgba(6,182,212,0.1); color: var(--info);">💡</div>
             <div class="metric-info">
               <p>Startups Tracked</p>
@@ -1831,20 +2134,25 @@
             <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">Aggregated outcome figures across
               Ghana campuses.</p>
             <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
-              <li
-                style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:8px;">
-                <span>📚 Courses Active</span><strong style="color:var(--primary);">4 Running</strong>
+              <li onclick="showAdminAnalyticsDetails('courses')"
+                style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:8px; cursor:pointer;"
+                class="hover-opacity-analytics">
+                <span>📚 Courses Active</span><strong style="color:var(--primary);" id="admin-analytics-courses-val">4 Running</strong>
               </li>
-              <li
-                style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:8px;">
-                <span>🔬 Research Registries</span><strong style="color:var(--secondary);">4 Approved</strong>
+              <li onclick="showAdminAnalyticsDetails('research')"
+                style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:8px; cursor:pointer;"
+                class="hover-opacity-analytics">
+                <span>🔬 Research Registries</span><strong style="color:var(--secondary);" id="admin-analytics-research-val">4 Approved</strong>
               </li>
-              <li
-                style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:8px;">
-                <span>💼 Grads Employed</span><strong style="color:var(--success);">92% Rate</strong>
+              <li onclick="showAdminAnalyticsDetails('grads')"
+                style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:8px; cursor:pointer;"
+                class="hover-opacity-analytics">
+                <span>💼 Grads Employed</span><strong style="color:var(--success);" id="admin-analytics-grads-val">92% Rate</strong>
               </li>
-              <li style="display:flex; justify-content:space-between; padding-bottom:4px;">
-                <span>🤖 AI Prompt Requests</span><strong style="color:var(--accent);">412 Total</strong>
+              <li onclick="showAdminAnalyticsDetails('ai-prompts')"
+                style="display:flex; justify-content:space-between; padding-bottom:4px; cursor:pointer;"
+                class="hover-opacity-analytics">
+                <span>🤖 AI Prompt Requests</span><strong style="color:var(--accent);" id="admin-analytics-ai-val">412 Total</strong>
               </li>
             </ul>
           </div>
@@ -3109,10 +3417,33 @@
         </div>
 
         <div id="res-pub-reviewers" class="res-sub-view">
-          <div class="glass-panel">
+          <div class="glass-panel" style="padding:24px; border-radius:14px;">
             <h3>Reviewer Response Tracker</h3>
-            <p style="color:var(--text-muted);">Manage your point-by-point rebuttal documents.</p>
-            <button class="btn btn-secondary">Upload Reviewer Comments</button>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Manage your point-by-point rebuttal documents.</p>
+            
+            <div style="display:flex; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+              <input type="text" id="reviewer-comments-search" placeholder="Search rebuttal docs..." class="form-control" style="max-width:300px;" oninput="renderReviewerComments()">
+              <div>
+                <input type="file" id="reviewer-comments-upload" class="form-control" style="display:none;" onchange="handleReviewerCommentsUpload(event)">
+                <button class="btn btn-primary" onclick="document.getElementById('reviewer-comments-upload').click()">⬆️ Upload Comments</button>
+              </div>
+            </div>
+
+            <table style="width:100%; text-align:left; border-collapse:collapse;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                  <th style="padding:12px;">File Name</th>
+                  <th style="padding:12px;">Size</th>
+                  <th style="padding:12px;">Upload Date</th>
+                  <th style="padding:12px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="reviewer-comments-table-body">
+                <tr>
+                  <td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No reviewer comments uploaded yet.</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -3137,10 +3468,34 @@
         </div>
 
         <div id="res-pub-openaccess" class="res-sub-view">
-          <div class="glass-panel">
+          <div class="glass-panel" style="padding:24px; border-radius:14px;">
             <h3>Open Access Repository (Pre-prints)</h3>
-            <p style="color:var(--text-muted);">Deposit your pre-prints to the institutional repository.</p>
-            <button class="btn btn-secondary">Upload to DSpace Archive</button>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Deposit your pre-prints to the institutional repository.</p>
+
+            <div style="display:flex; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+              <input type="text" id="dspace-archive-search" placeholder="Search pre-prints..." class="form-control" style="max-width:300px;" oninput="renderDSpaceArchive()">
+              <div>
+                <input type="file" id="dspace-archive-upload" class="form-control" style="display:none;" onchange="handleDSpaceArchiveUpload(event)">
+                <button class="btn btn-primary" onclick="document.getElementById('dspace-archive-upload').click()">⬆️ Upload to DSpace</button>
+              </div>
+            </div>
+
+            <table style="width:100%; text-align:left; border-collapse:collapse;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                  <th style="padding:12px;">File Name</th>
+                  <th style="padding:12px;">Size</th>
+                  <th style="padding:12px;">Date Deposited</th>
+                  <th style="padding:12px;">Status</th>
+                  <th style="padding:12px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="dspace-archive-table-body">
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No pre-prints deposited yet.</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -3870,8 +4225,13 @@
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center; padding:16px;">
     <div class="glass" style="width:100%; max-width:500px; padding:32px; background:var(--bg-surface);">
       <h3 style="margin-bottom:8px;">Submit Assignment</h3>
-      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;" id="modal-asg-title">Assignment Title
-      </p>
+      <div style="margin-bottom: 20px; background: rgba(0,0,0,0.1); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+        <h4 style="color:var(--primary); margin:0; font-size:1.05rem;" id="modal-asg-title">Assignment Title</h4>
+        <div style="font-size:0.8rem; color:var(--text-muted); display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+          <div><span style="font-weight:600; color:var(--text-color);">Course:</span> <span id="modal-asg-course-code">CS101</span> - <span id="modal-asg-course-title">Coding Concepts</span></div>
+          <div><span style="font-weight:600; color:var(--text-color);">Lecturer:</span> <span id="modal-asg-instructor">Dr. Kwame Mensah</span></div>
+        </div>
+      </div>
       <div class="form-group"> <label>Upload Document File</label> <input type="file" id="asg-file-upload"
           class="form-control" style="padding:8px;"> <span style="font-size:0.7rem; color:var(--text-light);">Supported:
           PDF, DOCX, ZIP, PPT. Max size: 15 MB.</span></div>
@@ -4264,6 +4624,121 @@
     </div>
   </div>
 
+  <!-- ============================================================
+       ADMIN QUICK ANALYTICS DETAILS MODAL
+       ============================================================ -->
+  <div id="admin-analytics-modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:10000; align-items:center; justify-content:center; padding:16px;">
+    <div class="glass"
+      style="width:100%; max-width:600px; padding:32px; background:var(--bg-surface); max-height:85vh; overflow-y:auto; position:relative; border-radius:20px; display:flex; flex-direction:column; gap:20px; box-shadow:0 20px 50px rgba(0,0,0,0.4);">
+      <button onclick="closeAdminAnalyticsModal()"
+        style="position:absolute; right:20px; top:20px; background:transparent; border:none; color:var(--text-muted); font-size:1.3rem; cursor:pointer; font-weight:700; transition:color 0.2s;"
+        onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
+      <div style="border-bottom:1px solid var(--border); padding-bottom:12px;">
+        <h3 id="admin-analytics-title" style="font-size:1.35rem; font-weight:800; color:#fff;">Analytics Details</h3>
+      </div>
+      <div id="admin-analytics-body" style="overflow-y:auto; max-height:55vh;">
+        <!-- Dynamic content goes here -->
+      </div>
+      <div style="border-top:1px solid var(--border); padding-top:16px; text-align:right;">
+        <button class="btn btn-secondary btn-sm" onclick="closeAdminAnalyticsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE SUBJECT COMMUNITY MODAL -->
+  <div id="engagement-create-community-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:10000; align-items:center; justify-content:center; padding:16px;">
+    <div class="glass" style="width:100%; max-width:450px; padding:24px; background:var(--bg-surface); border-radius:16px; position:relative; box-shadow:0 20px 50px rgba(0,0,0,0.4); border:1px solid var(--border);">
+      <button onclick="closeCreateCommunityModal()" style="position:absolute; right:20px; top:20px; background:transparent; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">✕</button>
+      <h3 style="margin-bottom:15px; font-weight:800;">Create Subject Community</h3>
+      <form onsubmit="handleCreateCommunity(event)">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Community Name</label>
+          <input type="text" id="new-community-name" class="form-control" placeholder="E.g., Python Wizards" required>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Description</label>
+          <textarea id="new-community-desc" class="form-control" rows="3" placeholder="What is this study board about?" required></textarea>
+        </div>
+        <div style="text-align:right; margin-top:15px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeCreateCommunityModal()" style="margin-right:8px;">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Create Community</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SHARE INSIGHT / RESOURCE MODAL -->
+  <div id="engagement-share-insight-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:10000; align-items:center; justify-content:center; padding:16px;">
+    <div class="glass" style="width:100%; max-width:450px; padding:24px; background:var(--bg-surface); border-radius:16px; position:relative; box-shadow:0 20px 50px rgba(0,0,0,0.4); border:1px solid var(--border);">
+      <button onclick="closeShareInsightModal()" style="position:absolute; right:20px; top:20px; background:transparent; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">✕</button>
+      <h3 id="share-insight-title-label" style="margin-bottom:15px; font-weight:800;">Share Academic Insight</h3>
+      <form onsubmit="handleCreateInsight(event)">
+        <input type="hidden" id="share-insight-type" value="insight">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Title</label>
+          <input type="text" id="share-insight-title" class="form-control" placeholder="E.g., Agile Iterative Development" required>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Content</label>
+          <textarea id="share-insight-content" class="form-control" rows="4" placeholder="Detail your insight or resource suggestions..." required></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;" id="share-insight-url-group">
+          <label>Resource URL (Optional)</label>
+          <input type="url" id="share-insight-url" class="form-control" placeholder="https://example.com/lecture-notes.pdf">
+        </div>
+        <div style="text-align:right; margin-top:15px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeShareInsightModal()" style="margin-right:8px;">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Share Now</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ENDORSE STUDENT PROJECT MODAL -->
+  <div id="engagement-endorse-project-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:10000; align-items:center; justify-content:center; padding:16px;">
+    <div class="glass" style="width:100%; max-width:450px; padding:24px; background:var(--bg-surface); border-radius:16px; position:relative; box-shadow:0 20px 50px rgba(0,0,0,0.4); border:1px solid var(--border);">
+      <button onclick="closeEndorseProjectModal()" style="position:absolute; right:20px; top:20px; background:transparent; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">✕</button>
+      <h3 style="margin-bottom:15px; font-weight:800;">Endorse Student Project</h3>
+      <form onsubmit="handleCreateEndorsement(event)">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Project</label>
+          <select id="endorse-project-select" class="form-control" required></select>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Endorsement Statement</label>
+          <textarea id="endorse-text" class="form-control" rows="4" placeholder="Detail your endorsement (technical strength, market viability, etc.)..." required></textarea>
+        </div>
+        <div style="text-align:right; margin-top:15px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeEndorseProjectModal()" style="margin-right:8px;">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Submit Endorsement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- REPLY Q&A MODAL -->
+  <div id="engagement-reply-qa-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:10000; align-items:center; justify-content:center; padding:16px;">
+    <div class="glass" style="width:100%; max-width:450px; padding:24px; background:var(--bg-surface); border-radius:16px; position:relative; box-shadow:0 20px 50px rgba(0,0,0,0.4); border:1px solid var(--border);">
+      <button onclick="closeReplyQaModal()" style="position:absolute; right:20px; top:20px; background:transparent; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">✕</button>
+      <h3 style="margin-bottom:15px; font-weight:800;">Answer Student Question</h3>
+      <div id="reply-qa-question-text" style="background:rgba(255,255,255,0.03); padding:10px; border-radius:6px; border:1px solid var(--border); font-size:0.85rem; color:var(--text-light); margin-bottom:15px; max-height:100px; overflow-y:auto;">
+        <!-- Question text -->
+      </div>
+      <form onsubmit="handleSendAnswer(event)">
+        <input type="hidden" id="reply-qa-question-id">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Your Answer</label>
+          <textarea id="reply-qa-answer-text" class="form-control" rows="4" placeholder="Write your explanation..." required></textarea>
+        </div>
+        <div style="text-align:right; margin-top:15px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeReplyQaModal()" style="margin-right:8px;">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Send Answer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="assets/js/data.js"></script>
   <script src="assets/js/demo_data.js"></script>
   <script src="assets/js/advisory.js"></script>
@@ -4277,6 +4752,7 @@
   <script src="assets/js/app.js"></script>
   <script src="assets/js/creativity.js"></script>
   <script src="assets/js/nav_injector.js"></script>
+  <script src="assets/js/engagement.js"></script>
 </body>
 
 </html>

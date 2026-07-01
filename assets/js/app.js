@@ -47,7 +47,10 @@ const API_BASE = window.location.origin.includes('localhost') || window.location
 // Hardcoded demo accounts — always available regardless of localStorage state
 const DEMO_ACCOUNTS = [
   { id: 'user_std_1', name: 'Kofi Mensah', email: 'stu@smartlearn.com', password: 'password', role: 'student', department: 'Computing & Information Technology', program: 'BSc Computer Science', studentIdNumber: 'stu/csc/0001', phone: '+233 24 111 2222', gender: 'Male', level: '300', securityQuestion: 'What was the name of your first pet?', securityAnswer: 'Rex' },
-  { id: 'user_lec_1', name: 'Dr. Kwame Mensah', email: 'lec@smartlearn.com', password: 'password', role: 'lecturer', office: 'Block C, Rm 4', securityQuestion: "What is your mother's maiden name?", securityAnswer: 'Serwaa' },
+  { id: 'user_lec_1', name: 'Dr. Kwame Mensah', email: 'Kwame@smartlearn.edu', password: 'password', role: 'lecturer', office: 'Block C, Rm 4', securityQuestion: "What is your mother's maiden name?", securityAnswer: 'Serwaa' },
+  { id: 'user_lec_2', name: 'Prof. Ama Serwaa', email: 'Ama@smartlearn.edu', password: 'password', role: 'lecturer', office: 'RM 412', securityQuestion: "What is your mother's maiden name?", securityAnswer: 'Unknown' },
+  { id: 'user_lec_3', name: 'Mr. Emmanuel Osei', email: 'Emmanuel@smartlearn.edu', password: 'password', role: 'lecturer', office: 'ICT Lab B', securityQuestion: "What is your mother's maiden name?", securityAnswer: 'Unknown' },
+  { id: 'user_lec_4', name: 'Dr. Sophia Tetteh', email: 'Sophia@smartlearn.edu', password: 'password', role: 'lecturer', office: 'Block A, Rm 2', securityQuestion: "What is your mother's maiden name?", securityAnswer: 'Unknown' },
   { id: 'user_universal', name: 'Universal User', email: 'everybody@smartlearn.com', password: 'password', role: 'admin', securityQuestion: 'In what city or town were you born?', securityAnswer: 'Accra' }
 ];
 const getSimulatedUsers = () => {
@@ -110,7 +113,8 @@ loadOfflineState = () => {
 }, saveOfflineState = () => {
   localStorage.setItem('smartlearn_offline_appstate_v4', JSON.stringify({
     courses: appState.courses, notes: appState.notes, assignments: appState.assignments, submissions: appState.submissions, forumThreads: appState.forumThreads, universities: appState.universities, students: appState.students,
-    facultyContacts: appState.facultyContacts, facultyChats: appState.facultyChats, activeFacultyEmail: appState.activeFacultyEmail, studentStartups: appState.studentStartups
+    facultyContacts: appState.facultyContacts, facultyChats: appState.facultyChats, activeFacultyEmail: appState.activeFacultyEmail, studentStartups: appState.studentStartups,
+    aiPromptCount: appState.aiPromptCount, aiPromptHistory: appState.aiPromptHistory, demoAlumniProfiles: appState.demoAlumniProfiles, demoResearchProjects: appState.demoResearchProjects
   }));
 }, enableOfflineDemoIndicator = enable => { isOfflineDemoMode = enable; D.show('offline-demo-indicator', enable); }; if (!localStorage.getItem('smartlearn_offline_appstate_v4')) saveOfflineState(); else loadOfflineState();
 
@@ -268,7 +272,14 @@ async function handlePrototypeSignUp() {
     // Optional profile picture
     const fileInput = document.getElementById('signup-profile-pic');
     if (fileInput && fileInput.files && fileInput.files[0]) {
-      payload.avatar = 'picture/avatar_student.jpg';
+      const file = fileInput.files[0];
+      if (file.size > 5 * 1024 * 1024) return showAuthAlert("Profile picture is too large (Max 5MB).");
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
+      payload.avatar = base64;
     }
   } else if (activeSignupRole === 'prospective_student') {
     payload.intendedMajor = D.val('signup-intended-major') || 'Computer Science';
@@ -325,7 +336,21 @@ function setUserRole(role) {
     
     customizeSidebarMenuItems(role);
     
-    switchTab(isStudentWorkspace ? 'student' : (isResearcherWorkspace ? 'researcher' : 'lecturer'), isStudentWorkspace ? 'student-dashboard' : (isResearcherWorkspace ? 'researcher-dashboard' : 'lecturer-dashboard')); 
+    // Determine correct landing tab per role
+    let landingTab = 'lecturer-dashboard';
+    let landingRole = 'lecturer';
+    if (isStudentWorkspace) { landingTab = 'student-dashboard'; landingRole = 'student'; }
+    else if (isResearcherWorkspace) { landingTab = 'research-hub-expanded'; landingRole = 'researcher'; }
+    else if (role === 'alumni') { landingTab = 'alumni-console'; }
+    else if (role === 'industry_partner') { landingTab = 'partner-hub'; }
+    else if (role === 'career_advisor') { landingTab = 'advisor-dashboard'; }
+
+    // Use switchTabExtended for hub sections, switchTab for standard sections
+    if (['alumni', 'industry_partner', 'career_advisor', 'researcher'].includes(role) && typeof switchTabExtended === 'function') {
+      setTimeout(() => switchTabExtended(role, landingTab), 300);
+    } else {
+      switchTab(landingRole, landingTab);
+    }
   }
   updateAiSettingsVisibility();
 }
@@ -347,6 +372,12 @@ const setAdminPrototypeView = view => {
   // Custom sidebar items switching
   customizeSidebarMenuItems(view);
 
+  // Sync the top navbar view switcher select element if it exists
+  const switcherSelect = document.querySelector('#portal-role-switcher-container select');
+  if (switcherSelect) {
+    switcherSelect.value = view;
+  }
+
   // Trigger nav visibility update
   if (typeof updateNavVisibility === 'function') {
     updateNavVisibility();
@@ -365,10 +396,32 @@ const setAdminPrototypeView = view => {
 
   const roleGroup = studentRoles.includes(view) ? 'student' : (researcherRoles.includes(view) ? 'researcher' : (lecturerRoles.includes(view) ? 'lecturer' : 'admin'));
   if (typeof switchTabExtended === 'function') {
-    switchTabExtended(roleGroup, targetTab);
+    // For special hub roles, pass the actual view so switchTabExtended can route correctly
+    const effectiveRole = ['alumni', 'industry_partner', 'career_advisor', 'researcher'].includes(view) ? view : roleGroup;
+    switchTabExtended(effectiveRole, targetTab);
   } else {
     switchTab(roleGroup, targetTab);
   }
+
+  // Re-render the correct dashboard content for the selected view
+  setTimeout(() => {
+    if (view === 'prospective_student') {
+      if (typeof renderProspectiveStudentDashboard === 'function') renderProspectiveStudentDashboard();
+    } else if (view === 'student') {
+      // Restore normal student dashboard if it was overwritten
+      const container = document.getElementById('student-dashboard');
+      if (container && container.dataset.originalHtml) {
+        container.innerHTML = container.dataset.originalHtml;
+      }
+      if (typeof updateStudentDashboardMetrics === 'function') updateStudentDashboardMetrics();
+      if (typeof renderStudentCourses === 'function') renderStudentCourses();
+    } else if (view === 'lecturer') {
+      if (typeof renderLecturerAnalytics === 'function') renderLecturerAnalytics();
+      if (typeof renderLecturerSubmissions === 'function') renderLecturerSubmissions();
+    } else if (view === 'admin') {
+      if (typeof renderAdminViews === 'function') renderAdminViews();
+    }
+  }, 150);
 },
 handlePrototypeLogout = () => { localStorage.removeItem('proto_token'); appState.user = null; enableOfflineDemoIndicator(false); navigateTo('landing-shell'); };
 async function validatePrototypeSession() {
@@ -459,10 +512,9 @@ function customizeSidebarMenuItems(role) {
       const tab = el.getAttribute('data-tab');
       let visible = true;
       if (role === 'prospective_student') {
-        visible = ['student-dashboard', 'student-universities', 'student-forum', 'student-ai-assistant', 'student-settings'].includes(tab);
+        visible = ['student-dashboard', 'student-universities', 'student-ai-assistant', 'student-settings'].includes(tab);
         if (tab === 'student-dashboard') el.textContent = '🏫 Admissions Desk';
         if (tab === 'student-universities') el.textContent = '🏛️ University Explorer';
-        if (tab === 'student-forum') el.textContent = '💬 Community Board';
         if (tab === 'student-ai-assistant') el.textContent = '🤖 Admission Advisor';
       } else {
         if (tab === 'student-dashboard') el.textContent = '📊 Dashboard Overview';
@@ -477,15 +529,27 @@ function customizeSidebarMenuItems(role) {
       let visible = true;
       if (role === 'alumni') {
         visible = ['lecturer-dashboard', 'lecturer-settings'].includes(tab);
-        if (tab === 'lecturer-dashboard') el.textContent = '🎓 Alumni Console';
+        if (tab === 'lecturer-dashboard') {
+          el.textContent = '🎓 Alumni Console';
+          el.setAttribute('onclick', "switchTabExtended('alumni', 'alumni-console')");
+        }
       } else if (role === 'industry_partner') {
         visible = ['lecturer-dashboard', 'lecturer-settings'].includes(tab);
-        if (tab === 'lecturer-dashboard') el.textContent = '🏢 Partner Hub';
+        if (tab === 'lecturer-dashboard') {
+          el.textContent = '🏢 Partner Hub';
+          el.setAttribute('onclick', "switchTabExtended('industry_partner', 'partner-hub')");
+        }
       } else if (role === 'career_advisor') {
         visible = ['lecturer-dashboard', 'lecturer-settings'].includes(tab);
-        if (tab === 'lecturer-dashboard') el.textContent = '👔 Advisor Dashboard';
+        if (tab === 'lecturer-dashboard') {
+          el.textContent = '👔 Advisor Dashboard';
+          el.setAttribute('onclick', "switchTabExtended('career_advisor', 'advisor-dashboard')");
+        }
       } else {
-        if (tab === 'lecturer-dashboard') el.textContent = '📊 Lecturer Dashboard';
+        if (tab === 'lecturer-dashboard') {
+          el.textContent = '📊 Lecturer Dashboard';
+          el.setAttribute('onclick', "switchTab('lecturer', 'lecturer-dashboard')");
+        }
       }
       el.style.display = visible ? 'block' : 'none';
     });
@@ -544,10 +608,375 @@ async function fetchStateData() {
     if (appState.role === 'lecturer' || appState.role === 'admin') appState.submissions = await getJSON(`${API_BASE}/api/assignments/submissions`) || appState.submissions;
     appState.universities = await getJSON(`${API_BASE}/api/universities`) || appState.universities; enableOfflineDemoIndicator(false);
   } catch (err) { loadOfflineState(); enableOfflineDemoIndicator(true); } }
+const renderProspectiveStudentDashboard = () => {
+  const container = D.get('student-dashboard');
+  if (!container) return;
+
+  const isProspectiveView = appState.role === 'prospective_student';
+  if (!isProspectiveView) {
+    if (['student', 'admin'].includes(appState.role) && container.dataset.originalHtml) {
+      container.innerHTML = container.dataset.originalHtml;
+    }
+    return;
+  }
+
+  if (!container.dataset.originalHtml) container.dataset.originalHtml = container.innerHTML;
+
+  // ── 1. PERSONALISATION ──────────────────────────────────────────────────────
+  const userName = appState.user?.name || 'Applicant';
+  const userProgram = appState.user?.intendedProgram || '';
+  const userAggregate = appState.user?.wassceAggregate || null;
+
+  // ── 2. DOCUMENTS — pulled from / initialised into appState ─────────────────
+  if (!appState.admissionDocs) {
+    appState.admissionDocs = [
+      { id: 'doc_wassce',  label: 'WASSCE Result Certificate',               status: 'pending', required: true  },
+      { id: 'doc_birth',  label: 'Birth Certificate / Passport (Bio-data)',  status: 'pending', required: true  },
+      { id: 'doc_photo',  label: 'Passport-Size Photograph (White BG)',      status: 'pending', required: true  },
+      { id: 'doc_fee',    label: 'Application Fee Receipt (GH₵ 250)',        status: 'pending', required: true  },
+      { id: 'doc_letter', label: 'Personal Statement / Motivation Letter',   status: 'pending', required: false },
+    ];
+  }
+  const appDocs = appState.admissionDocs;
+  const uploadedCount    = appDocs.filter(d => d.status === 'uploaded').length;
+  const totalRequired    = appDocs.filter(d => d.required).length;
+  const uploadedRequired = appDocs.filter(d => d.required && d.status === 'uploaded').length;
+  const progressPct      = totalRequired ? Math.round((uploadedRequired / totalRequired) * 100) : 0;
+  const appStatus        = uploadedRequired === totalRequired ? 'Ready to Submit' : uploadedRequired > 0 ? 'In Progress' : 'Draft';
+  const statusColor      = uploadedRequired === totalRequired ? 'var(--success)' : uploadedRequired > 0 ? '#f59e0b' : 'var(--primary)';
+
+  // ── 3. INTAKE DATE — computed dynamically from today ───────────────────────
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const nextSept = new Date(thisYear, 8, 1); // Sept 1
+  if (nextSept < now) nextSept.setFullYear(thisYear + 1);
+  const daysToIntake = Math.ceil((nextSept - now) / 86400000);
+  const intakeLabel  = nextSept.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+  // ── 4. KEY DATES — relative to the next intake ────────────────────────────
+  const intakeYear = nextSept.getFullYear();
+  const keyDates = [
+    { date: new Date(intakeYear, 6, 1),  label: 'Application Portal Opens',   desc: 'Online applications open for all public universities', hot: true  },
+    { date: new Date(intakeYear, 7, 15), label: 'Early Bird Deadline',         desc: 'Submit before this date to waive GH₵ 100 processing fee', hot: true  },
+    { date: new Date(intakeYear, 8, 2),  label: 'Virtual Open Day / Campus Tour', desc: 'Live webinar — register at your chosen university website', hot: false },
+    { date: new Date(intakeYear, 8, 30), label: 'Final Application Deadline',  desc: 'Last date to submit all required documents', hot: false },
+    { date: new Date(intakeYear, 10, 15), label: 'Admission Results Released', desc: 'Check your application portal for offer letters', hot: false },
+    { date: new Date(intakeYear + 1, 0, 12), label: 'Matriculation / Orientation', desc: `Official start of ${intakeYear}/${intakeYear + 1} academic year`, hot: false },
+  ];
+  const nextEvent = keyDates.find(e => e.date > now);
+  const daysToDeadline = nextEvent ? Math.ceil((nextEvent.date - now) / 86400000) : 0;
+
+  // ── 5. PROGRAMMES — from programCardsData with WASSCE data ────────────────
+  const programWassce = {
+    'BSc Computer Science':       { cutoff: 12, subjects: 'Elective Maths + Core Science' },
+    'BSc Software Engineering':   { cutoff: 14, subjects: 'Elective Maths + Physics' },
+    'BSc Cybersecurity':          { cutoff: 14, subjects: 'Elective Maths + Core Science' },
+    'BSc Data Science':           { cutoff: 14, subjects: 'Elective Maths + Statistics' },
+    'BSc Business Administration':{ cutoff: 18, subjects: 'Business + Math / Economics' },
+    'BSc Electrical Engineering': { cutoff: 12, subjects: 'Elective Maths + Physics' },
+    'Bachelor of Laws (LLB)':     { cutoff: 14, subjects: 'English + Government / History' },
+    'BSc Nursing & Allied Health':{ cutoff: 18, subjects: 'Biology + Chemistry + Core Maths' },
+    'BSc Mechanical Engineering': { cutoff: 14, subjects: 'Elective Maths + Physics' },
+    'Medicine & Surgery (MBChB)': { cutoff: 8,  subjects: 'Biology + Chemistry + Physics' },
+    'Doctor of Pharmacy (PharmD)':{ cutoff: 10, subjects: 'Biology + Chemistry + Elective Maths' },
+    'BSc Architecture & Design':  { cutoff: 16, subjects: 'Elective Maths + Physics / Art' },
+    'BA Economics & Public Policy':{ cutoff: 16, subjects: 'Economics + Maths' },
+  };
+  const progColors = ['#6366f1','#ef4444','#10b981','#f59e0b','#8b5cf6','#0ea5e9','#e11d48','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7','#ec4899'];
+  const programmes = (typeof programCardsData !== 'undefined' ? programCardsData : []).map((p, i) => ({
+    name: p.title,
+    uni: (appState.universities || []).filter(u => u.programsOffered && u.programsOffered.some(po => po.toLowerCase().includes(p.title.split(' ').slice(-1)[0].toLowerCase()))).slice(0,3).map(u => u.name.split(' ').slice(0,2).join(' ')).join(' / ') || 'Multiple Universities',
+    cutoff: programWassce[p.title]?.cutoff || 18,
+    subjects: programWassce[p.title]?.subjects || 'English + Core Maths + 3 Electives',
+    demand: p.demand.split(' ')[0] + ' ' + (p.demand.includes('High') ? p.demand.split('(')[0].trim() : ''),
+    salary: p.salary,
+    duration: p.duration,
+    color: progColors[i % progColors.length],
+    eligible: userAggregate ? userAggregate <= (programWassce[p.title]?.cutoff || 18) : null,
+  }));
+
+  // Search/filter by WASSCE aggregate eligibility or name
+  const filterAgg = appState.admissionFilter || '';
+  const filteredProgs = filterAgg
+    ? programmes.filter(p => p.eligible === true || p.name.toLowerCase().includes(filterAgg.toLowerCase()))
+    : programmes.slice(0, 8);
+
+  // ── 6. SCHOLARSHIPS — from appState.universities scholarship info ──────────
+  const scholarships = [
+    { name: 'MasterCard Foundation Scholars',     body: 'MasterCard Foundation',  deadline: new Date(intakeYear, 10, 1),  type: 'Full Scholarship',  color: '#ef4444', link: 'https://mastercardfdn.org/all-programs/scholars-program/' },
+    { name: 'Ghana Scholarship Secretariat (GSS)',body: 'Govt. of Ghana',          deadline: new Date(intakeYear, 7, 1),   type: 'Govt. Bursary',     color: '#10b981', link: 'https://scholarships.gov.gh' },
+    { name: 'GETFund Scholarship',                body: 'GETFund / ESLA',          deadline: new Date(intakeYear, 8, 1),   type: 'Partial Bursary',   color: '#f59e0b', link: 'https://getfund.gov.gh' },
+    { name: 'Ashesi University Financial Aid',    body: 'Ashesi University',        deadline: new Date(intakeYear + 1, 2, 1),type: 'Needs-Based Aid',  color: '#6366f1', link: 'https://www.ashesi.edu.gh/admissions/fees-scholarships' },
+    { name: 'KNUST Vice-Chancellor Merit Award',  body: 'KNUST',                   deadline: new Date(intakeYear, 9, 1),   type: 'Merit Award',       color: '#8b5cf6', link: 'https://knust.edu.gh/admissions' },
+    { name: 'Fulbright Foreign Student Program',  body: 'U.S. Embassy Ghana',      deadline: new Date(intakeYear, 9, 15),  type: 'International',     color: '#0ea5e9', link: 'https://gh.usembassy.gov/education-culture/educational-exchanges/fulbright-program/' },
+  ].map(s => {
+    const daysLeft = Math.ceil((s.deadline - now) / 86400000);
+    return { ...s, daysLeft, deadlineStr: s.deadline.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }), expired: daysLeft < 0 };
+  }).filter(s => !s.expired).sort((a, b) => a.daysLeft - b.daysLeft);
+
+  // ── 7. LIVE APPLICANT COUNT — from simulated user registry ────────────────
+  const registeredApplicants = typeof getSimulatedUsers === 'function'
+    ? getSimulatedUsers().filter(u => u.role === 'prospective_student' || u.role === 'student').length
+    : (appState.students?.length || 0);
+
+  // ── 8. UNIVERSITY COUNT ───────────────────────────────────────────────────
+  const totalUnis = (appState.universities || []).length;
+  const publicUnis = (appState.universities || []).filter(u => u.type === 'Public').length;
+
+  // ── RENDER ─────────────────────────────────────────────────────────────────
+  container.innerHTML = `
+    <!-- Header -->
+    <div style="margin-bottom:24px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h2 style="margin-bottom:4px;">🏛️ Welcome, <span class="gradient-text">${userName}</span>!</h2>
+        <p style="color:var(--text-muted); font-size:0.88rem;">SmartLearn Admissions Desk · ${totalUnis} universities · ${intakeYear} intake</p>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        ${userAggregate ? `<span class="badge badge-primary" style="font-size:0.8rem; padding:6px 12px;">📊 Your Aggregate: ${userAggregate}</span>` : `<button class="btn btn-secondary btn-sm" onclick="admSetAggregate()" style="font-size:0.75rem;">📊 Enter WASSCE Aggregate</button>`}
+        <button class="btn btn-primary btn-sm" onclick="switchTab('student','student-ai-assistant'); setAiMode('admission');" style="font-size:0.75rem;">🤖 Ask AI Advisor</button>
+      </div>
+    </div>
+
+    <!-- Application Progress Banner -->
+    <div class="glass" style="padding:18px 22px; margin-bottom:20px; border-left:4px solid ${statusColor}; border-radius:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+      <div>
+        <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Your Application Status</div>
+        <div style="font-size:1.6rem; font-weight:900; color:${statusColor};">${appStatus}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">${uploadedRequired} of ${totalRequired} required documents submitted</div>
+        ${nextEvent ? `<div style="font-size:0.75rem; color:#f59e0b; margin-top:6px; font-weight:600;">⏰ ${nextEvent.label} in <strong>${daysToDeadline} days</strong></div>` : ''}
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:3rem; font-weight:900; color:${statusColor}; line-height:1;">${progressPct}<span style="font-size:1rem; font-weight:500;">%</span></div>
+        <div style="width:150px; height:10px; background:rgba(255,255,255,0.08); border-radius:99px; overflow:hidden; margin-top:8px;">
+          <div style="height:100%; width:${progressPct}%; background:${statusColor}; border-radius:99px; transition:width 1s ease;"></div>
+        </div>
+        <div style="font-size:0.68rem; color:var(--text-muted); margin-top:4px;">Completion progress</div>
+      </div>
+    </div>
+
+    <!-- Metric Cards -->
+    <div class="metrics-row" style="margin-bottom:24px;">
+      <div class="metric-card glass">
+        <div class="metric-icon-box" style="background:rgba(99,102,241,0.12); color:#6366f1;">🏛️</div>
+        <div class="metric-info"><p>Next Intake</p><h3>${intakeLabel}</h3><small style="color:var(--text-muted); font-size:0.7rem;">${daysToIntake} days away</small></div>
+      </div>
+      <div class="metric-card glass">
+        <div class="metric-icon-box" style="background:rgba(245,158,11,0.12); color:#f59e0b;">📅</div>
+        <div class="metric-info"><p>Next Key Deadline</p><h3>${nextEvent ? nextEvent.date.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : 'TBD'}</h3><small style="color:var(--text-muted); font-size:0.7rem;">${daysToDeadline} days left</small></div>
+      </div>
+      <div class="metric-card glass">
+        <div class="metric-icon-box" style="background:rgba(16,185,129,0.12); color:var(--success);">📄</div>
+        <div class="metric-info"><p>Documents Submitted</p><h3>${uploadedCount} / ${appDocs.length}</h3><small style="color:var(--text-muted); font-size:0.7rem;">${appDocs.filter(d=>d.required && d.status!=='uploaded').length} required pending</small></div>
+      </div>
+      <div class="metric-card glass">
+        <div class="metric-icon-box" style="background:rgba(239,68,68,0.12); color:#ef4444;">🏆</div>
+        <div class="metric-info"><p>Scholarships Open</p><h3>${scholarships.length} Active</h3><small style="color:var(--text-muted); font-size:0.7rem;">Closes in ${scholarships[0]?.daysLeft || 0} days</small></div>
+      </div>
+      <div class="metric-card glass">
+        <div class="metric-icon-box" style="background:rgba(139,92,246,0.12); color:#8b5cf6;">🎓</div>
+        <div class="metric-info"><p>Programmes Available</p><h3>${programmes.length}</h3><small style="color:var(--text-muted); font-size:0.7rem;">Across ${publicUnis} public unis</small></div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+
+      <!-- Required Documents Checklist -->
+      <div class="widget glass">
+        <div class="widget-header" style="margin-bottom:14px;">
+          <h3 class="widget-title">📋 Required Documents</h3>
+          <span style="font-size:0.72rem; color:${progressPct===100?'var(--success)':'#f59e0b'}; font-weight:700;">${progressPct}% complete</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${appDocs.map(doc => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:rgba(0,0,0,0.12); border-radius:10px; border:1px solid ${doc.status==='uploaded'?'rgba(16,185,129,0.35)':'rgba(255,255,255,0.06)'}; transition:all 0.2s;">
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:0.82rem; font-weight:600;">${doc.status==='uploaded'?'✅':'📌'} ${doc.label}</div>
+                <div style="font-size:0.68rem; color:var(--text-muted);">${doc.required?'Required':'Optional'}${
+                  doc.status==='uploaded' && doc.fileName
+                    ? ` · <span style='color:var(--success);'>Uploaded</span> · <a href='${doc.objectUrl||'#'}' target='_blank' style='color:var(--primary);text-decoration:underline;font-size:0.65rem;'>${doc.fileName}</a> (${doc.fileSize||''}) · ${doc.uploadedAt||''}`
+                    : doc.status==='uploaded' ? ` · <span style='color:var(--success);'>Uploaded</span>` : ''
+                }</div>
+              </div>
+              <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
+                ${doc.status==='uploaded'
+                  ? `<button class="btn btn-secondary btn-sm" style="font-size:0.62rem; padding:3px 7px; opacity:0.7;" onclick="simulateDocUpload('${doc.id}')">Replace</button><span class="badge badge-success" style="font-size:0.65rem;">✓ Done</span>`
+                  : `<button class="btn btn-secondary btn-sm" style="font-size:0.68rem; padding:4px 10px; white-space:nowrap;" onclick="simulateDocUpload('${doc.id}')">📁 Choose File</button>`
+                }
+              </div>
+            </div>`).join('')}
+        </div>
+        ${progressPct===100?`<div class="btn btn-primary" style="width:100%;text-align:center;margin-top:12px;cursor:default;">✅ Ready to Submit Application</div>`:`<div style="font-size:0.72rem;color:var(--text-muted);margin-top:10px;text-align:center;">Complete all required documents to submit your application.</div>`}
+      </div>
+
+      <!-- Key Dates -->
+      <div class="widget glass">
+        <div class="widget-header" style="margin-bottom:14px;">
+          <h3 class="widget-title">🗓️ Key Dates & Deadlines</h3>
+          <span style="font-size:0.7rem; color:var(--text-muted);">${intakeYear} Intake</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${keyDates.map(ev => {
+            const isPast = ev.date < now;
+            const isNext = nextEvent && ev.label === nextEvent.label;
+            const dLeft  = Math.ceil((ev.date - now) / 86400000);
+            const m = ev.date.toLocaleString('en-GB',{month:'short'}).toUpperCase();
+            const d = ev.date.getDate().toString().padStart(2,'0');
+            return `<div style="display:flex; gap:12px; align-items:flex-start; padding:9px 11px; background:${isPast?'rgba(0,0,0,0.05)':isNext?'rgba(37,99,235,0.08)':'rgba(0,0,0,0.08)'}; border-radius:10px; ${isNext?'border-left:3px solid var(--primary);':isPast?'opacity:0.45;':''}">
+              <div style="background:${isNext?'var(--primary)':isPast?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.08)'}; border-radius:8px; padding:5px 9px; text-align:center; min-width:42px; flex-shrink:0;">
+                <div style="font-size:0.58rem; font-weight:800; text-transform:uppercase; opacity:0.85;">${m}</div>
+                <div style="font-size:1.1rem; font-weight:900;">${d}</div>
+              </div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:0.8rem; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
+                  <span>${ev.label}</span>
+                  ${isNext?`<span style="font-size:0.65rem;background:rgba(245,158,11,0.15);color:#f59e0b;padding:2px 6px;border-radius:5px;font-weight:700;">In ${dLeft}d</span>`:''}
+                  ${isPast?`<span style="font-size:0.65rem;color:var(--text-muted);">Passed</span>`:''}
+                </div>
+                <div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;">${ev.desc}</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Programmes + Filter -->
+    <div class="widget glass" style="margin-bottom:20px;">
+      <div class="widget-header" style="margin-bottom:14px;">
+        <h3 class="widget-title">🎓 Programmes & WASSCE Requirements</h3>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          ${userAggregate ? `<span style="font-size:0.7rem; color:var(--success); font-weight:700;">✅ Showing eligible for agg. ${userAggregate}</span>` : ''}
+          <input type="number" min="6" max="36" placeholder="Your aggregate..." id="adm-agg-filter"
+            value="${userAggregate||''}"
+            style="width:130px; font-size:0.72rem; padding:5px 8px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:var(--text-primary);"
+            oninput="admFilterByAggregate(this.value)" />
+          <button class="btn btn-secondary btn-sm" onclick="switchTab('student','student-universities')" style="font-size:0.7rem;">View All Unis →</button>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;">
+        ${filteredProgs.map(p => `
+          <div class="glass" style="padding:13px 15px; border-radius:12px; border-left:3px solid ${p.eligible===true?'var(--success)':p.eligible===false?'rgba(239,68,68,0.5)':p.color}; cursor:pointer; transition:transform 0.2s; position:relative;"
+            onmouseover="this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.transform=''"
+            onclick="switchTab('student','student-ai-assistant'); setAiMode('admission');">
+            ${p.eligible===true?`<div style="position:absolute;top:8px;right:8px;font-size:0.6rem;background:rgba(16,185,129,0.15);color:var(--success);padding:2px 6px;border-radius:5px;font-weight:700;">✅ ELIGIBLE</div>`:''}
+            ${p.eligible===false?`<div style="position:absolute;top:8px;right:8px;font-size:0.6rem;background:rgba(239,68,68,0.1);color:#ef4444;padding:2px 6px;border-radius:5px;font-weight:700;">Above cutoff</div>`:''}
+            <div style="font-size:0.85rem; font-weight:700; margin-bottom:4px; padding-right:${p.eligible!==null?'72px':'0'};">${p.name}</div>
+            <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:8px;">🏛️ ${p.uni} · ⏱ ${p.duration}</div>
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+              <span style="font-size:0.63rem; background:rgba(255,255,255,0.07); border-radius:5px; padding:2px 7px;">📊 Agg. ≤ ${p.cutoff}</span>
+              <span style="font-size:0.63rem; background:rgba(255,255,255,0.07); border-radius:5px; padding:2px 7px;">📚 ${p.subjects}</span>
+              <span style="font-size:0.63rem; border-radius:5px; padding:2px 7px; color:${p.color}; background:rgba(255,255,255,0.05);">💰 ${p.salary}</span>
+            </div>
+          </div>`).join('')}
+        ${filterAgg && filteredProgs.length === 0 ? `<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:24px;">No programmes found. Try a higher aggregate or <button class="btn btn-secondary btn-sm" onclick="admFilterByAggregate('')">Show all</button></div>` : ''}
+      </div>
+      ${!filterAgg && programmes.length > 8 ? `<div style="text-align:center;margin-top:12px;"><button class="btn btn-secondary btn-sm" onclick="admShowAllProgs()" style="font-size:0.75rem;">Show all ${programmes.length} programmes →</button></div>` : ''}
+    </div>
+
+    <!-- Scholarships -->
+    <div class="widget glass" style="margin-bottom:20px;">
+      <div class="widget-header" style="margin-bottom:14px;">
+        <h3 class="widget-title">🏆 Active Scholarship Opportunities</h3>
+        <span style="font-size:0.72rem; color:var(--success); font-weight:700;">● ${scholarships.length} currently open</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px;">
+        ${scholarships.map(s => `
+          <div class="glass" style="padding:15px; border-radius:12px; border-top:3px solid ${s.color}; transition:transform 0.2s;"
+            onmouseover="this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.transform=''">
+            <div style="font-size:0.85rem; font-weight:700; margin-bottom:4px;">${s.name}</div>
+            <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:8px;">By ${s.body}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:4px;">
+              <span style="font-size:0.65rem; background:rgba(255,255,255,0.07); border-radius:5px; padding:2px 8px;">${s.type}</span>
+              <span style="font-size:0.65rem; color:${s.daysLeft<=30?'#ef4444':'#f59e0b'}; font-weight:700;">⏰ ${s.daysLeft}d left · ${s.deadlineStr}</span>
+            </div>
+            <a href="${s.link}" target="_blank" class="btn btn-secondary btn-sm" style="width:100%; text-align:center; font-size:0.7rem; display:block;">Apply / Learn More →</a>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Stats Row + CTA -->
+    <div style="display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center; flex-wrap:wrap;">
+      <div class="glass" style="padding:14px 18px; border-radius:12px; display:flex; gap:20px; flex-wrap:wrap;">
+        <div style="text-align:center;"><div style="font-size:1.4rem; font-weight:900; color:var(--primary);">${totalUnis}</div><div style="font-size:0.68rem; color:var(--text-muted);">Universities Listed</div></div>
+        <div style="text-align:center;"><div style="font-size:1.4rem; font-weight:900; color:var(--success);">${programmes.length}</div><div style="font-size:0.68rem; color:var(--text-muted);">Programmes</div></div>
+        <div style="text-align:center;"><div style="font-size:1.4rem; font-weight:900; color:#f59e0b;">${scholarships.length}</div><div style="font-size:0.68rem; color:var(--text-muted);">Scholarships Open</div></div>
+        <div style="text-align:center;"><div style="font-size:1.4rem; font-weight:900; color:#8b5cf6;">${registeredApplicants}</div><div style="font-size:0.68rem; color:var(--text-muted);">Applicants Registered</div></div>
+      </div>
+      <div style="display:flex; gap:8px; flex-direction:column;">
+        <button class="btn btn-primary" onclick="switchTab('student','student-ai-assistant'); setAiMode('admission');">🤖 Ask Admission Advisor</button>
+        <button class="btn btn-secondary" onclick="switchTab('student','student-universities');">🏛️ Browse Universities</button>
+      </div>
+    </div>
+  `;
+};
+
+function simulateDocUpload(docId) {
+  if (!appState.admissionDocs) return;
+  // Create a temporary hidden file input to trigger a real OS file picker
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,.jpg,.jpeg,.png,.docx,.doc,.zip';
+  input.style.display = 'none';
+  document.body.appendChild(input);
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    document.body.removeChild(input);
+    if (!file) return;
+    // Validate size (max 15 MB)
+    if (file.size > 15 * 1024 * 1024) {
+      showToastNotification('❌ File too large. Max 15 MB allowed.');
+      return;
+    }
+    const doc = appState.admissionDocs.find(d => d.id === docId);
+    if (!doc) return;
+    // Store real file metadata
+    doc.status = 'uploaded';
+    doc.fileName = file.name;
+    doc.fileSize = (file.size / 1024).toFixed(0) + ' KB';
+    doc.uploadedAt = new Date().toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    // Save a local object URL so it can be previewed
+    if (doc.objectUrl) URL.revokeObjectURL(doc.objectUrl);
+    doc.objectUrl = URL.createObjectURL(file);
+    saveOfflineState();
+    showToastNotification(`✅ "${file.name}" uploaded successfully!`);
+    renderProspectiveStudentDashboard();
+  });
+  input.click();
+}
+
+function admFilterByAggregate(val) {
+  const num = parseInt(val);
+  if (val === '' || isNaN(num)) {
+    appState.user && (appState.user.wassceAggregate = null);
+    appState.admissionFilter = '';
+  } else {
+    if (!appState.user) appState.user = {};
+    appState.user.wassceAggregate = num;
+    appState.admissionFilter = val;
+  }
+  renderProspectiveStudentDashboard();
+}
+
+function admSetAggregate() {
+  const val = prompt('Enter your WASSCE aggregate score (6 = best, 36 = lowest eligible):');
+  if (val) admFilterByAggregate(val.trim());
+}
+
+function admShowAllProgs() {
+  appState.admissionShowAll = true;
+  renderProspectiveStudentDashboard();
+}
+
+
+
 const renderAllComponents = () => {
-  renderStudentCourses(); renderStudentNotes(); renderStudentAssignments(); renderLecturerAnalytics(); renderLecturerSubmissions(); renderForums(); generateCalendarGrid(); renderDedicatedAssignmentsDeck(); renderStudentUniversities(); renderFacultyChat(); renderContactsDirectory(); renderProgramSelectionCards(); updateStudentDashboardMetrics(); renderSpaStartupsList();
+  renderProspectiveStudentDashboard();
+  renderStudentCourses(); renderStudentNotes(); renderStudentAssignments(); renderLecturerAnalytics(); renderLecturerSubmissions(); renderForums(); generateCalendarGrid(); renderDedicatedAssignmentsDeck(); renderStudentUniversities(); renderFacultyChat(); renderContactsDirectory(); renderProgramSelectionCards(); updateStudentDashboardMetrics(); renderSpaStartupsList(); renderStudentInternships();
   if (typeof renderResearcherScansTable === 'function') renderResearcherScansTable();
   if (appState.role === 'admin' && typeof renderAdminViews === 'function') renderAdminViews();
+  renderDashboardAnnouncements(); renderDynamicNotifications();
 },
 updateStudentDashboardMetrics = () => {
   if (!appState.user || appState.role !== 'student') return; const s = appState.students.find(x => x.email.toLowerCase() === appState.user.email.toLowerCase());
@@ -580,10 +1009,24 @@ function renderFacultyChat() {
 const switchFacultyContact = email => { appState.activeFacultyEmail = email; renderFacultyChat(); };
 function sendFacultyChatMessage() {
   const input = D.get('faculty-chat-input'); if (!input || !input.value.trim()) return; const text = input.value.trim(); input.value = ''; if (!appState.facultyChats[appState.activeFacultyEmail]) appState.facultyChats[appState.activeFacultyEmail] = [];
-  appState.facultyChats[appState.activeFacultyEmail].push({ sender: 'student', text: text, timestamp: 'Just now' }); saveOfflineState(); renderFacultyChat(); const name = appState.facultyContacts.find(c => c.email === appState.activeFacultyEmail)?.name || 'Professor';
+  appState.facultyChats[appState.activeFacultyEmail].push({ sender: appState.role === 'lecturer' ? 'faculty' : 'student', text: text, timestamp: 'Just now' }); saveOfflineState(); renderFacultyChat(); const name = appState.facultyContacts.find(c => c.email === appState.activeFacultyEmail)?.name || 'Professor';
+  
+  // Use WebSocket if connected
+  if (typeof wsConn !== 'undefined' && wsConn && wsConn.readyState === 1) {
+    wsConn.send(JSON.stringify({
+      type: 'chat_message',
+      recipientId: appState.activeFacultyEmail,
+      senderId: appState.user?.email || `user_${Date.now()}`,
+      senderName: appState.user?.name || (appState.role === 'lecturer' ? 'Lecturer' : 'Student'),
+      text: text
+    }));
+    return;
+  }
+  
+  // Fallback to simulated offline response for testing
   setTimeout(() => {
     const resText = getSimulatedFacultyResponse(name, text);
-    appState.facultyChats[appState.activeFacultyEmail].push({ sender: 'faculty', text: resText, timestamp: 'Just now' }); saveOfflineState(); renderFacultyChat(); showToastNotification(`New message from ${name}`);
+    appState.facultyChats[appState.activeFacultyEmail].push({ sender: appState.role === 'lecturer' ? 'student' : 'faculty', text: resText, timestamp: 'Just now' }); saveOfflineState(); renderFacultyChat(); showToastNotification(`New message from ${name}`);
   }, 1200); }
 function getSimulatedFacultyResponse(name, msg) {
   const text = msg.toLowerCase(); if (text.includes('hello') || text.includes('hi')) return 'Hello! Let me know what specific questions you have about our latest academic modules.'; if (text.includes('gpa') || text.includes('grade')) return 'Grades are computed based on coursework. Only lecturers can submit final adjustments.';
@@ -597,11 +1040,29 @@ const renderStudentCourses = () => {
   if (appState.role === 'student' && appState.user && appState.user.program) {
     filteredCourses = appState.courses.filter(c => c.program === appState.user.program);
   }
-  el.innerHTML = filteredCourses.map(c => `
+  el.innerHTML = filteredCourses.map(c => {
+    const courseDescriptions = {
+      'CS101': 'Master computational thinking, Python programming, data structures, and algorithm design.',
+      'MATH102': 'Explore calculus, linear algebra, applied mathematics, and statistical modeling.',
+      'ENG201': 'Learn software engineering lifecycles, UML design, Agile/Scrum, and architectural patterns.',
+      'BUA202': 'Study corporate leadership, supply chain logistics, financial reporting, and marketing strategy.',
+      'CYS101': 'Dive into cryptography, network security, ethical hacking, and digital forensics.',
+      'DSC101': 'Analyze datasets using machine learning, SQL, data visualization, and predictive modeling.',
+      'ELE101': 'Study circuit analysis, semiconductor electronics, power systems, and signal processing.',
+      'MEC101': 'Explore thermodynamics, fluid mechanics, CAD modeling, and mechanical control systems.',
+      'ARC101': 'Learn structural design, sustainable architecture, CAD modeling, and building codes.',
+      'NUR101': 'Master clinical patient care, pediatric nursing, anatomy, and pharmaceutical ethics.',
+      'MED101': 'Undergo clinical rotations, diagnostics, pathology, and internal medicine training.',
+      'PHA101': 'Study pharmaceutical chemistry, drug delivery systems, and clinical pharmacology.',
+      'LAW101': 'Analyze constitutional law, jurisprudence, contract law, and legal drafting in Ghana.',
+      'ECO101': 'Study macroeconomic trends, public finance, econometrics, and policy frameworks.'
+    };
+    const desc = courseDescriptions[c.code] || `Advanced coursework in ${c.title.split('&')[0].trim()} with practical applications.`;
+    return `
     <div class="course-card">
       <div class="course-banner"><span class="course-code">${c.code}</span><h3 style="font-size:1.05rem; margin-top:10px;">${c.title}</h3></div>
       <div class="course-body">
-        <p>Complete introduction course mapping foundations, tests, and research guides.</p>
+        <p>${desc}</p>
         <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
           <span>📚 ${c.notesCount} Lecture Notes</span><span>📝 ${c.assignmentsCount} Assignments</span>
         </div>
@@ -610,7 +1071,8 @@ const renderStudentCourses = () => {
         <div class="instructor-profile"><div class="instructor-avatar"><img src="picture/${c.avatar}"></div><span>${c.instructor}</span></div>
         <button class="btn btn-secondary btn-sm" onclick="switchTab('student', 'student-contacts')">Contact</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 },
 renderStudentNotes = () => {
   const el = D.get('student-notes-list'); if (!el) return;
@@ -767,19 +1229,86 @@ renderStudentAssignments = () => {
     ${submitted.length ? submitted.map(renderSubmittedItem).join('') : '<p style="color:var(--text-muted);">No submitted assignments yet.</p>'}
   `;
 };
+function animateCount(elId, targetVal, suffix, decimals) {
+  const el = D.get(elId); if (!el) return;
+  const start = 0, duration = 900, startTime = performance.now();
+  const step = (now) => {
+    const pct = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - pct, 3);
+    const current = decimals ? (eased * targetVal).toFixed(decimals) : Math.floor(eased * targetVal);
+    el.textContent = current + (suffix || '');
+    if (pct < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 function renderLecturerAnalytics() {
   const el = D.get('lecturer-students-table-body'); if (!el) return; let total = 0;
-  el.innerHTML = appState.students.map(s => {
-    total += parseFloat(s.cgpa); const editing = appState.editingStudentId === s.id;
-    const gpaCell = editing ? `<td><input type="number" step="0.01" value="${s.cgpa}" id="editing-gpa-val" style="width:70px;"></td>` : `<td><strong>${s.cgpa}</strong></td>`;
-    const actionsCell = editing ? `<td><button class="btn btn-primary btn-sm" onclick="saveStudentGpa('${s.id}')">Save</button></td>` : `<td><button class="btn btn-secondary btn-sm" onclick="editStudentGpa('${s.id}')">Edit</button></td>`;
+
+  // --- Build dynamic student list ---
+  let studentsToShow = [...appState.students];
+  if (typeof getSimulatedUsers === 'function') {
+    const adminStudents = getSimulatedUsers().filter(u => u.role === 'student');
+    adminStudents.forEach(as => {
+      if (!studentsToShow.some(s => s.email.toLowerCase() === as.email.toLowerCase())) {
+        studentsToShow.push({
+          id: as.id || as.email,
+          name: as.name,
+          email: as.email,
+          courses: as.department || 'General',
+          attendance: Math.floor(70 + Math.random() * 25),
+          cgpa: (2.0 + Math.random() * 2.0).toFixed(2),
+          status: 'Good Stand'
+        });
+      }
+    });
+  }
+
+  // --- Render student table ---
+  el.innerHTML = studentsToShow.map(s => {
+    total += parseFloat(s.cgpa);
+    const editing = appState.editingStudentId === s.id;
+    const gpaCell = editing
+      ? `<td><input type="number" step="0.01" value="${s.cgpa}" id="editing-gpa-val" style="width:70px;"></td>`
+      : `<td><strong>${s.cgpa}</strong></td>`;
+    const actionsCell = editing
+      ? `<td><button class="btn btn-primary btn-sm" onclick="saveStudentGpa('${s.id}')">Save</button></td>`
+      : `<td><button class="btn btn-secondary btn-sm" onclick="editStudentGpa('${s.id}')">Edit</button></td>`;
     return `
       <tr>
-        <td><strong>${s.name}</strong></td><td>${s.courses}</td><td>${s.attendance}%</td>
-        ${gpaCell}<td><span class="badge ${s.cgpa < 2 ? 'badge-danger' : 'badge-success'}">${s.status}</span></td>
+        <td><strong>${s.name}</strong></td>
+        <td>${s.courses}</td>
+        <td>${s.attendance}%</td>
+        ${gpaCell}
+        <td><span class="badge ${parseFloat(s.cgpa) < 2 ? 'badge-danger' : 'badge-success'}">${s.status}</span></td>
         ${actionsCell}
       </tr>`;
-  }).join(''); const avg = appState.students.length ? (total / appState.students.length).toFixed(2) : '0.00'; D.html('class-average-gpa-display', avg); }
+  }).join('');
+
+  // --- Compute metrics dynamically ---
+  const totalStudents = studentsToShow.length;
+  const avgGpa = totalStudents ? (total / totalStudents) : 0;
+
+  // Notes published = sum of notesCount across all courses
+  const totalNotes = (appState.courses || []).reduce((sum, c) => sum + (c.notesCount || 0), 0);
+
+  // Grading queue = submissions without a grade yet
+  const ungradedCount = (appState.submissions || []).filter(s => !s.grade).length;
+
+  // --- Animate metric cards ---
+  animateCount('lec-roster-count', totalStudents, ' Students', 0);
+  animateCount('class-average-gpa-display', avgGpa, '', 2);
+  animateCount('lec-notes-count', totalNotes, ' Modules', 0);
+
+  // Grading queue label
+  const gradingEl = D.get('lecturer-grading-queue-count');
+  if (gradingEl) {
+    animateCount('lecturer-grading-queue-count', ungradedCount, ungradedCount === 1 ? ' Submission' : ' Submissions', 0);
+    // Highlight badge if there are pending items
+    const card = D.get('lec-metric-grading');
+    if (card) card.style.borderLeft = ungradedCount > 0 ? '3px solid var(--danger)' : '3px solid var(--success)';
+  }
+}
 const editStudentGpa = id => { appState.editingStudentId = id; renderLecturerAnalytics(); },
 cancelEditStudentGpa = () => { appState.editingStudentId = null; renderLecturerAnalytics(); };
 async function saveStudentGpa(id) {
@@ -792,44 +1321,110 @@ function renderLecturerSubmissions() {
   const el = D.get('lecturer-submissions-list'); if (!el) return;
   el.innerHTML = appState.submissions.map(sub => {
     const asg = appState.assignments.find(a => a.id === sub.assignmentId);
-    
-    // Find plagiarism report matching file name
+
+    // Plagiarism badge
     const reports = (appState.plagiarismReports || []).concat(appState.demoPlagiarismReports || []);
     const report = reports.find(r => r.documentName === sub.fileName);
     let plagHtml = '';
     if (report) {
       const recColor = report.recommendation === 'CLEAR' ? '#10b981' : report.recommendation === 'FLAG_CONCERN' ? '#ef4444' : '#f59e0b';
-      plagHtml = `<span style="font-size:0.75rem; color:var(--text-muted); margin-left:8px;">Plagiarism: <strong style="color:${recColor}; cursor:pointer;" onclick="viewPlagiarismReportForFile('${sub.fileName}')" title="Click to view detailed AI report">${report.overallSimilarity}% (${report.recommendation.replace(/_/g,' ')})</strong></span>`;
+      plagHtml = `<span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px;">Plagiarism: <strong style="color:${recColor};cursor:pointer;" onclick="viewPlagiarismReportForFile('${sub.fileName}')">${report.overallSimilarity}% (${report.recommendation.replace(/_/g,' ')})</strong></span>`;
     }
 
-    const gradingHtml = sub.grade ? `<span style="color:var(--success); font-weight:700;">Graded: ${sub.grade}/100</span>` : `
-      <div style="display:flex; gap:8px;">
-        <input type="number" id="grade-val-${sub.id}" placeholder="Grade" style="width:70px;">
-        <input type="text" id="feedback-val-${sub.id}" placeholder="Feedback" style="width:150px;">
-        <button class="btn btn-primary btn-sm" onclick="submitGrade(${sub.id})">Grade</button>
-      </div>`;
+    const isEditing = appState.editingSubmissionId === sub.id;
+
+    let gradingHtml;
+    if (isEditing) {
+      // ── Inline edit form ──
+      gradingHtml = `
+        <div style="display:flex;flex-direction:column;gap:8px;min-width:260px;">
+          <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:2px;">New Grade (0–100)</label>
+          <input type="number" id="grade-val-${sub.id}" value="${sub.grade || ''}" min="0" max="100"
+                 style="width:100%;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:var(--text-primary);">
+          <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:2px;">Feedback</label>
+          <input type="text" id="feedback-val-${sub.id}" value="${sub.feedback || ''}" placeholder="Feedback note…"
+                 style="width:100%;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:var(--text-primary);">
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <button class="btn btn-primary btn-sm" style="flex:1;" onclick="submitGrade(${sub.id})">💾 Save Grade</button>
+            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="cancelEditSubmission()">✕ Cancel</button>
+          </div>
+        </div>`;
+    } else if (sub.grade) {
+      // ── Already graded — show result + edit button ──
+      const gradeNum = parseFloat(sub.grade);
+      const gradeColor = gradeNum >= 75 ? '#10b981' : gradeNum >= 50 ? '#f59e0b' : '#ef4444';
+      gradingHtml = `
+        <div style="text-align:right;">
+          <div style="font-size:1.4rem;font-weight:800;color:${gradeColor};">${sub.grade}<span style="font-size:0.85rem;font-weight:500;color:var(--text-muted);">/100</span></div>
+          ${sub.feedback ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:8px;max-width:180px;">"${sub.feedback}"</div>` : ''}
+          <button class="btn btn-secondary btn-sm" style="font-size:0.72rem;" onclick="startEditSubmission(${sub.id})">✏️ Edit Grade</button>
+        </div>`;
+    } else {
+      // ── Ungraded — fresh grade form ──
+      gradingHtml = `
+        <div style="display:flex;flex-direction:column;gap:8px;min-width:240px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="grade-val-${sub.id}" placeholder="Grade /100" min="0" max="100"
+                   style="width:90px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:var(--text-primary);">
+            <input type="text" id="feedback-val-${sub.id}" placeholder="Feedback…"
+                   style="flex:1;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:var(--text-primary);">
+          </div>
+          <button class="btn btn-primary btn-sm" style="width:100%;" onclick="submitGrade(${sub.id})">✅ Submit Grade</button>
+        </div>`;
+    }
+
+    const borderColor = sub.grade ? (parseFloat(sub.grade) >= 75 ? 'rgba(16,185,129,0.3)' : parseFloat(sub.grade) >= 50 ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)') : 'rgba(99,102,241,0.2)';
+
     return `
-      <div class="glass" style="padding:20px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h4>Student: <strong>${sub.studentName}</strong></h4>
-          <span style="font-size:0.8rem;">File: <a href="#" style="color:var(--primary);" onclick="event.preventDefault(); viewPlagiarismReportForFile('${sub.fileName}')">${sub.fileName}</a>${plagHtml}</span><br>
-          <span style="font-weight:600;">Assignment: ${asg ? asg.title : 'General'}</span>
+      <div class="glass" style="padding:20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;border-left:3px solid ${borderColor};border-radius:14px;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 24px rgba(124,58,237,0.12)'" onmouseout="this.style.boxShadow=''">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">👤</div>
+            <div>
+              <h4 style="font-size:0.95rem;margin:0;">Student: <strong>${sub.studentName}</strong></h4>
+              <span style="font-size:0.75rem;color:var(--text-muted);">${new Date(sub.date).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) || sub.date}</span>
+            </div>
+          </div>
+          <div style="font-size:0.8rem;margin-bottom:4px;">📎 File: <a href="#" style="color:var(--primary);" onclick="event.preventDefault();viewPlagiarismReportForFile('${sub.fileName}')">${sub.fileName}</a>${plagHtml}</div>
+          <div style="font-weight:600;font-size:0.88rem;">📋 ${asg ? asg.title : 'General Assignment'}</div>
         </div>
-        <div>${gradingHtml}</div>
+        <div style="flex-shrink:0;">${gradingHtml}</div>
       </div>`;
-  }).join(''); }
+  }).join('');
+}
+
+function startEditSubmission(id) {
+  appState.editingSubmissionId = id;
+  renderLecturerSubmissions();
+}
+
+function cancelEditSubmission() {
+  appState.editingSubmissionId = null;
+  renderLecturerSubmissions();
+}
+
 async function submitGrade(id) {
   const grade = parseFloat(D.val(`grade-val-${id}`)), fb = D.val(`feedback-val-${id}`) || 'Well done.'; if (isNaN(grade)) return showToastNotification('Please enter a grade.'); const token = localStorage.getItem('proto_token'); if (!token) return;
   if (token.startsWith('simulated_token_') || isOfflineDemoMode) {
     const sub = appState.submissions.find(s => s.id == id);
     if (sub) {
-      sub.grade = grade; sub.feedback = fb; const asg = appState.assignments.find(a => a.id == sub.assignmentId);
+      sub.grade = grade; sub.feedback = fb;
+      const asg = appState.assignments.find(a => a.id == sub.assignmentId);
       if (asg) { asg.grade = grade.toString(); asg.feedback = fb; asg.status = 'Submitted'; }
-      saveOfflineState(); showToastNotification('Graded (Offline)!'); renderStateData(); }
-    return; }
+      appState.editingSubmissionId = null;
+      pushDynamicNotification(`📊 Your assignment "${asg ? asg.title : 'Assignment'}" was graded: ${grade}/100. Feedback: "${fb}"`, 'grading', sub.studentName);
+      saveOfflineState(); showToastNotification('Grade saved!'); renderStateData();
+    }
+    return;
+  }
   try {
     const res = await fetch(`${API_BASE}/api/assignments/grade`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ submissionId: id, grade, feedback: fb }) });
-    if (res.ok) { showToastNotification('Graded successfully!'); renderStateData(); }
+    if (res.ok) {
+      const sub = appState.submissions.find(s => s.id == id);
+      const asg = sub ? appState.assignments.find(a => a.id == sub.assignmentId) : null;
+      pushDynamicNotification(`📊 Your assignment "${asg ? asg.title : 'Assignment'}" was graded: ${grade}/100. Feedback: "${fb}"`, 'grading', sub?.studentName);
+      showToastNotification('Graded successfully!'); renderStateData();
+    }
   } catch (err) {} }
 function renderForums() {
   const el = D.get('forum-posts-container'); if (!el) return;
@@ -866,14 +1461,27 @@ const toggleRepliesBox = id => {
   const el = D.get(`replies-box-${id}`); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; };
 async function submitForumReply(id) {
   const input = D.get(`reply-input-${id}`); if (!input || !input.value.trim()) return; const token = localStorage.getItem('proto_token');
+  const replyRole = appState.role === 'lecturer' ? 'Lecturer' : (appState.role === 'admin' ? 'Admin' : 'Student');
+  const replyAvatar = appState.role === 'lecturer' ? 'avatar_lecturer.jpg' : 'avatar_student.jpg';
   if (token && token.startsWith('simulated_token_')) {
     const t = appState.forumThreads.find(x => x.id == id);
     if (t) {
-      t.replies.push({ author: appState.user?.name || 'Student', avatar: 'avatar_student.jpg', role: 'Student', body: input.value }); input.value = ''; saveOfflineState(); renderStateData();
+      t.replies.push({ author: appState.user?.name || replyRole, avatar: replyAvatar, role: replyRole, body: input.value });
+      // Cross-role notification: Lecturer/Admin reply → notify thread author
+      if (appState.role === 'lecturer' || appState.role === 'admin') {
+        pushDynamicNotification(`💬 ${appState.user?.name || replyRole} replied to your forum thread: "${t.title}"`, 'forum', t.author);
+      }
+      input.value = ''; saveOfflineState(); renderStateData();
     } return; }
   try {
     const res = await fetch(`${API_BASE}/api/forums/reply`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ threadId: id, body: input.value }) });
-    if (res.ok) { input.value = ''; renderStateData(); }
+    if (res.ok) {
+      const t = appState.forumThreads.find(x => x.id == id);
+      if (t && (appState.role === 'lecturer' || appState.role === 'admin')) {
+        pushDynamicNotification(`💬 ${appState.user?.name || replyRole} replied to your forum thread: "${t.title}"`, 'forum', t.author);
+      }
+      input.value = ''; renderStateData();
+    }
   } catch(e){} }
 async function createForumThread() {
   const title = D.val('new-thread-title'), cat = D.val('new-thread-category'), body = D.val('new-thread-body'); if (!title || !body) return showToastNotification('Fill in title and description.'); const token = localStorage.getItem('proto_token');
@@ -889,25 +1497,139 @@ const getSystemPrompt = mode => ({
   tutor: 'You are a Programming Tutor. Explain code, debug, and provide brief examples in Python, JS, SQL.',
   research: 'You are an expert AI Research Assistant helping Ghanaian university students. Critically evaluate methodology, search and critique literature, extract findings from abstracts, suggest regional West African/Ghanaian context, and format citations (APA, Harvard, IEEE, MLA).',
   innovation: 'You are a Startup Advisor and Business Plan Optimizer helping students commercialize their research in Ghana. Validate product-market fit, analyze risk, suggest funding, highlight local regulatory compliance (e.g. Ghana FDA, GSA, registrar general), and structure pitches.',
-  admission: 'You are a University Admission Advisor for Ghanaian universities (e.g., KNUST, UG). Answer questions based on admission enquiries, WASSCE cut-offs, entry requirements, and provide helpful admission advice.'
+  admission: `You are SmartLearn's dedicated University Admissions and Scholarships Advisor specialising exclusively in Ghanaian higher education. Your role is to help prospective students navigate every step of the admissions journey in Ghana.
+
+You must be knowledgeable and specific about:
+1. ADMISSIONS IN GHANA
+   - WASSCE grading: A1 to F9, aggregate scoring, and minimum cut-off aggregates per programme per university.
+   - Specific entry requirements for every public and accredited private university in Ghana: University of Ghana (UG), KNUST, UCC, UDS, UEW, UMaT, UPSA, GIMPA, Ashesi, Central University, GCTU, etc.
+   - Direct Entry (DE), Mature Entry, and HND top-up routes.
+   - WASSCE subject combinations required per programme (e.g. Elective Maths for engineering, Biology and Chemistry for medicine).
+   - Tertiary Education Bursary and Ghana Scholarship Secretariat application timelines.
+
+2. SCHOLARSHIPS AND FINANCIAL AID
+   - Ghana Scholarship Secretariat (GSS) awards: eligibility, deadlines, and how to apply.
+   - MasterCard Foundation Scholars Programme (Ashesi, KNUST, UCC, etc.).
+   - GETFund scholarships and eligibility.
+   - African Development Bank scholarships relevant to Ghanaian students.
+   - Commonwealth and Chevening scholarships for postgraduate study.
+   - District Assembly Scholarship Schemes.
+   - University-specific bursaries (e.g. UG Vice-Chancellor Scholarship, KNUST Merit Awards).
+   - International opportunities: Fulbright, Erasmus Mundus, DAAD for Ghanaians.
+   - How to write a compelling scholarship application essay or personal statement.
+
+3. APPLICATION PROCESS
+   - Online application portals per institution.
+   - Fees, document requirements, and important deadlines.
+   - Remedial and bridging programmes available at key universities.
+
+4. CAREER ALIGNMENT
+   - Help students match their WASSCE results and interests to the most appropriate programme.
+   - Highlight career pathways and job market demand in Ghana for various degrees.
+
+Always respond in a warm, encouraging, and detailed manner. When asked about cut-off aggregates or deadlines, provide the most up-to-date information you have and advise the student to verify on the official university admissions portal.`
 }[mode] || 'Assistant');
+
+function configureAiForRole() {
+  const isProspective = typeof appState !== 'undefined' && appState.role === 'prospective_student';
+  const title = D.get('ai-section-title');
+  const subtitle = D.get('ai-section-subtitle');
+  const btnAdmission = D.get('ai-btn-admission');
+  const btnScholarship = D.get('ai-btn-scholarship');
+  const btnStudy = D.get('ai-btn-study');
+
+  if (isProspective) {
+    if (title) title.innerHTML = 'SmartLearn <span class="gradient-text">Admissions Advisor</span>';
+    if (subtitle) subtitle.textContent = 'Get expert guidance on university admissions, WASSCE requirements, and scholarship opportunities in Ghana.';
+    if (btnAdmission) { btnAdmission.style.display = 'block'; }
+    if (btnScholarship) { btnScholarship.style.display = 'block'; }
+    if (btnStudy) { btnStudy.style.display = 'none'; }
+    // Also hide non-admission modes for cleaner UX
+    document.querySelectorAll('.ai-mode-btn:not(#ai-btn-admission):not(#ai-btn-scholarship)').forEach(btn => btn.style.display = 'none');
+  } else {
+    if (title) title.innerHTML = 'SmartLearn <span class="gradient-text">AI Academic Tutor</span>';
+    if (subtitle) subtitle.textContent = 'Ask academic queries, translate files, evaluate buggy code, or run plagiarism checks.';
+    if (btnAdmission) { btnAdmission.style.display = 'none'; }
+    if (btnScholarship) { btnScholarship.style.display = 'none'; }
+    if (btnStudy) { btnStudy.style.display = 'block'; }
+    document.querySelectorAll('.ai-mode-btn').forEach(btn => btn.style.display = 'block');
+  }
+}
+
 function setAiMode(mode) {
   currentAiMode = mode; document.querySelectorAll('.ai-mode-btn').forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-mode') === mode)); chatSessionHistory = [];
+  configureAiForRole();
   const greet = {
-    study: 'Hello! I am your AI Study Assistant. Ask me to explain concepts or translate notes.', career: 'Welcome! I am your AI Career Advisor. Tell me your interests and let\'s explore careers.',
+    study: 'Hello! I am your AI Study Assistant. Ask me to explain concepts or translate notes.',
+    career: 'Welcome! I am your AI Career Advisor. Tell me your interests and let\'s explore careers.',
     helper: 'I am your Assignment Helper. Paste guidelines to get structural feedback.',
     tutor: 'Hey! I am your AI Programming Tutor. Paste your code and let\'s debug!',
     research: 'Welcome to your AI Research Assistant! Ask me to evaluate your methodology, format academic citations, or paste an abstract for critical summary.',
     innovation: 'Welcome to the Innovation & Startup Advisor! Paste your business pitch or startup ideas. I will analyze their viability, risks, and local Ghanaian regulatory steps (FDA, GSA, registrar general).',
-    admission: 'Welcome! I am your Admissions Advisor. Ask me any questions about WASSCE cut-offs, program requirements, and general admission advice for universities in Ghana.'
+    admission: `🎓 Hello! I am your **Ghana Admissions & Scholarships Advisor** — powered by SmartLearn AI.
+
+I specialise exclusively in Ghanaian higher education. Here is what I can help you with:
+
+📋 **University Admissions** — WASSCE cut-offs & aggregate requirements, subject combinations, Direct Entry, Mature Entry & HND top-up routes for UG, KNUST, UCC, UDS, UEW, UMaT, UPSA, GIMPA, Ashesi, and more.
+
+🏆 **Scholarships & Bursaries** — Ghana Scholarship Secretariat (GSS), MasterCard Foundation, GETFund, District Assembly grants, Commonwealth, Chevening, Fulbright, Erasmus Mundus, DAAD, and university-specific awards.
+
+📝 **Application Guidance** — How to navigate university portals, write personal statements, and craft winning scholarship essays.
+
+🎯 **Programme Matching** — I will help you find the right course and university based on your WASSCE results and career interests.
+
+Try asking me:
+• *"What aggregate do I need for BSc Computer Science at KNUST?"*
+• *"How do I apply for the MasterCard Foundation scholarship?"*
+• *"What subjects do I need to study Medicine at UG?"*
+• *"Are there scholarships available for first-year students in Ghana?"*`
   }[mode] || 'Hello!';
-  chatSessionHistory.push({ role: 'assistant', content: greet }); D.html('ai-chat-messages', ''); appendChatMessage('ai', greet); }
+  // Auto-switch to admission mode for prospective students
+  if (typeof appState !== 'undefined' && appState.role === 'prospective_student' && mode === 'study') {
+    currentAiMode = 'admission';
+    document.querySelectorAll('.ai-mode-btn').forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-mode') === 'admission'));
+    const admissionGreet = greet; // will be overridden by recursive call
+    chatSessionHistory = [];
+    setAiMode('admission');
+    return;
+  }
+  chatSessionHistory.push({ role: 'assistant', content: greet }); D.html('ai-chat-messages', ''); appendChatMessage('ai', greet);
+}
 function appendChatMessage(sender, text) {
   const box = D.get('ai-chat-messages'); if (!box) return; const bubble = document.createElement('div');
   bubble.className = `message-bubble ${sender === 'user' ? 'message-user' : 'message-ai'}`;
   bubble.innerHTML = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/```(python|js|sql)?([\s\S]*?)```/g, '<pre style="background:rgba(0,0,0,0.05); padding:10px; border-radius:6px; font-family:monospace; overflow-x:auto;">$2</pre>'); box.appendChild(bubble); box.scrollTop = box.scrollHeight; }
 async function executeClientAiRequest(prompt, systemInstruction, mode = 'study') {
+  // Increment global AI Prompt requests count and record in history
+  if (typeof appState !== 'undefined') {
+    appState.aiPromptCount = (appState.aiPromptCount || 412) + 1;
+    if (!appState.aiPromptHistory) appState.aiPromptHistory = [];
+    
+    // Add current timestamp
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const dateStr = now.toLocaleDateString([], {month: '2-digit', day: '2-digit', year: 'numeric'});
+    
+    appState.aiPromptHistory.unshift({
+      timestamp: `${timeStr} ${dateStr}`,
+      prompt: prompt,
+      mode: mode
+    });
+    
+    // Cap log history
+    if (appState.aiPromptHistory.length > 50) {
+      appState.aiPromptHistory.pop();
+    }
+    
+    // Sync UI text immediately if badge is present in DOM
+    const badgeVal = document.getElementById('admin-analytics-ai-val');
+    if (badgeVal) {
+      badgeVal.textContent = appState.aiPromptCount + ' Total';
+    }
+    
+    saveOfflineState();
+  }
   const token = localStorage.getItem('proto_token');
   if (token && !token.startsWith('simulated_token_')) {
     try {
@@ -1253,23 +1975,43 @@ function resetInactivityTimer() {
   if (appState.user) {
     inactivityTimer = setTimeout(() => {
       if (appState.user) { showToastNotification("Session timed out."); handlePrototypeLogout(); }
-    }, 5 * 60 * 1000); } }
+    }, 10 * 60 * 1000); } }
 ['mousemove', 'keydown', 'click'].forEach(evt => window.addEventListener(evt, resetInactivityTimer, { passive: true }));
 function renderContactsDirectory() {
   const container = D.get('student-contacts-directory-list'); if (!container) return; const colors = ['var(--primary)', 'var(--secondary)', 'var(--accent)'];
-  container.innerHTML = appState.facultyContacts.map((c, idx) => `
+  // Merge static faculty contacts with engagement-followed lecturers
+  let contactsList = [...appState.facultyContacts];
+  if (typeof followedLecturers !== 'undefined' && Array.isArray(followedLecturers)) {
+    followedLecturers.forEach(fl => {
+      if (!contactsList.some(c => c.name === fl.name)) {
+        contactsList.push({
+          name: fl.name,
+          role: 'Followed Lecturer',
+          email: fl.email || `${fl.name.toLowerCase().replace(/\s/g,'.')}@smartlearn.edu`,
+          status: 'Online',
+          avatar: 'avatar_lecturer.jpg',
+          room: fl.office || 'Faculty Office',
+          hours: fl.officeHours || 'By Appointment'
+        });
+      }
+    });
+  }
+  container.innerHTML = contactsList.map((c, idx) => {
+    const followedBadge = c.role === 'Followed Lecturer' ? '<span class="badge badge-success" style="font-size:0.6rem; margin-left:6px;">Following</span>' : '';
+    return `
     <div class="timetable-item" style="border-left-color: ${colors[idx % colors.length]};">
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
         <div style="display:flex; align-items:center; gap:16px;">
           <div class="instructor-avatar" style="width:44px; height:44px; border-radius:50%; overflow:hidden;"><img src="picture/${c.avatar}" style="width:100%; height:100%; object-fit:cover;"></div>
           <div>
-            <h4 style="font-size:0.95rem;">${c.name}</h4> <p style="font-size:0.8rem; color:var(--text-muted);">${c.role} • ${c.room} • ${c.email}</p>
+            <h4 style="font-size:0.95rem;">${c.name}${followedBadge}</h4> <p style="font-size:0.8rem; color:var(--text-muted);">${c.role} • ${c.room} • ${c.email}</p>
             <span style="font-size:0.75rem; color:var(--success); font-weight:600;">Office Hours: ${c.hours}</span>
           </div>
         </div>
         <button class="btn btn-primary btn-sm" onclick="startFacultyChat('${c.name}')">Message</button>
       </div>
-    </div>`).join(''); }
+    </div>`;
+  }).join(''); }
 
 /* ==========================================================================
    LANDING PAGE UNIVERSITY SHOWCASE
@@ -1317,6 +2059,30 @@ function renderLandingUniversityCards(unis, expanded) {
           <button class="btn btn-secondary btn-sm" style="width:100%; margin-top:12px; font-size:0.75rem;" onclick="event.stopPropagation(); openUniRequirementsModal('${u.id}')">View Details 📋</button>
         </div>
       </div>`;
+  }).join('');
+}
+
+function renderStudentInternships() {
+  const container = D.get('student-internships-list');
+  if (!container) return;
+  const adminJobs = appState.adminJobListings || [];
+  const defaultJobs = [
+    { title: 'Software Eng Intern', type: 'Intern', company: 'Hubtel Ghana - Accra' },
+    { title: 'Graduate National Service', type: 'NSP', company: 'Ecobank Corporate HQ - Accra' }
+  ];
+  const allJobs = adminJobs.length > 0 ? adminJobs : defaultJobs;
+  
+  container.innerHTML = allJobs.slice(0, 4).map((job, idx) => {
+    let badgeClass = job.type && job.type.toLowerCase() === 'intern' ? 'badge-success' : 'badge-primary';
+    return `
+      <li style="padding-bottom:10px; border-bottom:${idx === allJobs.length - 1 ? 'none' : '1px solid var(--border)'};">
+        <div style="display:flex; justify-content:space-between;">
+          <strong>${job.title}</strong> 
+          <span class="badge ${badgeClass}">${job.type || 'Job'}</span>
+        </div>
+        <span style="font-size:0.75rem; color:var(--text-muted)">${job.company}</span>
+      </li>
+    `;
   }).join('');
 }
 
@@ -1880,5 +2646,91 @@ function closePracticeModal() {
   }
   pqState.active = false;
   D.get('pq-practice-modal').style.display = 'none';
+}
+
+/* ============================================================
+   CROSS-ROLE DYNAMIC SYSTEM
+   Bridges admin announcements, grading notifications, and
+   live events to the correct user dashboards.
+   ============================================================ */
+
+// Push a dynamic notification into the shared state
+function pushDynamicNotification(text, category, targetUser) {
+  const notif = {
+    id: `dyn_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
+    text: text,
+    category: category || 'system',
+    targetUser: targetUser || null,
+    timestamp: new Date().toLocaleString(),
+    unread: true,
+    createdAt: new Date().toISOString()
+  };
+  appState.dynamicNotifications.unshift(notif);
+  // Keep max 100 notifications
+  if (appState.dynamicNotifications.length > 100) appState.dynamicNotifications.length = 100;
+  saveOfflineState();
+  renderDynamicNotifications();
+}
+
+// Render dynamic notifications on the student/lecturer notification panel
+function renderDynamicNotifications() {
+  const panel = D.get('dynamic-notifications-panel');
+  if (!panel) return;
+
+  // Filter notifications relevant to the current user
+  const userName = appState.user?.name || '';
+  const relevant = appState.dynamicNotifications.filter(n => {
+    if (!n.targetUser) return true; // Broadcast to all
+    return n.targetUser.toLowerCase() === userName.toLowerCase();
+  });
+
+  if (relevant.length === 0) {
+    panel.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem; padding:8px;">No new notifications.</div>';
+    return;
+  }
+
+  panel.innerHTML = relevant.slice(0, 20).map(n => {
+    const categoryIcons = { grading: '📊', forum: '💬', announcement: '📢', system: '🔔', career: '💼' };
+    const icon = categoryIcons[n.category] || '🔔';
+    const bgColor = n.unread ? 'rgba(124,58,237,0.08)' : 'rgba(255,255,255,0.02)';
+    const borderColor = n.unread ? 'rgba(124,58,237,0.3)' : 'var(--border)';
+    return `
+      <div style="background:${bgColor}; border:1px solid ${borderColor}; padding:10px; border-radius:8px; cursor:pointer; transition:background 0.2s;" onclick="this.style.background='rgba(255,255,255,0.02)'; this.style.borderColor='var(--border)';">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-size:0.8rem; font-weight:${n.unread ? '700' : '400'}; color:#fff;">${icon} ${n.text}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="badge" style="font-size:0.55rem; padding:1px 5px; background:rgba(37,99,235,0.1); color:var(--primary); text-transform:uppercase;">${n.category}</span>
+          <span style="font-size:0.65rem; color:var(--text-muted);">${n.timestamp}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Render admin announcements as banners on student/lecturer dashboards
+function renderDashboardAnnouncements() {
+  const banner = D.get('dashboard-announcements-banner');
+  if (!banner) return;
+
+  const announcements = appState.announcements || [];
+  if (announcements.length === 0) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.style.display = 'block';
+  banner.innerHTML = announcements.slice(0, 5).map(a => `
+    <div style="background:linear-gradient(135deg, rgba(37,99,235,0.12), rgba(124,58,237,0.08)); border:1px solid rgba(37,99,235,0.25); border-radius:10px; padding:12px 16px; display:flex; align-items:flex-start; gap:10px;">
+      <span style="font-size:1.2rem; flex-shrink:0;">📢</span>
+      <div style="flex:1;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <strong style="font-size:0.88rem; color:var(--primary);">${a.title}</strong>
+          <span style="font-size:0.65rem; color:var(--text-muted);">${a.timestamp}</span>
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-light); margin:0; line-height:1.4;">${a.body}</p>
+      </div>
+      <button onclick="this.parentElement.remove()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem; flex-shrink:0;" title="Dismiss">&times;</button>
+    </div>
+  `).join('');
 }
 

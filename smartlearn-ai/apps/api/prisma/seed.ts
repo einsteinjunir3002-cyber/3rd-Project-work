@@ -9,6 +9,7 @@ async function main() {
   console.log('Seeding comprehensive database...');
 
   const passwordHash = await argon2.hash('password123');
+  const lecturerPasswordHash = await argon2.hash('password');
 
   // --- 1. FACULTIES ---
   const facComputing = await prisma.faculty.upsert({
@@ -66,34 +67,34 @@ async function main() {
 
   // --- 4. LECTURERS (INSTRUCTORS) ---
   const lecCS = await prisma.user.upsert({
-    where: { email: 'lecturer_cs@smartlearn.edu' }, update: { passwordHash, roles: [Role.LECTURER, Role.RESEARCHER] },
+    where: { email: 'Kwame@smartlearn.edu' }, update: { passwordHash: lecturerPasswordHash, roles: [Role.LECTURER, Role.RESEARCHER] },
     create: {
-      email: 'lecturer_cs@smartlearn.edu', passwordHash,
-      firstName: 'Alan', lastName: 'Turing',
+      email: 'Kwame@smartlearn.edu', passwordHash: lecturerPasswordHash,
+      firstName: 'Kwame', lastName: 'Mensah',
       roles: [Role.LECTURER, Role.RESEARCHER], departmentId: deptCS.id,
     },
   });
   const lecBUS = await prisma.user.upsert({
-    where: { email: 'lecturer_bus@smartlearn.edu' }, update: { passwordHash },
+    where: { email: 'Ama@smartlearn.edu' }, update: { passwordHash: lecturerPasswordHash },
     create: {
-      email: 'lecturer_bus@smartlearn.edu', passwordHash,
-      firstName: 'Peter', lastName: 'Drucker',
+      email: 'Ama@smartlearn.edu', passwordHash: lecturerPasswordHash,
+      firstName: 'Ama', lastName: 'Serwaa',
       roles: [Role.LECTURER], departmentId: deptBUS.id,
     },
   });
   const lecENG = await prisma.user.upsert({
-    where: { email: 'lecturer_eng@smartlearn.edu' }, update: { passwordHash },
+    where: { email: 'Emmanuel@smartlearn.edu' }, update: { passwordHash: lecturerPasswordHash },
     create: {
-      email: 'lecturer_eng@smartlearn.edu', passwordHash,
-      firstName: 'Virginia', lastName: 'Woolf',
+      email: 'Emmanuel@smartlearn.edu', passwordHash: lecturerPasswordHash,
+      firstName: 'Emmanuel', lastName: 'Osei',
       roles: [Role.LECTURER], departmentId: deptENG.id,
     },
   });
   const lecMECH = await prisma.user.upsert({
-    where: { email: 'lecturer_mech@smartlearn.edu' }, update: { passwordHash },
+    where: { email: 'Sophia@smartlearn.edu' }, update: { passwordHash: lecturerPasswordHash },
     create: {
-      email: 'lecturer_mech@smartlearn.edu', passwordHash,
-      firstName: 'Nikola', lastName: 'Tesla',
+      email: 'Sophia@smartlearn.edu', passwordHash: lecturerPasswordHash,
+      firstName: 'Sophia', lastName: 'Tetteh',
       roles: [Role.LECTURER], departmentId: deptMECH.id,
     },
   });

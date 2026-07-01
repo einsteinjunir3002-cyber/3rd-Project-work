@@ -114,23 +114,25 @@
       'researcher': 'researcher-only',
       'industry_partner': 'partner-only',
       'career_advisor': 'advisor-only',
-      'admin': null // admin sees all
+      'admin': null
     };
 
     // For each injected nav item, update display
     document.querySelectorAll('.alumni-only, .researcher-only, .partner-only, .advisor-only').forEach(el => {
-      if (role === 'admin') {
-        el.style.display = 'block';
-      } else {
-        const targetClass = roleToClasses[role];
-        el.style.display = (el.classList.contains(targetClass)) ? 'block' : 'none';
-      }
+      const targetClass = roleToClasses[role];
+      el.style.display = (targetClass && el.classList.contains(targetClass)) ? 'block' : 'none';
     });
 
-    // Show lecturer-extra items only for lecturer/admin
+    // Show lecturer-extra items only for lecturer
     document.querySelectorAll('.lecturer-only').forEach(el => {
-      if (role === 'lecturer' || role === 'admin') {
+      if (role === 'lecturer') {
         el.style.display = 'block';
+      } else if (['alumni', 'industry_partner', 'career_advisor'].includes(role)) {
+        // Keep only lecturer-dashboard and lecturer-settings
+        const tab = el.getAttribute('data-tab');
+        el.style.display = (['lecturer-dashboard', 'lecturer-settings'].includes(tab)) ? 'block' : 'none';
+      } else {
+        el.style.display = 'none';
       }
     });
   }

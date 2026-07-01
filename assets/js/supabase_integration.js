@@ -79,6 +79,7 @@ async function uploadResearchDocument(event) {
       .from('Document')
       .insert([
         {
+          id: crypto.randomUUID(),
           title: file.name,
           filename: fileName,
           fileUrl: publicUrl,
