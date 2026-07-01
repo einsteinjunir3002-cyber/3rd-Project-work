@@ -187,47 +187,10 @@ const appState = {
   adminJobListings: []         // Admin-created jobs visible in student Career Hub
 };
 
-const careerQuizQuestions = [
-  { title: "1. What kind of academic tasks do you enjoy the most?", options: [
-    { category: "programming", text: "Coding programs and designing database systems" },
-    { category: "business", text: "Creating financial plans and managing school activities" },
-    { category: "datascience", text: "Finding patterns in statistical math databases" },
-    { category: "engineering", text: "Assembling hardware circuits and designing mechanical devices" },
-    { category: "healthcare", text: "Diagnosing biological symptoms and caregiving" },
-    { category: "law", text: "Analyzing legal arguments, writing briefs, and debating rights" }
-  ]},
-  { title: "2. Which secondary school subject did you excel at the most?", options: [
-    { category: "programming", text: "Information Technology & Elective Physics" },
-    { category: "business", text: "Business Economics & Financial Accounting" },
-    { category: "datascience", text: "Pure Mathematics & Probability" },
-    { category: "engineering", text: "Applied Physics & Technical Drawing" },
-    { category: "healthcare", text: "Chemistry & General Biology" },
-    { category: "law", text: "Government, History & Literature in English" }
-  ]},
-  { title: "3. What would be your ideal post-graduate work environment?", options: [
-    { category: "programming", text: "Leading tech developers in a software engineering hub" },
-    { category: "business", text: "Managing finance portfolios in a banking office in Accra" },
-    { category: "datascience", text: "Mining large databases to build predictive algorithms" },
-    { category: "engineering", text: "Working in electrical grid facilities or robotics fabrication labs" },
-    { category: "healthcare", text: "Working in clinical hospitals or pharmaceutical research facilities" },
-    { category: "law", text: "Practicing in a law firm court room or policy consulting agency" }
-  ]},
-  { title: "4. Choose a final year project topic you would love to build:", options: [
-    { category: "programming", text: "A multi-factor cybersecurity firewall system" },
-    { category: "business", text: "A business model for online crop sales across Kumasi" },
-    { category: "datascience", text: "A system that predicts student dropout risks from data" },
-    { category: "engineering", text: "A solar-powered microgrid system for rural communities" },
-    { category: "healthcare", text: "An automated drug compatibility analysis checklist" },
-    { category: "law", text: "A legal advisory database covering Ghana land law precedents" }
-  ]},
-  { title: "5. Which critical skill do you want to master in college?", options: [
-    { category: "programming", text: "Full-Stack coding and cloud engineering" },
-    { category: "business", text: "Venture funding models and product pitching" },
-    { category: "datascience", text: "Deep learning, SQL database query, and neural nets" },
-    { category: "engineering", text: "CAD structural simulation and electric circuit layout" },
-    { category: "healthcare", text: "Clinical patient assessment and medical diagnostics" },
-    { category: "law", text: "Critical litigation arguments and constitutional reviews" } ]}
-];
+
+/* careerQuizQuestions moved to advisory.js (5-step wizard format) */
+
+
 
 const programCardsData = [
   { title: 'BSc Computer Science', duration: '4 Years', bg: 'linear-gradient(135deg, var(--primary), var(--secondary))', desc: 'Study algorithms, software engineering, databases, network security, and machine learning structures.', careers: 'Software Engineer, Systems Architect, Devops', demand: 'High (92% placement rate)', salary: 'GH₵ 8,000 - GH₵ 22,000 / mo', suitability: 95, pdfPath: 'PDF/Computer and Information Technology/ComputerScienceOne.pdf' },
