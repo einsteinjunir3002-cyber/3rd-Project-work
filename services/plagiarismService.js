@@ -3,15 +3,18 @@ const stringSimilarity = require('string-similarity');
 
 class PlagiarismService {
     constructor(supabase) {
-        const apiKey = process.env.GEMINI_API_KEY || 'MOCK_API_KEY';
-        this.genAI = new GoogleGenerativeAI(apiKey);
-        this.isMockMode = (apiKey === 'MOCK_API_KEY');
+        this.geminiApiKey = process.env.GEMINI_API_KEY || '';
+        this.groqApiKey = process.env.GROQ_API_KEY || '';
+        this.isMockMode = !this.geminiApiKey && !this.groqApiKey;
         
-        // Use gemini-1.5-flash for fast semantic analysis and JSON output
-        this.model = this.genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-flash',
-            generationConfig: { responseMimeType: 'application/json' }
-        });
+        if (this.geminiApiKey) {
+            this.genAI = new GoogleGenerativeAI(this.geminiApiKey);
+            // Use gemini-1.5-flash for fast semantic analysis and JSON output
+            this.model = this.genAI.getGenerativeModel({ 
+                model: 'gemini-1.5-flash',
+                generationConfig: { responseMimeType: 'application/json' }
+            });
+        }
         this.supabase = supabase;
     }
 
@@ -123,14 +126,56 @@ Return a JSON object EXACTLY in this format:
 }
         `;
 
-        try {
-            const result = await this.model.generateContent(prompt);
-            const responseText = result.response.text();
-            return JSON.parse(responseText);
-        } catch (error) {
-            console.error('Gemini AI Analysis Error:', error);
-            return this.getMockAiAnalysis(); // Fallback if AI fails or quota exceeded
+        // If Groq API Key is configured, use it first (standard OpenAI chat completions endpoint)
+        if (this.groqApiKey) {
+            try {
+                console.log('[PlagiarismService] Analyzing with Groq (llama-3.3-70b-versatile)...');
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.groqApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        response_format: { type: 'json_object' },
+                        messages: [
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 0.1
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Groq API responded with status ${response.status}`);
+                }
+
+                const data = await response.json();
+                const responseText = data.choices[0].message.content;
+                return JSON.parse(responseText);
+            } catch (error) {
+                console.error('Groq AI Analysis Error:', error);
+                // Fall back to Gemini if it's also configured, otherwise proceed to mock fallback
+                if (!this.geminiApiKey) {
+                    return this.getMockAiAnalysis();
+                }
+            }
         }
+
+        // Fall back to Gemini if configured
+        if (this.geminiApiKey && this.model) {
+            try {
+                console.log('[PlagiarismService] Analyzing with Gemini (gemini-1.5-flash)...');
+                const result = await this.model.generateContent(prompt);
+                const responseText = result.response.text();
+                return JSON.parse(responseText);
+            } catch (error) {
+                console.error('Gemini AI Analysis Error:', error);
+                return this.getMockAiAnalysis();
+            }
+        }
+
+        return this.getMockAiAnalysis();
     }
 
     compileFinalReport(text, documentName, internalMatches, aiAnalysis) {
