@@ -242,19 +242,20 @@ function toggleQuickActions() {
 }
 
 function openQuickPlagiarism() {
-  const modal = D.get('plagiarism-report-modal');
+  const modal = D.get('plagiarism-upload-modal');
   if (!modal) { showToastNotification('Required modal elements are missing.'); return; }
-  const text = prompt("📋 Paste the text you want to scan for plagiarism (minimum 50 characters):");
-  if (!text) return;
-  if (text.trim().length < 50) {
-    showToastNotification("⚠️ Text too short. Please provide at least 50 characters.");
-    return;
-  }
-  const docName = prompt("📄 Enter a name for this document (e.g. My_Research_Draft.docx):") || "Manual Scan";
-  if (typeof quickScanSubmission === 'function') {
-    quickScanSubmission(text, docName);
-    earnBadge('plagiarism');
-  }
+  modal.style.display = 'flex';
+  
+  // Reset fields
+  D.get('plag-text-input').value = '';
+  D.get('plag-file-input').value = '';
+  D.get('plag-drop-zone').querySelector('div:nth-child(2)').innerText = 'Drag & Drop File Here';
+  D.get('plag-upload-progress').style.display = 'none';
+}
+
+function closePlagiarismUploadModal() {
+  const modal = D.get('plagiarism-upload-modal');
+  if (modal) modal.style.display = 'none';
 }
 
 // Close quick actions when clicking outside

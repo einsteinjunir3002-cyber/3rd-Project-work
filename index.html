@@ -4312,6 +4312,38 @@
   </div>
 
   <!-- ============================================================
+       PLAGIARISM UPLOAD MODAL
+       ============================================================ -->
+  <div id="plagiarism-upload-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:10000; align-items:center; justify-content:center; padding:16px;">
+    <div class="glass" style="width:100%; max-width:600px; padding:32px; background:var(--bg-surface); border-radius:20px; position:relative; box-shadow:0 20px 50px rgba(0,0,0,0.4);">
+      <button onclick="closePlagiarismUploadModal()" style="position:absolute; right:20px; top:20px; background:transparent; border:none; color:var(--text-muted); font-size:1.3rem; cursor:pointer;">✕</button>
+      <h2 style="font-size:1.3rem; margin-bottom:10px;">🛡️ AI Plagiarism <span class="gradient-text">Scanner</span></h2>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:20px;">Upload a document (PDF, DOCX, TXT) or paste text to perform a deep semantic plagiarism and AI-generation check.</p>
+      
+      <div id="plag-drop-zone" style="border:2px dashed var(--primary); border-radius:12px; padding:40px 20px; text-align:center; cursor:pointer; transition:all 0.3s ease; background:rgba(37,99,235,0.05); margin-bottom:15px;">
+        <div style="font-size:2.5rem; margin-bottom:10px;">📄</div>
+        <div style="font-weight:700; margin-bottom:5px;">Drag & Drop File Here</div>
+        <div style="font-size:0.75rem; color:var(--text-muted);">or click to browse</div>
+        <input type="file" id="plag-file-input" style="display:none;" accept=".pdf,.docx,.txt">
+      </div>
+      
+      <div style="text-align:center; font-size:0.8rem; color:var(--text-muted); margin-bottom:15px;">— OR PASTE TEXT —</div>
+      
+      <textarea id="plag-text-input" class="form-control" rows="4" placeholder="Paste your text here (minimum 50 characters)..." style="margin-bottom:20px; border-radius:10px;"></textarea>
+      
+      <div id="plag-upload-progress" style="display:none; text-align:center; margin-bottom:20px;">
+        <div class="pq-grading-spinner" style="margin:0 auto 10px auto;"></div>
+        <div id="plag-upload-status-text" style="font-size:0.85rem; color:var(--primary); font-weight:700;">Scanning document with Gemini AI...</div>
+      </div>
+
+      <div style="text-align:right;">
+        <button class="btn btn-secondary" onclick="closePlagiarismUploadModal()" style="margin-right:10px;">Cancel</button>
+        <button class="btn btn-primary" onclick="submitPlagiarismScan()">Scan Document</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
        PLAGIARISM REPORT MODAL
        ============================================================ -->
   <div id="plagiarism-report-modal"

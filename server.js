@@ -4,6 +4,9 @@ const cors = require('cors');
 const http = require('http');
 const WebSocket = require('ws');
 const { createClient } = require('@supabase/supabase-js');
+const multer = require('multer');
+const PlagiarismService = require('./services/plagiarismService');
+const DocumentExtractor = require('./services/documentExtractor');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +24,55 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Debugging mode flag (since the user might not have set up DB yet)
 const isMockMode = supabaseUrl === 'https://mock.supabase.co';
+
+// ==========================================
+// PLAGIARISM AI ENGINE ROUTES
+// ==========================================
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
+const plagiarismService = new PlagiarismService(supabase);
+
+app.post('/api/plagiarism/scan', upload.single('document'), async (req, res) => {
+    try {
+        let text = '';
+        let fileName = 'Pasted Text';
+        
+        if (req.file) {
+            // File upload
+            fileName = req.file.originalname;
+            text = await DocumentExtractor.extractText(req.file.buffer, req.file.mimetype, fileName);
+        } else if (req.body.text) {
+            // Raw text paste
+            text = req.body.text;
+            fileName = req.body.documentName || 'Pasted Text';
+        } else {
+            return res.status(400).json({ error: 'No file or text provided.' });
+        }
+
+        const userId = req.body.userId || 'anonymous';
+        const role = req.body.role || 'student';
+
+        const report = await plagiarismService.analyzeDocument(text, fileName, userId, role);
+        res.json(report);
+    } catch (err) {
+        console.error('Plagiarism Scan Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/plagiarism/history', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('plagiarism_reports')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        console.warn('Could not fetch history from DB, returning empty array:', err.message);
+        res.json([]);
+    }
+});
 
 // ==========================================
 // RESEARCHER PORTAL API ROUTES

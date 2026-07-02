@@ -1,8 +1,17 @@
 /* ============================================================
    SMARTLEARN AI — PLAGIARISM DETECTION ENGINE
    Client-side academic integrity analysis module.
-   All corpus data is clearly labelled [DEMO CONTENT].
    ============================================================ */
+
+/* Resolve the API base URL from app.js — falls back to localhost:5000 if not yet set */
+function _plagiarismApiBase() {
+  if (typeof API_BASE !== 'undefined') return API_BASE;
+  const origin = window.location.origin;
+  return (origin.includes('localhost') || origin.includes('127.0.0.1'))
+    ? 'http://localhost:5000'
+    : origin;
+}
+
 
 /* ---------- Demo Submission Corpus [DEMO CONTENT] ---------- */
 const DEMO_SUBMISSION_CORPUS = [
@@ -141,15 +150,8 @@ function findMatchedExcerpts(submittedText, corpusEntry) {
   return bestMatch ? `"...${bestMatch}..."` : null;
 }
 
-/* ---------- Main Plagiarism Analysis Function ---------- */
-function analyzeTextForPlagiarism(text, documentName) {
-  if (!text || text.trim().length < 50) {
-    return {
-      error: 'Text too short for meaningful analysis. Please submit at least 50 words.',
-      valid: false
-    };
-  }
-
+/* ---------- Local Fallback Plagiarism Function (Offline Mode) ---------- */
+function analyzeTextLocal(text, documentName) {
   const matches = [];
   let highestSimilarity = 0;
 
@@ -173,13 +175,11 @@ function analyzeTextForPlagiarism(text, documentName) {
     }
   });
 
-  // Sort by combined similarity descending
   matches.sort((a, b) => b.combinedSimilarity - a.combinedSimilarity);
 
   const aiAnalysis = detectAIGeneratedPatterns(text);
   const missingCitations = detectMissingCitations(text);
 
-  // Overall similarity (weighted average of top matches)
   const topMatches = matches.slice(0, 3);
   const overallSimilarity = topMatches.length
     ? Math.round(topMatches.reduce((acc, m) => acc + m.combinedSimilarity, 0) / topMatches.length * 0.7)
@@ -200,14 +200,178 @@ function analyzeTextForPlagiarism(text, documentName) {
     analysisDate: new Date().toLocaleDateString('en-GH', { year: 'numeric', month: 'long', day: 'numeric' }),
     wordCount: tokenizeText(text).length,
     overallSimilarity,
+    originalityScore: 100 - overallSimilarity,
     aiGeneratedLikelihood: aiAnalysis.score,
     aiIndicators: aiAnalysis.indicators,
     matches: matches.slice(0, 6),
     missingCitations,
+    writingAnalysis: {
+        grammarScore: Math.max(95 - aiAnalysis.score / 2, 70),
+        readability: "College Level",
+        suggestions: ["Improve citation formatting.", "Ensure all references are linked to citations."]
+    },
     recommendation,
-    overrideAllowed: true,
-    demoNote: '[DEMO CONTENT] — This analysis uses demonstration datasets for evaluation purposes. Results are simulated for academic project showcase.'
+    demoNote: '[OFFLINE DEMO MODE] — This analysis was computed locally in your browser because the backend server is not running. Full AI semantic checks, document upload parsing (PDF/DOCX), and global histories are disabled.'
   };
+}
+
+/* ---------- Main Plagiarism Analysis Function ---------- */
+async function analyzeTextForPlagiarism(text, documentName, file = null) {
+  if (!file && (!text || text.trim().length < 50)) {
+    return { error: 'Text too short for meaningful analysis. Please submit at least 50 words.', valid: false };
+  }
+
+  try {
+    const formData = new FormData();
+    if (file) {
+      formData.append('document', file);
+    } else {
+      formData.append('text', text);
+      formData.append('documentName', documentName);
+    }
+    
+    // Add user info if available in app state
+    formData.append('userId', appState.currentUser ? appState.currentUser.id : 'anonymous');
+    formData.append('role', appState.currentUser ? appState.currentUser.role : 'student');
+
+    const response = await fetch(`${_plagiarismApiBase()}/api/plagiarism/scan`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || 'Failed to scan document.');
+    }
+
+    const report = await response.json();
+    return report;
+  } catch (error) {
+    console.warn('Backend plagiarism scan failed, falling back to local analysis:', error);
+    
+    // If a file was uploaded, we try to read it as a plain text local file if possible
+    if (file) {
+      if (file.name.endsWith('.txt') || file.type === 'text/plain') {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            showToastNotification('⚠️ Backend offline. Switched to local text scan.');
+            resolve(analyzeTextLocal(e.target.result, file.name));
+          };
+          reader.readAsText(file);
+        });
+      } else {
+        return {
+          valid: false,
+          error: '⚠️ Backend offline. PDF and Word document extraction is unavailable without the backend running. Please paste your text directly or run "npm start".'
+        };
+      }
+    }
+
+    showToastNotification('⚠️ Backend offline. Switched to local analysis.');
+    return analyzeTextLocal(text, documentName);
+  }
+}
+
+/* ---------- Frontend Upload & Real-Time Handlers ---------- */
+let plagDebounceTimer;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const fileInput = D.get('plag-file-input');
+  const dropZone = D.get('plag-drop-zone');
+  const textInput = D.get('plag-text-input');
+
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.background = 'rgba(37,99,235,0.15)';
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.background = 'rgba(37,99,235,0.05)';
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.background = 'rgba(37,99,235,0.05)';
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        handlePlagFileSelect();
+      }
+    });
+
+    fileInput.addEventListener('change', handlePlagFileSelect);
+  }
+
+  if (textInput) {
+    textInput.addEventListener('input', () => {
+      clearTimeout(plagDebounceTimer);
+      if (textInput.value.trim().length > 50) {
+        // Real-time analysis indication (we won't fire full backend check on every keystroke to save AI cost, but we show a badge)
+        const statusText = D.get('plag-upload-status-text');
+        if (statusText) {
+            statusText.innerText = 'Analyzing semantics...';
+            D.get('plag-upload-progress').style.display = 'block';
+        }
+        
+        plagDebounceTimer = setTimeout(async () => {
+          submitPlagiarismScan(true);
+        }, 3000); // Wait 3 seconds after typing stops
+      }
+    });
+  }
+});
+
+function handlePlagFileSelect() {
+  const fileInput = D.get('plag-file-input');
+  if (fileInput && fileInput.files.length > 0) {
+    D.get('plag-drop-zone').querySelector('div:nth-child(2)').innerText = fileInput.files[0].name;
+    D.get('plag-text-input').value = ''; // Clear text if file is selected
+  }
+}
+
+async function submitPlagiarismScan(isRealTime = false) {
+  const fileInput = D.get('plag-file-input');
+  const textInput = D.get('plag-text-input');
+  const progressDiv = D.get('plag-upload-progress');
+  const statusText = D.get('plag-upload-status-text');
+
+  let file = null;
+  let text = '';
+
+  if (fileInput && fileInput.files.length > 0) {
+    file = fileInput.files[0];
+  } else if (textInput) {
+    text = textInput.value;
+  }
+
+  if (!file && text.trim().length < 50) {
+    if (!isRealTime) showToastNotification('Please upload a file or paste at least 50 characters of text.');
+    return;
+  }
+
+  if (progressDiv) progressDiv.style.display = 'block';
+  if (statusText) statusText.innerText = 'Scanning document with Gemini AI...';
+
+  const report = await analyzeTextForPlagiarism(text, file ? file.name : 'Pasted Text', file);
+  
+  if (progressDiv) progressDiv.style.display = 'none';
+
+  if (!report.valid) {
+    if (!isRealTime) showToastNotification(report.error);
+    return;
+  }
+
+  if (!isRealTime) {
+    closePlagiarismUploadModal();
+  }
+  
+  renderPlagiarismReport(report);
+  
+  if (!appState.plagiarismReports) appState.plagiarismReports = [];
+  appState.plagiarismReports.unshift(report);
 }
 
 /* ---------- Report Rendering ---------- */
@@ -287,7 +451,7 @@ function renderPlagiarismReport(report) {
         <div style="display:flex; flex-direction:column; gap:6px;">${citationsHtml}</div>
       </div>
 
-      ${report.aiIndicators.length ? `
+      ${report.aiIndicators && report.aiIndicators.length ? `
       <div>
         <h4 style="font-size:0.95rem; margin-bottom:8px;">🤖 AI Pattern Indicators</h4>
         <div style="display:flex; flex-wrap:wrap; gap:6px;">
@@ -295,10 +459,27 @@ function renderPlagiarismReport(report) {
         </div>
       </div>` : ''}
 
+      <!-- Writing & Grammar Analysis (AI generated) -->
+      ${report.writingAnalysis ? `
+      <div>
+        <h4 style="font-size:0.95rem; margin-bottom:8px;">✍️ Writing Quality & Grammar</h4>
+        <div style="padding:12px; background:rgba(0,0,0,0.1); border-radius:10px; font-size:0.8rem; color:var(--text-light);">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:6px;">
+             <span><strong>Grammar Score:</strong> <span style="color:${report.writingAnalysis.grammarScore >= 80 ? '#10b981' : '#f59e0b'}">${report.writingAnalysis.grammarScore || 'N/A'}/100</span></span>
+             <span><strong>Readability:</strong> ${report.writingAnalysis.readability || 'Standard'}</span>
+          </div>
+          ${report.writingAnalysis.suggestions && report.writingAnalysis.suggestions.length ? `
+          <ul style="margin:0; padding-left:16px;">
+            ${report.writingAnalysis.suggestions.map(s => `<li>${s}</li>`).join('')}
+          </ul>` : ''}
+        </div>
+      </div>` : ''}
+
       <!-- Demo Notice -->
+      ${report.demoNote ? `
       <div style="padding:10px 14px; border-radius:8px; background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.2); font-size:0.7rem; color:var(--text-muted);">
         ℹ️ ${report.demoNote}
-      </div>
+      </div>` : ''}
 
       <!-- Actions -->
       <div style="display:flex; gap:10px; flex-wrap:wrap; padding-top:8px; border-top:1px solid var(--border);">
@@ -365,28 +546,47 @@ function flagMisconductPlagiarism() {
 }
 
 /* ---------- Quick Scan (for assignment submissions) ---------- */
-function quickScanSubmission(text, docName) {
-  const report = analyzeTextForPlagiarism(text, docName);
+async function quickScanSubmission(text, docName) {
+  const report = await analyzeTextForPlagiarism(text, docName);
   if (report.valid) {
     renderPlagiarismReport(report);
-    // Store in demo logs
     if (!appState.plagiarismReports) appState.plagiarismReports = [];
     appState.plagiarismReports.unshift(report);
   }
 }
 
 /* ---------- Render Plagiarism Reports Table (Lecturer/Admin) ---------- */
-function renderPlagiarismReportsTable(containerId) {
+async function renderPlagiarismReportsTable(containerId) {
   const container = D.get(containerId);
   if (!container) return;
-  const reports = appState.plagiarismReports || appState.demoPlagiarismReports || [];
 
-  if (!reports.length) {
+  // Try to fetch from backend API
+  let backendReports = [];
+  try {
+      const res = await fetch(`${_plagiarismApiBase()}/api/plagiarism/history`);
+      if (res.ok) {
+          const data = await res.json();
+          // Extract report_data from DB rows
+          backendReports = data.map(r => r.report_data);
+      }
+  } catch (err) {
+      console.warn('Failed to fetch plagiarism history from backend', err);
+  }
+
+  // Merge backend reports with local appState for demo robustness
+  const reports = [...backendReports, ...(appState.plagiarismReports || []), ...(appState.demoPlagiarismReports || [])];
+  
+  // Remove duplicates based on documentName and analysisDate
+  const uniqueReports = Array.from(new Set(reports.map(a => a.documentName + a.analysisDate)))
+      .map(id => reports.find(a => a.documentName + a.analysisDate === id));
+
+  if (!uniqueReports.length) {
     container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">No plagiarism reports yet. Reports are generated automatically when students submit assignments.</div>';
     return;
   }
 
-  container.innerHTML = reports.map((r, idx) => {
+  container.innerHTML = uniqueReports.map((r, idx) => {
+
     const recColor = r.recommendation === 'CLEAR' ? '#10b981' : r.recommendation === 'FLAG_CONCERN' ? '#ef4444' : '#f59e0b';
     const recBg = r.recommendation === 'CLEAR' ? 'rgba(16,185,129,0.1)' : r.recommendation === 'FLAG_CONCERN' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)';
     return `
@@ -404,8 +604,8 @@ function renderPlagiarismReportsTable(containerId) {
             <div style="font-size:1.2rem; font-weight:800; color:#a78bfa;">${r.aiGeneratedLikelihood || 0}%</div>
             <div style="font-size:0.65rem; color:var(--text-muted);">AI Likelihood</div>
           </div>
-          <span style="padding:4px 10px; border-radius:8px; background:${recBg}; color:${recColor}; font-size:0.7rem; font-weight:700;">${r.recommendation.replace(/_/g,' ')}</span>
-          <button class="btn btn-secondary btn-sm" onclick="window._lastPlagiarismReport = appState.plagiarismReports[${idx}] || appState.demoPlagiarismReports[${idx}]; renderPlagiarismReport(window._lastPlagiarismReport);" style="font-size:0.72rem;">View Full Report</button>
+          <span style="padding:4px 10px; border-radius:8px; background:${recBg}; color:${recColor}; font-size:0.7rem; font-weight:700;">${r.recommendation ? r.recommendation.replace(/_/g,' ') : 'UNKNOWN'}</span>
+          <button class="btn btn-secondary btn-sm" onclick="window._lastPlagiarismReport = ${JSON.stringify(r).replace(/"/g, '&quot;')}; renderPlagiarismReport(window._lastPlagiarismReport);" style="font-size:0.72rem;">View Full Report</button>
         </div>
       </div>`;
   }).join('');
